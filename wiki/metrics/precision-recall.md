@@ -41,10 +41,10 @@ $$
 
 ## 直感 {#intuition}
 
-- Precision重視: 「positiveと言うなら外したくない」
-- Recall重視: 「本当のpositiveを取りこぼしたくない」
-
-Spam検知で正常メールをspam扱いするコストが高ければPrecision、疾患screeningで見逃しが重ければRecallを強く意識する、と考えると分かりやすいです。
+<div class="comparison-board" aria-label="PrecisionとRecallの直感的な違い">
+  <section class="comparison-card"><h4>Precisionを重視</h4><dl><dt>避けたい失敗</dt><dd>False Positive</dd><dt>意味</dt><dd>positiveと言うなら外したくない</dd><dt>例</dt><dd>正常メールをspam扱いしたくない</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Recallを重視</h4><dl><dt>避けたい失敗</dt><dd>False Negative</dd><dt>意味</dt><dd>本当のpositiveを取りこぼしたくない</dd><dt>例</dt><dd>screeningで疾患を見逃したくない</dd></dl></section>
+</div>
 
 ## Threshold {#threshold}
 
@@ -54,13 +54,13 @@ CompetitionがF1なら、PrecisionとRecallの両方からOOF thresholdを決め
 
 ## 使い分け {#comparison}
 
-| 指標 | 重視する失敗 |
-|---|---|
-| Precision | False Positiveを減らす |
-| Recall | False Negativeを減らす |
-| F1 | 両者のbalance |
-| PR-AUC / AP | threshold全体のPrecision/Recall |
-| ROC-AUC | ranking全体 |
+<div class="comparison-board" aria-label="Precision Recall関連Metricの使い分け">
+  <section class="comparison-card"><h4>Precision</h4><dl><dt>重視</dt><dd>False Positiveを減らす</dd><dt>threshold</dt><dd>依存</dd></dl></section>
+  <section class="comparison-card"><h4>Recall</h4><dl><dt>重視</dt><dd>False Negativeを減らす</dd><dt>threshold</dt><dd>依存</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>F1</h4><dl><dt>重視</dt><dd>Precision / Recall両方</dd><dt>用途</dt><dd>1つのoperating pointを評価</dd></dl></section>
+  <section class="comparison-card"><h4>PR-AUC / AP</h4><dl><dt>重視</dt><dd>threshold全体のPR関係</dd><dt>用途</dt><dd>不均衡ranking</dd></dl></section>
+  <section class="comparison-card"><h4>ROC-AUC</h4><dl><dt>重視</dt><dd>ranking全体</dd><dt>軸</dt><dd>FPR / TPR</dd></dl></section>
+</div>
 
 ## 注意点
 
