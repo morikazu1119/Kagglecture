@@ -17,18 +17,26 @@ Kagglectureの記事内で使う可視化の選択基準。描画ライブラリ
 | 表現 | 使う場面 |
 |---|---|
 | Markdown table | 手法、スコア、条件の比較 |
-| Mermaid | フロー、判断、モデル構造、関係 |
+| HTML / CSS / SVG | 単純な固定フロー、関係、模式図 |
 | MathJax / LaTeX | 評価指標、Loss、数式 |
-| HTML / CSS / SVG interactive | fold、threshold、weight、samplingなどを操作して理解する図 |
+| HTML / CSS / SVG interactive | fold、threshold、weight、sampling、overlap、分布差などを操作して理解する図 |
 | Chart.js | 軽量な棒・線・散布図 |
 | Plotly | hover / zoom / legend切替が理解に役立つ定量グラフ |
 | Vega-Lite | 複数軸・統計的な比較 |
 | D3 | 他の手段で表現しにくい特殊図・interaction |
 | Leaflet | 地理・位置情報コンペ |
-| SVG | 精密な模式図 |
 | Callout | 重要事項、注意、リーク警告 |
 | details | 発展事項・補足・長い説明 |
 | image / iframe | 外部図、動画、スライド |
+
+### Mermaidの扱い
+
+Mermaidは**原則として第一候補にしない**。
+
+- 値・状態・条件を変えると理解が深まるならInteractiveを優先する。
+- 固定された単純フローならHTML / CSS / SVGを優先する。
+- Mermaidを使うのは、複雑な静的関係を短く保守でき、Interactive化しても理解が増えず、SVG/CSSを手書きする利点も小さい場合に限定する。
+- 「フローだからMermaid」という機械的な選択をしない。
 
 ## Static vs Interactive
 
@@ -43,17 +51,28 @@ Kagglectureの記事内で使う可視化の選択基準。描画ライブラリ
 - Ensemble weightを変えて予測の変化を見る
 - Calibration前後を切り替える
 - foldを切り替えてTrain / Validationの分離を見る
-- Ranking metricで順位入れ替えによるscore変化を見る
+- Target Encodingで自己targetを含む/除く差を見る
+- Pseudo Label thresholdで採用数とnoiseのtrade-offを見る
+- Dice / IoUでmask overlapを動かす
+- RMSE / MAEで外れ値の影響を変える
 - augmentationやsamplingの適用前後を比較する
 
 ### Staticで十分なケース
 
-- 単純な処理順
+- 単純な処理順で、切替や値変更から新しい理解が増えない
 - 固定されたモデル構造
 - 数値を操作しても新しい理解が増えない比較
 - 表だけで十分な使い分け
 
-Interactiveにできるという理由だけでInteractiveにしない。
+Interactiveにできるという理由だけでInteractiveにしない。ただし**操作対象が明確に存在する概念を、静的フローだけで済ませない**。
+
+## Synthetic / illustrative data
+
+概念説明用に作った値やsampleをInteractiveで使う場合は、実測値と混同させない。
+
+- 「模式例」「理解用の例」「実測値ではない」などを図内または直前に明示する。
+- KaggleのCV / LB / ablation値に見える数値を捏造しない。
+- 実在Competitionの定量グラフを作る場合は、確認済み実測値だけを使い出典を付ける。
 
 ## Interactive UX rules
 
@@ -96,7 +115,6 @@ Interactiveは本文の代替ではなく補助。
 
 公開サイトでは以下を利用できる。
 
-- Mermaid
 - MathJax / LaTeX
 - HTML / CSS / SVG interactive components
 - Chart.js
