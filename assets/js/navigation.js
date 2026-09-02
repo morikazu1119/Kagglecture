@@ -16,23 +16,18 @@
 
     if (!toggle || !drawer || !backdrop || !closeButton) return;
 
-    const applyViewportMode = () => {
+    const setDesktopOpen = (open, focus = false) => {
+      body.classList.toggle("sidebar-closed", !open);
       body.classList.remove("menu-open");
+      toggle.setAttribute("aria-expanded", String(open));
+      drawer.setAttribute("aria-hidden", String(!open));
+      drawer.inert = !open;
 
-      if (mobileQuery.matches) {
-        toggle.setAttribute("aria-expanded", "false");
-        drawer.setAttribute("aria-hidden", "true");
-        drawer.inert = true;
-      } else {
-        toggle.setAttribute("aria-expanded", "true");
-        drawer.setAttribute("aria-hidden", "false");
-        drawer.inert = false;
-      }
+      if (focus && !open) toggle.focus();
     };
 
     const setMobileOpen = (open, focus = true) => {
-      if (!mobileQuery.matches) return;
-
+      body.classList.remove("sidebar-closed");
       body.classList.toggle("menu-open", open);
       toggle.setAttribute("aria-expanded", String(open));
       drawer.setAttribute("aria-hidden", String(!open));
@@ -43,12 +38,30 @@
       else toggle.focus();
     };
 
+    const applyViewportMode = () => {
+      if (mobileQuery.matches) {
+        setMobileOpen(false, false);
+      } else {
+        setDesktopOpen(true, false);
+      }
+    };
+
     toggle.addEventListener("click", () => {
-      setMobileOpen(!body.classList.contains("menu-open"));
+      if (mobileQuery.matches) {
+        setMobileOpen(!body.classList.contains("menu-open"));
+      } else {
+        setDesktopOpen(body.classList.contains("sidebar-closed"));
+      }
     });
 
-    closeButton.addEventListener("click", () => setMobileOpen(false));
-    backdrop.addEventListener("click", () => setMobileOpen(false));
+    closeButton.addEventListener("click", () => {
+      if (mobileQuery.matches) setMobileOpen(false);
+      else setDesktopOpen(false, true);
+    });
+
+    backdrop.addEventListener("click", () => {
+      if (mobileQuery.matches) setMobileOpen(false);
+    });
 
     drawer.querySelectorAll("a").forEach((link) => {
       link.addEventListener("click", () => {
@@ -57,11 +70,9 @@
     });
 
     document.addEventListener("keydown", (event) => {
-      if (
-        event.key === "Escape" &&
-        mobileQuery.matches &&
-        body.classList.contains("menu-open")
-      ) {
+      if (event.key !== "Escape") return;
+
+      if (mobileQuery.matches && body.classList.contains("menu-open")) {
         setMobileOpen(false);
       }
     });
