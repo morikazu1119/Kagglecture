@@ -2,7 +2,7 @@
 layout: default
 title: Vision Transformer
 description: 画像をpatch sequenceとしてTransformerへ入力し、self-attentionでglobal interactionを学習するVision model。
-summary: 画像patchをtoken化し、CNNのconvolutionではなくself-attention中心で特徴を学習するarchitecture。
+summary: 画像patchをtoken化し、position情報を加え、Self-AttentionとMLPを積み重ねて画像全体の関係を学習するarchitecture。
 type: reference
 domain: kaggle
 topic: vision-transformer
@@ -18,26 +18,27 @@ tags:
 
 # Vision Transformer
 
-**Vision Transformer（ViT）は、画像を小さなpatchへ分割してtoken列とみなし、Transformerのself-attentionで特徴を学習するモデルです。**
+**Vision Transformer（ViT）は、画像を小さなpatchへ分割してtoken列へ変換し、Transformer EncoderのSelf-Attentionでpatch同士の関係を学習するモデルです。**
 
-原論文では16×16などのpatchをsequenceへ変換し、大規模事前学習後のtransferでCNNと競争力のある性能を示しました（[ViT paper](https://arxiv.org/abs/2010.11929)）。
+CNNがkernelで近傍を順番に見るのに対し、ViTでは1つのtokenが離れたtokenへも直接attentionを向けられます。原論文では画像patch列へpure Transformerを適用し、大規模事前学習後のtransferで高い画像認識性能を示しました（[ViT paper](https://arxiv.org/abs/2010.11929)）。
 
 <nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
-  <a href="#mechanism">仕組み</a>
+  <a href="#patch-embedding">Patch化</a>
+  <a href="#attention">Self-Attention</a>
+  <a href="#encoder">Encoder構造</a>
   <a href="#comparison">CNNとの比較</a>
   <a href="#kaggle-examples">Kaggle実例</a>
   <a href="#pitfalls">注意点</a>
-  <a href="#quick-reference">Quick Reference</a>
 </nav>
 
-## 仕組み {#mechanism}
+## ImageからTokenへ {#patch-embedding}
 
-ViTでは画像をgrid状のpatchへ分け、各patchをtokenへ変換します。下は**画像の2D空間がtoken列へ変わること**を直接見せるHTML模式図です。
+ViTでは、まず画像を同じ大きさのpatchへ分割します。たとえば224×224画像を16×16 patchへ切ると14×14=196 patchです。各patchを1本のvectorへ変換し、Linear Projectionでembedding dimensionへ写像します。
 
-<div class="static-viz html-diagram" aria-label="Vision Transformerのpatch token化模式図">
-  <div class="viz-heading">
-    <div><div class="viz-title">Image → patch → token → Transformer</div><p class="viz-subtitle">空間上の小領域をtokenへ変換し、self-attentionで離れた領域も直接関連付けます。</p></div>
-    <span class="viz-badge">2D + layer構造</span>
+<div class="model-architecture" aria-label="Vision Transformerで画像をpatch tokenへ変換する構造">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">2D imageをpatch列へほどき、embeddingへ変換する</div><p class="model-architecture__subtitle">画像の位置関係はpatch分割後に消えやすいため、position情報をtokenへ加えます。</p></div>
+    <span class="model-architecture__badge">patch embedding</span>
   </div>
   <div class="patch-token-layout">
     <div>
@@ -47,29 +48,105 @@ ViTでは画像をgrid状のpatchへ分け、各patchをtokenへ変換します�
         <span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span>
         <span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span>
       </div>
-      <p class="viz-note">Imageを同じ大きさのpatchへ分割</p>
+      <p class="model-architecture__caption">Imageを固定サイズpatchへ分割</p>
     </div>
     <div>
-      <div class="token-row" aria-label="Patch token列">
-        <span class="token-chip is-cls">CLS</span><span class="token-chip">P1</span><span class="token-chip">P2</span><span class="token-chip">P3</span><span class="token-chip">P4</span><span class="token-chip">P5</span><span class="token-chip">…</span><span class="token-chip">P16</span>
-      </div>
-      <div class="html-flow" style="--flow-columns: 3; margin-top: 16px">
-        <div class="flow-node"><strong>Linear projection</strong><span>patchをembeddingへ変換</span></div>
-        <div class="flow-node"><strong>Transformer blocks</strong><span>self-attentionでglobal interaction</span></div>
-        <div class="flow-node is-accent"><strong>Head / Decoder</strong><span>classification / segmentationへ接続</span></div>
+      <div class="model-stage-row" style="--model-cols:3; padding-top:0">
+        <div class="model-stage"><div class="model-tensor is-wide"><span>Flatten patch<br>P1...PN</span></div><span class="model-stage__label">Patch vectors</span></div>
+        <div class="model-stage"><div class="model-op-box"><span><strong>Linear Projection</strong><br>D次元embeddingへ</span></div><span class="model-stage__label">Patch embedding</span></div>
+        <div class="model-stage"><div class="model-tensor is-accent is-wide"><span>[CLS] + P1...PN<br>+ Position</span></div><span class="model-stage__label">Token sequence</span></div>
       </div>
     </div>
   </div>
-  <p class="viz-caption">patch数・token数は理解用の模式例です。実際のtoken数はresolutionとpatch sizeで変わります。</p>
+  <p class="model-architecture__caption">patch数・token数は理解用の模式例です。classificationではCLS tokenを使う構成が代表的ですが、実装によってpooling方法は異なります。</p>
 </div>
 
-self-attentionにより離れたpatch同士を早い層から直接関連付けられます。一方でCNNほど強い局所inductive biasを持たないため、pretrainingやaugmentationの影響が大きいことがあります。
+Position Embeddingは「P1は左上、P16は右下」のような位置情報をtokenへ与える役割です。これがないと、同じpatch集合でも並び方を区別しづらくなります。
+
+## Self-Attentionを目で追う {#attention}
+
+Self-Attentionでは、各tokenから**Query（何を探すか）・Key（自分が何を持つか）・Value（実際に渡す情報）**を作ります。QueryとKeyの相性からattention weightを計算し、Valueを重み付きで混ぜます。
+
+下の図ではQuery patchを切り替えられます。強く表示されるpatchほど、そのQueryが多く参照している模式例です。実際のViTではheadごと・layerごとにattention patternが異なります。
+
+<div class="interactive-viz" data-model-interactive="vit-attention">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">1つのpatchが画像全体のどこを見るか</div>
+      <p class="interactive-viz__subtitle">Query patchを変えると参照先が変わります。離れたpatchにも直接attentionを向けられる点がCNNの局所convolutionとの大きな違いです。</p>
+    </div>
+    <span class="interactive-status" data-vit-status data-state="safe">Query P1</span>
+  </div>
+  <p class="interactive-note">模式例。attention weightは理解用の人工値で、学習済みViTの実測値ではありません。</p>
+  <div class="interactive-control-row">
+    <span class="interactive-control-label">Query patch</span>
+    <label class="interactive-range">
+      <input type="range" min="1" max="16" step="1" value="1" data-vit-query aria-label="Self-AttentionのQuery patch">
+      <span class="interactive-range-labels"><span>P1</span><span>P16</span></span>
+    </label>
+  </div>
+  <div class="vit-operation-board">
+    <div class="vit-patch-scene">
+      <div class="vit-patch-grid" data-vit-patches aria-label="Attention対象の4×4 patch grid"></div>
+    </div>
+    <div>
+      <div class="conv-panel__title">Attention weight上位</div>
+      <div class="vit-attention-bars" data-vit-bars></div>
+      <p class="interactive-explanation" data-vit-explanation aria-live="polite">Queryを切り替えると参照先が変わります。</p>
+    </div>
+  </div>
+  <noscript><p class="interactive-explanation">Self-Attentionでは各patch tokenが画像内の他tokenを重み付きで参照し、局所距離に縛られず情報を集約できます。</p></noscript>
+</div>
+
+Attentionの中心計算は次です。まず直感として、$QK^T$が「どのtokenをどれだけ見るか」、その重みで$V$を混ぜると考えます。
+
+$$
+Attention(Q,K,V)=softmax\left(\frac{QK^T}{\sqrt{d_k}}\right)V
+$$
+
+Multi-Head Self-Attentionではこの計算を複数headで並列に行い、異なる関係を同時に捉えます。
+
+## Transformer Encoderの内部 {#encoder}
+
+ViTは「Attentionを1回して終わり」ではありません。原論文のEncoder blockでは、LayerNorm、Multi-Head Self-Attention、Residual connection、MLPを繰り返します。
+
+<div class="model-architecture" aria-label="Vision Transformer Encoder blockの内部構造">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">Encoder Block: Attentionで混ぜ、MLPで各tokenを変換する</div><p class="model-architecture__subtitle">2本のResidual pathにより、block入力をAttention後・MLP後へ足し戻します。</p></div>
+    <span class="model-architecture__badge">Transformer block</span>
+  </div>
+  <div class="transformer-encoder">
+    <div class="transformer-block"><strong>Tokens</strong>N×D</div>
+    <div class="transformer-block"><strong>LayerNorm + MHA</strong>Q/K/Vを作りtoken間を混合</div>
+    <div class="transformer-add" aria-label="Residual add">+</div>
+    <div class="transformer-block"><strong>LayerNorm + MLP</strong>各token内部のfeatureを変換</div>
+    <div class="transformer-add" aria-label="Residual add">+</div>
+    <div class="transformer-block"><strong>Output</strong>N×D</div>
+    <div class="transformer-encoder__skip" aria-hidden="true"></div>
+    <div class="transformer-encoder__skip is-second" aria-hidden="true"></div>
+  </div>
+  <p class="model-architecture__caption">このblockをL層stackします。token数Nは基本的に維持され、embedding dimension Dの表現が更新されます。</p>
+</div>
+
+<div class="model-architecture" aria-label="Vision Transformer全体のarchitecture">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">ViT全体: Patch Embedding → Encoder stack → Head</div><p class="model-architecture__subtitle">Encoderを深く積み重ねることで、patch表現を段階的に更新します。</p></div>
+    <span class="model-architecture__badge">2.5D layer stack</span>
+  </div>
+  <div class="model-stage-row" style="--model-cols:5">
+    <div class="model-stage"><div class="model-tensor"><span>Image<br>H×W×3</span></div><span class="model-stage__label">Input</span></div>
+    <div class="model-stage"><div class="model-tensor is-wide"><span>Patch Embedding<br>N×D</span></div><span class="model-stage__label">Tokenize</span></div>
+    <div class="model-stage"><div class="model-tensor is-thin"><span>Encoder<br>Block × L</span></div><span class="model-stage__label">Attention + MLP</span></div>
+    <div class="model-stage"><div class="model-tensor is-thin"><span>Deep token<br>representation</span></div><span class="model-stage__label">Global features</span></div>
+    <div class="model-stage"><div class="model-tensor is-accent is-wide"><span>CLS / Pool<br>Head / Decoder</span></div><span class="model-stage__label">Task output</span></div>
+  </div>
+</div>
 
 ## CNNとの比較 {#comparison}
 
 <div class="comparison-board" aria-label="CNNとVision Transformerの比較">
-  <section class="comparison-card"><h4>CNN</h4><dl><dt>局所性</dt><dd>convolutionで強く組み込む</dd><dt>Global interaction</dt><dd>深い層でreceptive fieldが広がる</dd><dt>小データ</dt><dd>比較的安定</dd><dt>計算</dt><dd>architecture依存</dd></dl></section>
-  <section class="comparison-card is-primary"><h4>Vision Transformer</h4><dl><dt>局所性</dt><dd>patch / attentionから学習</dd><dt>Global interaction</dt><dd>attentionで直接扱いやすい</dd><dt>小データ</dt><dd>pretraining依存が大きい場合あり</dd><dt>計算</dt><dd>token数増加でattention costが増える</dd></dl></section>
+  <section class="comparison-card"><h4>CNN</h4><dl><dt>基本演算</dt><dd>局所convolution</dd><dt>Global関係</dt><dd>層を重ねreceptive fieldを広げる</dd><dt>Inductive bias</dt><dd>局所性・平行移動へ強い</dd><dt>小データ</dt><dd>比較的安定しやすい</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Vision Transformer</h4><dl><dt>基本演算</dt><dd>Self-Attention + MLP</dd><dt>Global関係</dt><dd>遠いtokenへ直接attention可能</dd><dt>Inductive bias</dt><dd>CNNより弱く、data/pretraining依存が大きい場合</dd><dt>計算</dt><dd>token数増加でattention costが増える</dd></dl></section>
 </div>
 
 どちらか一方へ決め打ちせず、同じCVでpretrained CNN/ViTを比較します。
@@ -86,23 +163,23 @@ Cassava Leaf Disease Classificationの1位解法ではImageNet weightのViT-B/16
 
 ### Patch sizeとresolution
 
-resolutionを上げるとtoken数が増え、memoryと計算量が急増します。backbone sizeだけでなくpatch sizeまでbudgetに影響します。
+resolutionを上げる、またはpatch sizeを小さくするとtoken数が増えます。標準Self-Attentionはtoken間の組み合わせを扱うため、memoryと計算量が大きくなります。
 
 ### Pretraining差をarchitecture差と誤認する
 
-ImageNet-1K CNNとLAION/DINO等で大規模事前学習したViTを比べると、architectureだけの差ではありません。pretraining sourceを記録します。
+ImageNet-1K CNNと大規模self-supervised/vision-language pretraining済みViTを比べると、architectureだけの差ではありません。checkpointの学習dataとobjectiveまで記録します。
 
-### Segmentation decoder
+### Segmentationでmulti-scaleが必要
 
-plain ViTは単一scale featureが中心なので、FPN/U-Net的decoderへ接続するときは中間block抽出やfeature pyramid設計が必要になる場合があります。
+plain ViTはCNNのような自然なfeature pyramidを持たないため、中間block抽出、hierarchical Transformer、FPN等でmulti-scale featureを作る設計が必要になる場合があります。
 
-## Quick Reference {#quick-reference}
+## Quick Reference
 
-- pretrained weight込みで比較する。
-- resolution × patch size × batch sizeで計算量を見積もる。
-- small dataではCNN baselineも残す。
-- segmentationはmulti-scale feature取得方法を設計する。
-- CNNとのensemble diversityも評価する。
+- Imageをpatchへ切り、Linear Projectionでtokenへ変える。
+- Position情報を加えてpatchの場所を保持する。
+- Self-Attentionは離れたpatch同士を直接関連付けられる。
+- EncoderはAttentionだけでなくLayerNorm・Residual・MLPを含む。
+- resolution × patch size × batch sizeで計算budgetを見る。
 
 ## 関連項目
 
