@@ -34,6 +34,25 @@ positiveが非常に少ない問題ではROC-AUCだけではFalse Positiveの実
 
 positiveを上位へ集めつつ、上位にnegativeを混ぜないモデルほどcurveが右上側になります。PrecisionとRecallの両方が高い領域が広いほど良いと考えます。
 
+<div class="static-viz html-chart" aria-label="Precision Recall curveの模式図">
+  <div class="viz-heading"><div><div class="viz-title">PrecisionとRecallを同時に高く保てる範囲を見る</div><p class="viz-subtitle">右へ行くほどRecallが高く、上にいるほどPrecisionが高い。右上に近いcurveほど良い模式例です。</p></div><span class="viz-badge">模式曲線</span></div>
+  <svg viewBox="0 0 560 300" role="img" aria-label="Recallを横軸、Precisionを縦軸にした模式Precision Recall curve">
+    <line x1="58" y1="250" x2="525" y2="250" stroke="var(--border-strong)" stroke-width="2" />
+    <line x1="58" y1="250" x2="58" y2="28" stroke="var(--border-strong)" stroke-width="2" />
+    <line x1="58" y1="205" x2="525" y2="205" stroke="var(--border)" stroke-width="1" />
+    <line x1="58" y1="160" x2="525" y2="160" stroke="var(--border)" stroke-width="1" />
+    <line x1="58" y1="115" x2="525" y2="115" stroke="var(--border)" stroke-width="1" />
+    <line x1="58" y1="70" x2="525" y2="70" stroke="var(--border)" stroke-width="1" />
+    <path d="M58,48 C120,49 175,58 225,72 C286,90 339,115 383,143 C433,175 477,210 525,236" fill="none" stroke="var(--success)" stroke-width="5" stroke-linecap="round" />
+    <path d="M58,92 C122,103 179,122 229,144 C292,171 345,193 399,211 C452,228 490,239 525,244" fill="none" stroke="var(--text-secondary)" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 7" />
+    <text x="292" y="286" text-anchor="middle" fill="var(--text-secondary)" font-size="13">Recall →</text>
+    <text x="18" y="142" text-anchor="middle" fill="var(--text-secondary)" font-size="13" transform="rotate(-90 18 142)">Precision →</text>
+    <text x="398" y="124" fill="var(--success)" font-size="12" font-weight="700">より良いranking</text>
+    <text x="365" y="224" fill="var(--text-secondary)" font-size="12">弱い模式curve</text>
+  </svg>
+  <p class="viz-caption">曲線は概念説明用で実測値ではありません。CompetitionのAP/PR-AUCは公式実装で計算します。</p>
+</div>
+
 ## Average Precision {#ap}
 
 scikit-learnのAPは、各thresholdでRecallが増えた分をweightにしてPrecisionを平均します。
@@ -46,10 +65,10 @@ $$
 
 ## ROC-AUCとの違い {#comparison}
 
-| 指標 | x/y | 不均衡時の見え方 |
-|---|---|---|
-| ROC-AUC | FPR / TPR | negative全体が分母になる |
-| PR / AP | Recall / Precision | positive検出とFPを直接見る |
+<div class="comparison-board" aria-label="ROC-AUCとPR Average Precisionの比較">
+  <section class="comparison-card"><h4>ROC-AUC</h4><dl><dt>軸</dt><dd>FPR / TPR</dd><dt>negative</dt><dd>全negativeが分母</dd><dt>向く判断</dt><dd>ranking全体を広く見る</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>PR / Average Precision</h4><dl><dt>軸</dt><dd>Recall / Precision</dd><dt>positive</dt><dd>positive検出とFalse Positiveを直接見る</dd><dt>向く判断</dt><dd>positiveが希少な問題</dd></dl></section>
+</div>
 
 random predictorのAP baselineはpositive率です。positive率1%ならAP 0.01付近がrandom相当になるため、dataset間で生値を比較するときはclass prevalenceも見ます（[scikit-learn](https://scikit-learn.org/stable/modules/model_evaluation.html)）。
 
