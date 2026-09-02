@@ -7,11 +7,11 @@ description: Kaggleの公開Writeup・Discussion・Notebook・技術記事・上
 
 ## Goal
 
-Kaggleで公開されている情報を広く調査し、コンペで実際に効果が確認された手法を、再利用可能な知識として整理する。
+Kaggleで公開されている情報を広く調査し、コンペで実際に効果が確認された手法を、再利用可能な知識として `wiki/` に体系化する。
 
-対象は「よく使われる一般手法」だけではなく、特定コンペで大きく効いたユニークな工夫、Validation設計、データ分割、評価指標への最適化、リーク対策、後処理、アンサンブル、疑似ラベル、外部データ、推論時工夫なども含む。
+一般的な手法だけでなく、特定コンペで大きく効いたユニークな工夫、Validation設計、データ分割、評価指標への最適化、リーク対策、後処理、アンサンブル、疑似ラベル、外部データ、推論時工夫まで対象とする。
 
-成果物は llm-wiki 型の `raw/` と `wiki/` に分離する。
+**ソース保存専用ディレクトリは作らない。** 各Wiki Markdownを自己完結させ、本文の主張に出典URLを直接埋め込み、ページ末尾にも参考文献を置く。
 
 ## Non-goals
 
@@ -35,23 +35,23 @@ Kaggleで公開されている情報を広く調査し、コンペで実際に�
 6. Zenn / Qiita / はてなブログ等の日本語解説
 7. 技術ブログ・論文・公式ドキュメント
 
-二次まとめだけに依存しない。可能な限り一次情報まで遡る。
+二次まとめだけに依存せず、可能な限り一次情報まで遡る。
 
 ## Coverage policy
 
-「満遍なく調査」は単純な検索件数ではなく、以下の軸を偏りなく確認することを意味する。
+「満遍なく調査」は検索件数ではなく、以下の軸を偏りなく確認することを意味する。
 
 | 軸 | 必ず確認する観点 |
 |---|---|
 | データ種別 | Tabular / CV / NLP / Time Series / Audio / Multimodal / Recommendation・Ranking / Optimization系 |
 | Validation | Hold-out / KFold / Stratified / Group / StratifiedGroup / Time-based / Purged・Gap / Adversarial Validation |
-| モデル | GBDT / CNN / Transformer / Foundation Model / Linear・kNN等の単純モデル / specialized architecture |
+| モデル | GBDT / CNN / Transformer / Foundation Model / Linear・kNN等 / specialized architecture |
 | 改善 | Feature Engineering / Augmentation / Sampling / Loss / Pretraining / Fine-tuning / Pseudo Label / External Data |
 | 推論 | TTA / threshold / calibration / post-processing / test-time adaptation |
 | Ensemble | averaging / weighted blend / rank averaging / stacking / seed・fold ensemble |
 | コンペ戦略 | CV-LB correlation / leaderboard probing / shake-up対策 / inference budget / reproducibility |
 
-対象テーマが限定されている場合は、無関係なモダリティを水増ししない。その代わり同一領域内で複数コンペ・複数年代・複数上位解法を比較する。
+テーマが限定されている場合は無関係なモダリティを水増しせず、同一領域内で複数コンペ・複数年代・複数上位解法を比較する。
 
 ## Research workflow
 
@@ -65,10 +65,10 @@ flowchart TD
     E --> F[手法・順位・CV・スコア差を抽出]
     F --> G[一般手法とユニーク手法に分類]
     G --> H[複数コンペでクロスチェック]
-    H --> I[効果のエビデンス評価]
-    I --> J[raw/source manifest更新]
-    J --> K[wikiページ作成・更新]
-    K --> L[相互リンク・図表・参考文献チェック]
+    H --> I[Evidence Grade]
+    I --> J[Wikiページ作成・更新]
+    J --> K[本文へ出典URLを埋め込む]
+    K --> L[図表・参考文献・相互リンクを確認]
 ```
 
 ## Evidence grading
@@ -82,7 +82,7 @@ flowchart TD
 | C | 複数の独立した上位解法で同じ傾向が確認できる |
 | D | 単一記事・経験談・理論上の推測のみ。参考扱い |
 
-A/B/C/Dを混同しない。数値がない場合は「どの程度効いたか不明」と明記する。
+数値がない場合は「どの程度効いたか不明」と明記する。
 
 ## Extraction schema
 
@@ -102,35 +102,25 @@ A/B/C/Dを混同しない。数値がない場合は「どの程度効いたか�
 | Applicability | どんな条件で再利用できるか |
 | Risks | leakage / overfit / compute / instability 等 |
 | Evidence | A/B/C/D |
-| Sources | 一次情報を優先した参考文献 |
+| Sources | 一次情報を優先したURL |
 
 ## General vs unique methods
 
-最終整理では手法を最低でも以下の3群に分ける。
-
 ### 1. Foundation / General
 
-複数コンペで再現されやすい基本手法。
-
-例: 正しいCV設計、seed/fold ensemble、GBDT baseline、augmentation、OOF、metric-aligned validation。
+複数コンペで再現されやすい基本手法。例: 正しいCV設計、seed/fold ensemble、GBDT baseline、augmentation、OOF、metric-aligned validation。
 
 ### 2. Strong situational methods
 
-条件が合えば非常に強いが、常に使えるわけではない手法。
-
-例: pseudo labeling、external data、adversarial validation、target encoding、pretraining、TTA。
+条件が合えば非常に強いが、常に使えるわけではない手法。例: pseudo labeling、external data、adversarial validation、target encoding、pretraining、TTA。
 
 ### 3. Competition-specific / Unique
 
-データ生成過程・評価指標・制約を深く突いた特殊解法。
-
-一般化可能な「原理」と、そのコンペ固有の「実装」を分けて説明する。
+データ生成過程・評価指標・制約を深く突いた特殊解法。一般化可能な「原理」と、そのコンペ固有の「実装」を分けて説明する。
 
 ## Visualization requirements
 
-文章だけで終わらせない。
-
-原則として各主要wikiページに、内容に応じて以下のうち2種類以上を入れる。
+文章だけで終わらせない。主要Wikiページには内容に応じて以下のうち2種類以上を入れる。
 
 - Markdown比較表
 - Mermaid flowchart
@@ -160,21 +150,7 @@ flowchart TD
 
 ## llm-wiki output model
 
-### raw layer
-
-調査したソースの事実を保存する。
-
-```text
-raw/
-  sources/
-    YYYY-MM-DD_<topic>.md
-```
-
-rawには解釈を盛りすぎない。URL、タイトル、著者、日付、言語、コンペ、順位、引用可能な事実、確認した手法を記録する。
-
-### wiki layer
-
-複数sourceを統合した知識を書く。
+知識の正本は `wiki/` のMarkdownだけにする。
 
 ```text
 wiki/
@@ -189,6 +165,8 @@ wiki/
 ```
 
 1ページ1テーマを原則とし、巨大な1ファイルに詰め込まない。
+
+各ページは「調査結果」と「出典」を同じファイルに保持する。別のソース保管層は作らない。
 
 ## Wiki page rules
 
@@ -229,11 +207,13 @@ tags:
 
 ## Citation rules
 
-参考文献は必須。
+参考文献は必須。URLはWiki Markdownへ直接埋め込む。
 
-- Web由来の具体的事実には対応する出典を付ける。
+- Web由来の具体的事実・数値・順位・採用手法には、直後または同じ段落にMarkdownリンクを付ける。
+- 例: `この手法でCVが改善したと報告されている（[1st place solution](https://...)）。`
+- 比較表の `Source` 列にも可能な限り直接リンクを置く。
 - 最終ページ末尾に `## 参考文献` を置く。
-- URLだけではなく、タイトル・著者または投稿者・媒体・公開年/日付（確認できる範囲）を記載する。
+- URLだけでなく、タイトル・著者または投稿者・媒体・公開年/日付（確認できる範囲）を記載する。
 - Kaggle Discussionは Competition名とDiscussion/Writeup名を記載する。
 - GitHubはリポジトリ名と該当README/solutionファイルを明示する。
 - 二次記事から一次情報が辿れる場合、一次情報も併記する。
@@ -242,9 +222,7 @@ tags:
 
 ## Cross-linking
 
-llm-wikiとして、既存ページと積極的に関連付ける。
-
-例:
+既存ページと積極的に関連付ける。
 
 - Validation記事 → `../validation/group-split.md`
 - pseudo label記事 → `../methods/pseudo-labeling.md`
@@ -253,8 +231,6 @@ llm-wikiとして、既存ページと積極的に関連付ける。
 GitHub Pagesで閲覧できるよう、実ファイルへの相対Markdownリンクを基本とする。
 
 ## Research quality checks
-
-完了前に必ず確認する。
 
 - [ ] 日本語と英語の両方で検索した
 - [ ] Kaggle一次情報を確認した
@@ -267,29 +243,21 @@ GitHub Pagesで閲覧できるよう、実ファイルへの相対Markdownリン
 - [ ] 反例・失敗条件も記載した
 - [ ] 表がある
 - [ ] Mermaidまたは別の図がある
-- [ ] 参考文献が欠けていない
+- [ ] 本文中に出典URLが埋め込まれている
+- [ ] ページ末尾に参考文献がある
 - [ ] wiki内の関連ページをリンクした
 
 ## No-code preference
 
 このスキルの主目的は調査・解説・知識ベース構築であり、Pythonコードは原則出力しない。
 
-コードが必要な場合でも、ユーザーが明示的にコードを求めたときだけ別途追加する。
-
-手法の理解には、コードよりも以下を優先する。
-
-1. 図
-2. 比較表
-3. 具体的なコンペ事例
-4. スコア・順位・ablationなどの根拠
-5. 適用条件と失敗条件
+コードよりも、図、比較表、具体的なコンペ事例、スコア・順位・ablationなどの根拠、適用条件と失敗条件を優先する。
 
 ## Final deliverable
 
-調査タスクでは、単発のチャット回答だけで終わらせず、原則として以下を更新する。
+調査タスクでは原則として以下を更新する。
 
-1. `raw/sources/...` — 調査ソース記録
-2. `wiki/...` — 統合された解説ページ
-3. `wiki/index.md` — 新規ページへの索引
+1. `wiki/...` — 本文・図表・インライン出典URL・参考文献を含む統合ページ
+2. `wiki/index.md` — 新規ページへの索引
 
 既存wikiと矛盾する新しい根拠が見つかった場合、古い記述を無言で消さず、根拠・時期・条件の違いを明示して更新する。
