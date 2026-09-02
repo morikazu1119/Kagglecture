@@ -31,25 +31,36 @@ Epochやtree数を固定するより、foldごとに「改善が止まる場所�
 
 ## 仕組み {#mechanism}
 
-```text
-epoch 1  -> val improves -> save
-...
-epoch 12 -> best score   -> save best
-epoch 13 -> no improve
-epoch 14 -> no improve
-epoch 15 -> no improve -> patience到達なら停止
-```
+Validation scoreが改善した地点を保存し、そこから`patience`回改善しなければ停止します。**停止した最後の重みではなく、best iteration / best checkpointを使う**のが要点です。
 
-停止時点の重みではなく、**best iteration / best checkpoint**を推論に使う点が重要です。
+<div class="static-viz html-chart" aria-label="Early StoppingのValidation curve模式図">
+  <div class="viz-heading"><div><div class="viz-title">best checkpointを保存し、改善が止まった後に停止する</div><p class="viz-subtitle">横軸=epoch、縦軸=Validation performance。模式例ではepoch 12付近がbestです。</p></div><span class="viz-badge">模式学習曲線</span></div>
+  <svg viewBox="0 0 580 300" role="img" aria-label="epoch 12でbestになり、その後patience分改善せず停止する模式曲線">
+    <line x1="58" y1="250" x2="540" y2="250" stroke="var(--border-strong)" stroke-width="2" />
+    <line x1="58" y1="250" x2="58" y2="28" stroke="var(--border-strong)" stroke-width="2" />
+    <path d="M65,220 C110,190 145,160 185,132 C230,100 270,76 312,66 C350,62 382,69 410,78 C445,89 480,101 530,115" fill="none" stroke="var(--text-secondary)" stroke-width="4" stroke-linecap="round" />
+    <line x1="312" y1="42" x2="312" y2="250" stroke="var(--success)" stroke-width="2" stroke-dasharray="6 6" />
+    <circle cx="312" cy="66" r="7" fill="var(--success)" />
+    <line x1="455" y1="52" x2="455" y2="250" stroke="var(--danger)" stroke-width="2" stroke-dasharray="6 6" />
+    <text x="312" y="34" text-anchor="middle" fill="var(--success)" font-size="12" font-weight="700">best checkpoint</text>
+    <text x="455" y="44" text-anchor="middle" fill="var(--danger)" font-size="12" font-weight="700">stop</text>
+    <text x="300" y="286" text-anchor="middle" fill="var(--text-secondary)" font-size="13">Epoch →</text>
+    <text x="18" y="142" text-anchor="middle" fill="var(--text-secondary)" font-size="13" transform="rotate(-90 18 142)">Validation performance →</text>
+  </svg>
+  <p class="viz-caption">曲線とepoch番号は理解用の模式例です。実際のbest地点とpatienceはfold・metricごとに変わります。</p>
+</div>
 
 ## 設定 {#settings}
 
-| Parameter | 意味 |
-|---|---|
-| patience / stopping_rounds | 何回改善なしを許すか |
-| min_delta | 改善とみなす最小差 |
-| monitor | 監視するValidation Metric |
-| mode | maximize / minimize |
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th scope="col">Parameter</th><th scope="col">意味</th><th scope="col">設計上の注意</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">patience / stopping_rounds</th><td>何回改善なしを許すか</td><td>短すぎると伸びる前に止まる</td></tr>
+    <tr><th scope="row">min_delta</th><td>改善とみなす最小差</td><td>metric noiseより小さすぎる差を追わない</td></tr>
+    <tr><th scope="row">monitor</th><td>監視するValidation Metric</td><td>Competition目的へ近い指標を選ぶ</td></tr>
+    <tr><th scope="row">mode</th><td>maximize / minimize</td><td>AUCとLossで方向が逆</td></tr>
+  </tbody>
+</table></div>
 
 Metricのノイズが大きいほどpatienceを短くしすぎると、本来伸びる前に停止します。
 
