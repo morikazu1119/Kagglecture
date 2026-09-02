@@ -2,7 +2,9 @@
 layout: default
 title: Ensemble
 description: KaggleのEnsemble手法を調べるためのカテゴリ索引。
+summary: Averaging、Weighted Blend、Rank Average、Stacking、Fold / Seed Ensemble。
 type: category-index
+nav_order: 6
 permalink: /wiki/ensemble/
 ---
 
