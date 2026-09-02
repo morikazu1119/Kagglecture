@@ -42,19 +42,32 @@ Kaggleでは強いモデルより先に潰すべき問題です。Leakageがあ�
 
 ## 防ぎ方 {#prevention}
 
-最も安全な原則は、**先にsplitし、その後の`fit`をすべてTrain fold内に閉じること**です。
+最も安全な原則は、**先にsplitし、その後の`fit`をすべてTrain fold内に閉じること**です。下で安全な順序と、split前にfitしてしまう順序を切り替えられます。
 
-```mermaid
-flowchart LR
-  A[Raw data] --> B[Split]
-  B --> C[Train fold]
-  B --> D[Validation fold]
-  C --> E[Preprocessingをfit]
-  E --> F[Modelをfit]
-  E --> G[Validationをtransform]
-  F --> H[Validation予測]
-  G --> H
-```
+<div class="interactive-viz" data-interactive="leakage-pipeline">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">Splitとfitの順序を比較</div>
+      <p class="interactive-viz__subtitle">前処理をどのデータでfitするかがLeakageの境界です。</p>
+    </div>
+    <span class="interactive-status" data-leak-status data-state="safe">Leakageなし</span>
+  </div>
+  <div class="interactive-control-row" role="group" aria-label="Pipelineの順序">
+    <span class="interactive-control-label">Pipeline</span>
+    <button type="button" class="interactive-button is-active" data-leak-mode="safe" aria-pressed="true">先にSplit</button>
+    <button type="button" class="interactive-button" data-leak-mode="leaky" aria-pressed="false">先に全データでfit</button>
+  </div>
+  <div class="flow-strip" aria-label="処理フロー">
+    <div class="flow-stage" data-leak-stage>Raw data</div>
+    <div class="flow-stage" data-leak-stage>Split</div>
+    <div class="flow-stage" data-leak-stage>Train fold</div>
+    <div class="flow-stage" data-leak-stage>Trainだけでfit</div>
+    <div class="flow-stage" data-leak-stage>Validationをtransform</div>
+    <div class="flow-stage" data-leak-stage>Validation予測</div>
+  </div>
+  <p class="interactive-explanation" data-leak-explanation aria-live="polite">先にsplitし、標準化・欠損補完・特徴選択などのfitはTrain foldだけで行います。</p>
+  <noscript><p class="interactive-explanation">安全な原則は、splitしてからTrain foldだけで前処理をfitし、Validationへはtransformだけを適用することです。</p></noscript>
+</div>
 
 scikit-learnも、test/validationを含めて`fit`や`fit_transform`しないこと、Pipelineを使ってCross Validation内で前処理を学習することを推奨しています（[Common pitfalls](https://scikit-learn.org/stable/common_pitfalls.html#how-to-avoid-data-leakage)）。
 
