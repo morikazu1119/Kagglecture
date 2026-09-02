@@ -1,80 +1,63 @@
 ---
 layout: default
 title: Kagglecture
+description: Kaggleで使われる実践的な手法を体系的に学ぶWiki
 ---
 
 # Kagglecture
 
-Kaggle の公開 Writeup・Discussion・Notebook・GitHub・技術記事を **日本語 / 英語の両方から横断調査**し、コンペで有効だった手法を体系化するリサーチWikiです。
+**Kaggleで「何を使うか」だけでなく、「なぜ効くのか・いつ使うのか」まで学ぶためのWikiです。**
 
-一般的な勝ち筋だけでなく、特定コンペで効いたユニークな工夫についても、**効果・適用条件・失敗条件・参考文献**まで追跡します。
+上位解法や公開記事をもとに、Validation、評価指標、モデル改善、アンサンブル、コンペ固有の工夫まで整理します。
 
-## Start here
+<div class="hero-actions">
+  <a class="primary-button" href="wiki/">学習を始める</a>
+  <a class="secondary-button" href="wiki/#topics">テーマから探す</a>
+</div>
 
-- **[Kaggle Research Wiki](wiki/)** — 調査結果を統合した知識ベース
-- **[GitHub Repository](https://github.com/morikazu1119/Kagglecture)** — WikiのMarkdownと調査Skill
-
-## Knowledge Pipeline
+## 学ぶ順番
 
 ```mermaid
 flowchart LR
-    A[Kaggle Writeup] --> V[Verify & Cross-check]
-    B[Japanese Articles] --> V
-    C[English Articles] --> V
-    D[GitHub / Papers] --> V
-    V --> E[Evidence Grading]
-    E --> W[Wiki Markdown]
-    W --> R[Inline URLs & References]
-    W --> X[Cross-linked Knowledge]
+    A[問題と評価指標] --> B[Validation設計]
+    B --> C[Baseline]
+    C --> D[モデル・特徴量改善]
+    D --> E[Ensemble・後処理]
+    E --> F[上位解法から学ぶ]
 ```
 
-調査ソース専用の `raw/` ディレクトリは持ちません。各Wikiページの具体的な主張に出典URLを直接紐付け、ページ末尾にも参考文献をまとめます。
+<div class="learning-grid">
+  <div class="learning-card">
+    <div class="card-step">01</div>
+    <h3>Validation</h3>
+    <p>KFold、Stratified、Group、Time Seriesなど、正しいデータ分割を学ぶ。</p>
+  </div>
+  <div class="learning-card">
+    <div class="card-step">02</div>
+    <h3>Metrics</h3>
+    <p>AUC、F1、LogLoss、RMSEなど、評価指標と最適化の関係を理解する。</p>
+  </div>
+  <div class="learning-card">
+    <div class="card-step">03</div>
+    <h3>Methods</h3>
+    <p>特徴量、Augmentation、Pseudo Label、TTA、Ensembleなどを使い分ける。</p>
+  </div>
+  <div class="learning-card">
+    <div class="card-step">04</div>
+    <h3>Winning Solutions</h3>
+    <p>実際の上位解法から、一般化できる勝ち筋とユニークな工夫を学ぶ。</p>
+  </div>
+</div>
 
-## 調査する領域
+## このWikiで重視すること
 
-| 領域 | 主なテーマ |
+| 観点 | 学ぶ内容 |
 |---|---|
-| Validation | Hold-out, KFold, Stratified, Group, Time-based, Adversarial Validation |
-| Metrics | Accuracy, F1, AUC, LogLoss, RMSE, MAE, Ranking metric, custom metric |
-| Modeling | GBDT, CNN, Transformer, Foundation Model, specialized architecture |
-| Training | Augmentation, Sampling, Loss, Pretraining, Fine-tuning, Pseudo Label |
-| Feature | Feature Engineering, Encoding, Aggregation, domain-specific features |
-| Inference | TTA, Threshold, Calibration, Post-processing, Test-time adaptation |
-| Ensemble | Averaging, Weighted Blend, Rank Average, Stacking, Fold/Seed Ensemble |
-| Strategy | CV-LB correlation, Leakage, Leaderboard overfitting, reproducibility |
+| **再現性** | Public LBだけではなく、CVで判断できるようにする |
+| **使い分け** | 手法名ではなく、適用条件と失敗条件を理解する |
+| **実戦性** | 実際のKaggle上位解法・Writeupを具体例にする |
+| **根拠** | 数値や順位などの主張には参考文献を付ける |
 
-## 手法の整理
-
-```mermaid
-flowchart TD
-    M[Kaggleで報告された手法] --> G[General / Foundation]
-    M --> S[Strong Situational]
-    M --> U[Competition-specific / Unique]
-    G --> G1[複数コンペで再利用しやすい]
-    S --> S1[条件が合うと強い]
-    U --> U1[固有の工夫から一般原理を抽出]
-```
-
-## Evidence Grade
-
-「効いた」と書く場合は、根拠の強さも明示します。
-
-| Grade | 根拠 |
-|---|---|
-| **A** | ablation・CV差・LB差などの定量根拠あり |
-| **B** | 上位入賞者本人が有効性を明示し、最終解法に採用 |
-| **C** | 複数の独立した上位解法で同傾向を確認 |
-| **D** | 単一記事・経験談・推測。参考扱い |
-
-## 方針
-
-モデル名やコードを並べるだけではなく、次の問いに答えられるWikiを目指します。
-
-- **なぜその手法が効いたのか？**
-- **どんなデータで使えるのか？**
-- **どんなValidationを使っていたのか？**
-- **どの評価指標に対して最適化したのか？**
-- **他のコンペでも再利用できる原理は何か？**
-- **逆に、どんな条件では失敗するのか？**
-
-調査ルールはリポジトリ内の `kaggle-research` Skill に定義しています。
+<div class="next-step">
+  <strong>Next:</strong> <a href="wiki/">Kaggle Research Wikiを見る →</a>
+</div>
