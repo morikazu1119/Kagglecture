@@ -27,7 +27,7 @@ Pythonコード集を作るSkillではない。意味、使い分け、実例、
 - `../../standards/wiki/citation-policy.md`
 - `../../standards/wiki/visualization.md`
 
-記事構成・Citation・可視化ルールは上記StandardがSSOT。Skill内へ重複定義しない。
+記事構成・内部リンク・Citation・可視化ルールは上記StandardがSSOT。Skill内へ重複定義しない。
 
 ## Research scope
 
@@ -68,9 +68,37 @@ Pythonコード集を作るSkillではない。意味、使い分け、実例、
 5. 同じ手法を複数Competition・複数解法でクロスチェックする。
 6. General / Situational / Competition-specific に整理する。
 7. 効果主張のEvidenceを判定する。
-8. Wiki記事を新規作成または更新する。
-9. ルート `index.md` に記事リンクを追加する。
-10. Standardに沿ってCitation・図表・関連リンクを最終確認する。
+8. 既存Wikiページを確認し、本文中で参照すべき関連ページを特定する。
+9. 「文章・表・静的図・Interactive」のどれが最短で理解できるかを判断する。
+10. 操作によって理解が深まる概念ならInteractive visualizationを設計する。
+11. Wiki記事を新規作成または更新する。
+12. ルート `index.md` に記事への直接リンクを追加・確認する。
+13. ページ内リンク、cross-link、Citation、図表、モバイル表示を最終確認する。
+
+## Visual reasoning requirement
+
+記事を書く前に、テーマの**最も理解しづらい1点**を特定する。
+
+その1点について、次の優先順で表現方法を選ぶ。
+
+1. 短い文章で十分なら文章
+2. 比較なら表
+3. 関係・流れならMermaid / SVG
+4. 値や状態を変えた結果を見ることが理解につながるならInteractive
+5. 実測値の探索・hover・zoomが必要ならPlotly / Chart.js / Vega / D3
+
+Interactiveを採用する場合も、JavaScriptがなくても本文だけで結論が分かるようにする。
+
+## Page references
+
+記事作成・更新時は必ず既存ページとの関係を確認する。
+
+- 長い記事では主要節へのページ内リンクを置く。
+- 既存Wikiページがある関連用語はcross-linkする。
+- 未作成ページへdead linkを張らない。
+- `index.md` から新規記事へ直接到達できるようにする。
+- GitHub Pagesのbase pathでリンクが壊れないことを確認する。
+- 「次に読む」ではなく、辞書として概念上の関連を示す。
 
 ## Evidence
 
@@ -148,6 +176,7 @@ wiki/
 
 1. `wiki/...` — 辞書・リファレンス記事
 2. `index.md` — 記事への索引
+3. 必要な場合のみ `assets/` — Interactive visualization等の共通UI資産
 
 既存記事と矛盾する新しい根拠が見つかった場合、古い記述を無言で消さず、条件・時期・Evidenceの違いを確認して更新する。
 
@@ -160,7 +189,13 @@ wiki/
 - 定量値に確認可能な出典があるか
 - 適用条件と失敗条件を抽出したか
 - GeneralとCompetition-specificを混同していないか
+- 既存ページとのcross-linkを確認したか
+- ページ内リンクが必要な長さか判断したか
+- `index.md` から直接到達できるか
+- internal linkがGitHub Pages上で解決するか
+- 図で説明した方が速い箇所を文章だけにしていないか
+- Interactiveにする価値があるテーマか一度判断したか
+- Interactiveがなくても本文だけで理解できるか
 - `article-structure.md` に沿っているか
 - `citation-policy.md` に沿っているか
 - `visualization.md` に沿っているか
-- 新規記事を `index.md` から参照できるか
