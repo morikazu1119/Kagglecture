@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#ffffff">
-    <title>{{ page.title | default: site.title }}</title>
+    <title>{% if page.title %}{{ page.title }} | {% endif %}{{ site.title }}</title>
     <meta name="description" content="{{ page.description | default: site.description | escape }}">
     {% include head-custom.html %}
   </head>
@@ -13,10 +13,14 @@
 
     <header class="site-header">
       <div class="header-inner">
-        <a class="site-brand" href="{{ '/' | relative_url }}">Kagglecture</a>
+        <a class="site-brand" href="{{ '/' | relative_url }}" aria-label="Kagglecture ホーム">
+          <span class="site-brand__mark" aria-hidden="true"></span>
+          <span>Kagglecture</span>
+        </a>
+
         <nav class="header-nav" aria-label="メインナビゲーション">
           {% unless page.url == '/' %}
-          <a id="back-link" class="header-link" href="{{ '/' | relative_url }}">← 戻る</a>
+          <a id="back-link" class="header-link" href="{{ '/wiki/' | relative_url }}">← 戻る</a>
           {% endunless %}
           <a class="header-link" href="{{ '/wiki/' | relative_url }}">Wiki</a>
         </nav>
@@ -30,17 +34,22 @@
 
       {% unless page.url == '/' %}
       <nav class="page-bottom-nav" aria-label="ページ下部ナビゲーション">
-        <a id="back-link-bottom" class="bottom-link" href="{{ '/' | relative_url }}">← 戻る</a>
+        <a id="back-link-bottom" class="bottom-link" href="{{ '/wiki/' | relative_url }}">← 戻る</a>
         <a class="bottom-link" href="{{ '/wiki/' | relative_url }}">Wiki</a>
       </nav>
       {% endunless %}
     </main>
+
+    <footer class="site-footer">
+      <span>Kagglecture</span>
+    </footer>
 
     <script>
       (() => {
         const bindBack = (id) => {
           const link = document.getElementById(id);
           if (!link) return;
+
           link.addEventListener('click', (event) => {
             try {
               const referrer = document.referrer ? new URL(document.referrer) : null;
@@ -51,6 +60,7 @@
             } catch (_) {}
           });
         };
+
         bindBack('back-link');
         bindBack('back-link-bottom');
       })();
