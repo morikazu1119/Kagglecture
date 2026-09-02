@@ -1,0 +1,98 @@
+---
+layout: default
+title: Data Leakage
+summary: 予測時には利用できない情報が学習・特徴量・Validationへ混ざり、CVを不当に高く見せる問題。
+type: reference
+domain: kaggle
+topic: data-leakage
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 4
+tags:
+  - kaggle
+  - validation
+  - leakage
+  - cross-validation
+---
+
+# Data Leakage
+
+**Data Leakageは、本番の予測時には利用できない情報が学習や特徴量生成へ混ざり、Validation scoreを実力以上に高く見せる問題です。**
+
+Kaggleでは強いモデルより先に潰すべき問題です。LeakageがあるとCV改善量、feature importance、threshold、ensemble weightまで全部が誤った基準で最適化されます（[scikit-learn: Data leakage](https://scikit-learn.org/stable/common_pitfalls.html#data-leakage)）。
+
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#patterns">典型パターン</a>
+  <a href="#prevention">防ぎ方</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#diagnosis">診断</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+## 典型パターン {#patterns}
+
+| Leakage | 例 |
+|---|---|
+| Split leakage | 同一患者・ユーザー・重複画像がTrain/Validをまたぐ |
+| Target leakage | 全TrainのtargetでTarget EncodingしてからCVする |
+| Preprocessing leakage | 標準化・特徴選択・欠損補完を全データでfitする |
+| Temporal leakage | 未来の売上を含むrolling featureで過去を予測する |
+| Pseudo-label leakage | Validationを学習したteacherのpseudo labelをそのValidation評価に使う |
+| Duplicate leakage | near-duplicateがTrain/Valid/Test間に存在する |
+
+## 防ぎ方 {#prevention}
+
+最も安全な原則は、**先にsplitし、その後の`fit`をすべてTrain fold内に閉じること**です。
+
+```mermaid
+flowchart LR
+  A[Raw data] --> B[Split]
+  B --> C[Train fold]
+  B --> D[Validation fold]
+  C --> E[Preprocessingをfit]
+  E --> F[Modelをfit]
+  E --> G[Validationをtransform]
+  F --> H[Validation予測]
+  G --> H
+```
+
+scikit-learnも、test/validationを含めて`fit`や`fit_transform`しないこと、Pipelineを使ってCross Validation内で前処理を学習することを推奨しています（[Common pitfalls](https://scikit-learn.org/stable/common_pitfalls.html#how-to-avoid-data-leakage)）。
+
+## Kaggleでの実例 {#kaggle-examples}
+
+Google QUEST Q&A Labelingの1位解法では、pseudo label生成モデルのうちValidationを学習済みのモデルを使うとValidationが過度に楽観的になる問題を明示し、各splitで**現在のValidationを学習していないモデルだけ**からpseudo labelを生成しています（[1st place solution with code](https://www.kaggle.com/competitions/google-quest-challenge/writeups/bibimorph-1st-place-solution-with-code)）。
+
+NeurIPS Open Polymer Prediction 2025の1位解法では、SMILESのcanonical化によるduplicate除去に加え、各test foldに対してTanimoto similarity > 0.99のTrain sampleを除外し、near-duplicate leakageを抑えています（[1st Place Solution](https://www.kaggle.com/competitions/neurips-open-polymer-prediction-2025/writeups/1st-place-solution)）。
+
+## 診断 {#diagnosis}
+
+- 単純baselineなのに異常に高いCVが出る。
+- 特定ID、timestamp、集計特徴が極端に強い。
+- Random splitだけ高くGroup/Time splitで崩れる。
+- Public LBとCVの差が大きい。
+- duplicate/near-duplicateを除くとscoreが急落する。
+
+ただしCV-LB mismatchは分布差でも起きるため、[Adversarial Validation]({{ '/wiki/validation/adversarial-validation.html' | relative_url }})と合わせて原因を分けます。
+
+## Quick Reference {#quick-reference}
+
+- split前にtarget由来特徴を作らない。
+- 前処理の`fit`はTrain foldだけ。
+- patient/user/session/timeなど本番の独立単位を守る。
+- duplicate・near-duplicateを確認する。
+- pseudo label teacherもValidationを見ていないか確認する。
+- 異常に良いCVはまずLeakageを疑う。
+
+## 関連項目
+
+- [GroupKFold]({{ '/wiki/validation/group-kfold.html' | relative_url }})
+- [TimeSeriesSplit]({{ '/wiki/validation/time-series-split.html' | relative_url }})
+- [Target Encoding]({{ '/wiki/training/target-encoding.html' | relative_url }})
+- [Out-of-Fold Prediction]({{ '/wiki/competition-strategy/out-of-fold.html' | relative_url }})
+
+## 参考文献
+
+1. [scikit-learn, “Common pitfalls and recommended practices: Data leakage”](https://scikit-learn.org/stable/common_pitfalls.html#data-leakage)
+2. [Kaggle, “Google QUEST Q&A Labeling: 1st place solution with code”](https://www.kaggle.com/competitions/google-quest-challenge/writeups/bibimorph-1st-place-solution-with-code)
+3. [Kaggle, “NeurIPS Open Polymer Prediction 2025: 1st Place Solution”, 2025](https://www.kaggle.com/competitions/neurips-open-polymer-prediction-2025/writeups/1st-place-solution)
+4. [Kaggle, “SIIM-ISIC Melanoma Classification: 1st place solution”, 2020](https://www.kaggle.com/competitions/siim-isic-melanoma-classification/writeups/all-data-are-ext-1st-place-solution)
