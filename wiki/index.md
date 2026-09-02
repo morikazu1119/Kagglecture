@@ -5,39 +5,18 @@ title: Kaggle Wiki
 
 # Kaggle Wiki
 
-Kaggleで必要になる考え方と手法を、**基礎 → 実戦 → 上位解法**の順に学べます。
+Kaggleで使われる概念・手法・評価指標・コンペ戦略を、**必要な項目から直接調べるための索引**です。
 
-<div class="hero-actions">
-  <a class="primary-button" href="#learning-path">順番に学ぶ</a>
-  <a class="secondary-button" href="#topics">テーマから探す</a>
-</div>
-
-## Learning Path {#learning-path}
-
-```mermaid
-flowchart TD
-    A[1. 評価指標を理解する] --> B[2. Validationを設計する]
-    B --> C[3. Baselineを作る]
-    C --> D[4. 特徴量・モデルを改善する]
-    D --> E[5. Ensemble・後処理]
-    E --> F[6. 上位解法を比較する]
-```
-
-<div class="callout tip">
-  <div class="callout-title">最初に重視すること</div>
-  強いモデルを探す前に、評価指標とValidationが正しいかを確認する。
-</div>
-
-## Topics {#topics}
+## Categories {#categories}
 
 <div class="learning-grid">
   <div class="learning-card">
     <h3>Validation & Split</h3>
-    <p>Hold-out、KFold、Stratified、Group、Time Series、Leakage。</p>
+    <p>Hold-out、KFold、Stratified、Group、Time Series、Adversarial Validation、Leakage。</p>
   </div>
   <div class="learning-card">
     <h3>Metrics</h3>
-    <p>Accuracy、F1、AUC、LogLoss、RMSE、MAE、Ranking指標。</p>
+    <p>Accuracy、Precision、Recall、F1、AUC、LogLoss、RMSE、MAE、Ranking指標。</p>
   </div>
   <div class="learning-card">
     <h3>Modeling</h3>
@@ -45,11 +24,11 @@ flowchart TD
   </div>
   <div class="learning-card">
     <h3>Training</h3>
-    <p>Augmentation、Loss、Sampling、Pretraining、Fine-tuning。</p>
+    <p>Feature Engineering、Augmentation、Loss、Sampling、Pretraining、Fine-tuning。</p>
   </div>
   <div class="learning-card">
-    <h3>Strong Methods</h3>
-    <p>Pseudo Label、External Data、TTA、Calibration、Post-processing。</p>
+    <h3>Advanced Methods</h3>
+    <p>Pseudo Label、External Data、TTA、Calibration、Post-processing、Test-time adaptation。</p>
   </div>
   <div class="learning-card">
     <h3>Ensemble</h3>
@@ -57,36 +36,35 @@ flowchart TD
   </div>
   <div class="learning-card">
     <h3>Competition Strategy</h3>
-    <p>CV-LB correlation、Leaderboard overfitting、Shake-up、再現性。</p>
+    <p>CV-LB correlation、Leaderboard overfitting、Shake-up、Inference budget、再現性。</p>
   </div>
   <div class="learning-card">
     <h3>Winning Solutions</h3>
-    <p>上位解法から、一般的な勝ち筋とコンペ固有の工夫を比較する。</p>
+    <p>上位解法、一般的な勝ち筋、コンペ固有のユニークな工夫。</p>
   </div>
 </div>
 
-## データ種別から学ぶ
+## データ種別から探す
 
-| データ | 特に重要なテーマ |
+| データ | 主な項目 |
 |---|---|
-| **Tabular** | GBDT、Feature Engineering、Target Encoding、CV |
-| **Computer Vision** | Augmentation、Pretraining、TTA、Ensemble |
-| **NLP** | Transformer、Length設計、Pooling、Pseudo Label |
-| **Time Series** | 時系列Split、Lag、Rolling、Leakage |
+| **Tabular** | GBDT、Feature Engineering、Encoding、Aggregation、CV |
+| **Computer Vision** | Augmentation、Pretraining、Loss、TTA、Ensemble |
+| **NLP** | Transformer、Pooling、Length設計、Pseudo Label |
+| **Time Series** | Time-based Split、Lag、Rolling、Leakage |
 | **Audio** | Spectrogram、Augmentation、CV設計 |
-| **Multimodal** | 複数モダリティの融合、Pretraining、Ensemble |
+| **Multimodal** | Fusion、Pretraining、Cross-modal modeling、Ensemble |
+| **Ranking / Recommendation** | Ranking metric、negative sampling、candidate generation |
+| **Optimization** | Search、Simulation、Heuristics、RL、Evaluation design |
 
-## 記事の読み方
+## 記事の構成
 
-各記事では、必要に応じて次の順で整理します。
+各項目は必要に応じて、以下を簡潔にまとめます。
 
-1. **結論** — 何が重要か
-2. **直感** — なぜそうなるか
-3. **使い分け** — どんな条件で選ぶか
-4. **Kaggle実例** — 実際にどのコンペで使われたか
-5. **注意点** — Leakageや過学習など
-6. **参考文献** — Writeup・Notebook・GitHub・論文
-
-<div class="next-step">
-  <strong>基本方針:</strong> 読むための説明より、コンペで判断できる知識を優先します。
-</div>
+- **概要** — 何か
+- **使う場面** — いつ有効か
+- **比較** — 何と使い分けるか
+- **Kaggle実例** — 実際の上位解法や定量結果
+- **注意点** — Leakage、過学習、計算コストなど
+- **関連項目** — 同時に参照すると役立つ概念
+- **参考文献** — Writeup、Notebook、GitHub、論文、技術記事
