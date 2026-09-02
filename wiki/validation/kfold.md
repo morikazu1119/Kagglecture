@@ -41,21 +41,32 @@ tags:
 
 ## 仕組み {#mechanism}
 
-5-foldなら、各サンプルは**4回Trainに使われ、1回Validationに使われます**。
+5-foldなら、各サンプルは**4回Trainに使われ、1回Validationに使われます**。下の模式図でValidation foldを切り替えると、同じsampleが順番に評価側へ回ることを確認できます。
 
-```mermaid
-flowchart LR
-  D[全データ] --> F1[Fold 1]
-  D --> F2[Fold 2]
-  D --> F3[Fold 3]
-  D --> F4[Fold 4]
-  D --> F5[Fold 5]
-  F1 --> V1[1回目はValidation]
-  F2 --> T1[残りはTrain]
-  F3 --> T1
-  F4 --> T1
-  F5 --> T1
-```
+<div class="interactive-viz" data-interactive="kfold-basic">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">5-foldでValidationを切り替える</div>
+      <p class="interactive-viz__subtitle">緑 = Validation。各sampleは5回のうち1回だけValidationになります。</p>
+    </div>
+    <span class="interactive-status" data-kfold-status data-state="safe">Fold 1 / Train 12 / Validation 3</span>
+  </div>
+  <div class="interactive-control-row" role="group" aria-label="Validation fold">
+    <span class="interactive-control-label">Validation</span>
+    <button type="button" class="interactive-button is-active" data-kfold-fold="1" aria-pressed="true">Fold 1</button>
+    <button type="button" class="interactive-button" data-kfold-fold="2" aria-pressed="false">Fold 2</button>
+    <button type="button" class="interactive-button" data-kfold-fold="3" aria-pressed="false">Fold 3</button>
+    <button type="button" class="interactive-button" data-kfold-fold="4" aria-pressed="false">Fold 4</button>
+    <button type="button" class="interactive-button" data-kfold-fold="5" aria-pressed="false">Fold 5</button>
+  </div>
+  <div class="sample-grid" data-kfold-grid aria-label="TrainとValidationのsample">
+    <span class="sample-chip is-validation">S1</span><span class="sample-chip is-train">S2</span><span class="sample-chip is-train">S3</span><span class="sample-chip is-train">S4</span><span class="sample-chip is-train">S5</span>
+    <span class="sample-chip is-validation">S6</span><span class="sample-chip is-train">S7</span><span class="sample-chip is-train">S8</span><span class="sample-chip is-train">S9</span><span class="sample-chip is-train">S10</span>
+    <span class="sample-chip is-validation">S11</span><span class="sample-chip is-train">S12</span><span class="sample-chip is-train">S13</span><span class="sample-chip is-train">S14</span><span class="sample-chip is-train">S15</span>
+  </div>
+  <p class="interactive-explanation" data-kfold-explanation aria-live="polite">Fold 1では3 sampleだけをValidationにし、残り12 sampleで学習します。</p>
+  <noscript><p class="interactive-explanation">KFoldでは各sampleが1回ずつValidationになり、残りの回ではTrainに使われます。</p></noscript>
+</div>
 
 最終的には各foldのスコア平均や、全行のOut-of-Fold予測から計算したスコアでモデルを比較します。
 

@@ -48,6 +48,34 @@ PrecisionかRecallの片方だけが高くてもF1は伸びにくいため、両
 
 確率予測を0/1に変えるthresholdでF1は変化します。デフォルト0.5が最良とは限りません。
 
+下の模式データでthresholdを動かすと、positive判定が増減し、Precision・Recall・F1が同時に変わります。
+
+<div class="interactive-viz" data-interactive="f1-threshold">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">ThresholdでPrecision / Recall / F1がどう変わるか</div>
+      <p class="interactive-viz__subtitle">緑 = True Positive、赤 = False Positive、薄色 = negative予測。</p>
+    </div>
+    <span class="interactive-status" data-f1-status data-state="safe">threshold 50%</span>
+  </div>
+  <p class="interactive-note">模式例。予測確率とlabelは理解用の人工データです。</p>
+  <div class="interactive-control-row">
+    <span class="interactive-control-label">Threshold</span>
+    <label class="interactive-range">
+      <input type="range" min="10" max="90" step="1" value="50" data-f1-threshold aria-label="F1を計算するthreshold">
+      <span class="interactive-range-labels"><span>10%</span><span>90%</span></span>
+    </label>
+  </div>
+  <div class="metric-grid">
+    <div class="metric-card"><span>Precision</span><strong data-f1-precision>0.00</strong></div>
+    <div class="metric-card"><span>Recall</span><strong data-f1-recall>0.00</strong></div>
+    <div class="metric-card"><span>F1</span><strong data-f1-score>0.00</strong></div>
+  </div>
+  <div class="sample-grid" data-f1-grid aria-label="Threshold判定されたsample"></div>
+  <p class="interactive-explanation" data-f1-explanation aria-live="polite">thresholdを動かすとPrecisionとRecallのtrade-offが変わります。</p>
+  <noscript><p class="interactive-explanation">F1はthreshold依存です。OOF予測上でthresholdを評価し、Public LBだけで調整しないことが重要です。</p></noscript>
+</div>
+
 Kaggleでは、**OOF予測でthresholdを選び、そのthresholdをtestへ適用する**のが基本です。Leaderboardだけでthresholdを調整するとPublic LBへ過適合しやすくなります。
 
 ## 平均方法 {#averaging}

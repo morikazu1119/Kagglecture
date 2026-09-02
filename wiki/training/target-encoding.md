@@ -42,18 +42,41 @@ $$
 
 ## Leak-free設計 {#leak-free}
 
-Validation行のTEは、**Train foldのtargetだけ**で計算します。
+Validation行のTEは、**Train foldのtargetだけ**で計算します。さらにTrain fold自身へTE特徴を作る場合も、その行のtargetを直接含まないようinner-fold OOFやordered encodingを使います。
 
-さらにTrain fold自身へTE特徴を作る場合も、その行のtargetを直接含まないようinner-fold OOFやordered encodingを使います。
+下の模式例では、同じ行について「自己targetを除外」と「自己targetを含む」を切り替えられます。特にrare categoryほど自己参照の影響が大きくなります。
 
-```mermaid
-flowchart LR
-  A[Outer Train] --> B[Inner folds]
-  B --> C[Inner OOF TE]
-  C --> D[Model training]
-  A --> E[Outer Train全体でTE mapping]
-  E --> F[Outer Validationへ適用]
-```
+<div class="interactive-viz" data-interactive="target-encoding">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">Target Encodingの自己参照を確認</div>
+      <p class="interactive-viz__subtitle">選択したrow自身のtargetを統計へ含めると、特徴量が答えへ近づきます。</p>
+    </div>
+    <span class="interactive-status" data-te-status data-state="safe">自己targetを除外</span>
+  </div>
+  <p class="interactive-note">模式例。カテゴリA/Bとtargetは説明用の人工データです。</p>
+  <div class="interactive-controls">
+    <div class="interactive-control-row" role="group" aria-label="Target Encoding方式">
+      <span class="interactive-control-label">方式</span>
+      <button type="button" class="interactive-button is-active" data-te-mode="safe" aria-pressed="true">OOF / 自己target除外</button>
+      <button type="button" class="interactive-button" data-te-mode="leaky" aria-pressed="false">全行平均 / 自己target含む</button>
+    </div>
+    <div class="interactive-control-row" role="group" aria-label="確認するrow">
+      <span class="interactive-control-label">Row</span>
+      <button type="button" class="interactive-button is-active" data-te-row="0" aria-pressed="true">Row 1: A / y=1</button>
+      <button type="button" class="interactive-button" data-te-row="1" aria-pressed="false">Row 2: A / y=0</button>
+      <button type="button" class="interactive-button" data-te-row="2" aria-pressed="false">Row 3: B / y=1</button>
+      <button type="button" class="interactive-button" data-te-row="3" aria-pressed="false">Row 4: A / y=1</button>
+    </div>
+  </div>
+  <div class="metric-grid">
+    <div class="metric-card"><span>Target Encoding</span><strong data-te-value>0.50</strong></div>
+    <div class="metric-card"><span>計算</span><strong data-te-formula>1 / 2</strong></div>
+    <div class="metric-card"><span>原則</span><strong>自己参照しない</strong></div>
+  </div>
+  <p class="interactive-explanation" data-te-explanation aria-live="polite">Row 1のtargetは、この行のTarget Encoding計算には入りません。</p>
+  <noscript><p class="interactive-explanation">ValidationやTrain自身のtargetをTE統計へ直接含めず、fold内・OOFで作ることが重要です。</p></noscript>
+</div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 

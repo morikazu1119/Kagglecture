@@ -31,18 +31,40 @@ tags:
 
 ## 仕組み {#mechanism}
 
-```mermaid
-flowchart LR
-  A[Test image] --> B1[Original]
-  A --> B2[Horizontal Flip]
-  A --> B3[Vertical Flip]
-  B1 --> C1[Prediction]
-  B2 --> C2[Prediction]
-  B3 --> C3[Prediction]
-  C1 --> D[逆変換して平均]
-  C2 --> D
-  C3 --> D
-```
+TTAは「どの変換を平均へ含めるか」と「その変換がtaskの意味を保つか」が本質です。下の模式例ではTTA構成を切り替え、平均予測と危険な変換を確認できます。
+
+<div class="interactive-viz" data-interactive="tta-average">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">TTA構成と平均予測</div>
+      <p class="interactive-viz__subtitle">妥当な変換だけを選び、複数predictionを同じ出力空間で平均します。</p>
+    </div>
+    <span class="interactive-status" data-tta-status data-state="safe">3 predictionを平均</span>
+  </div>
+  <p class="interactive-note">模式例。表示するpredictionは理解用の人工値です。</p>
+  <div class="interactive-controls">
+    <div class="interactive-control-row" role="group" aria-label="Taskの性質">
+      <span class="interactive-control-label">Task</span>
+      <button type="button" class="interactive-button is-active" data-tta-task="invariant" aria-pressed="true">左右反転しても意味が同じ</button>
+      <button type="button" class="interactive-button" data-tta-task="directional" aria-pressed="false">左右・上下に意味がある</button>
+    </div>
+    <div class="interactive-control-row">
+      <span class="interactive-control-label">Transforms</span>
+      <label class="interactive-check"><input type="checkbox" value="original" data-tta-transform checked> Original</label>
+      <label class="interactive-check"><input type="checkbox" value="hflip" data-tta-transform checked> HFlip</label>
+      <label class="interactive-check"><input type="checkbox" value="vflip" data-tta-transform checked> VFlip</label>
+      <label class="interactive-check"><input type="checkbox" value="rotate" data-tta-transform> Rotate90</label>
+    </div>
+  </div>
+  <div class="metric-grid">
+    <div class="metric-card"><span>平均prediction</span><strong data-tta-mean>0.707</strong></div>
+    <div class="metric-card"><span>Segmentation</span><strong>逆変換して平均</strong></div>
+    <div class="metric-card"><span>Classification</span><strong>prob/logitを平均</strong></div>
+  </div>
+  <div class="interactive-list" data-tta-rows></div>
+  <p class="interactive-explanation" data-tta-explanation aria-live="polite">複数の妥当な変換で予測し、元座標・同じ出力空間へ戻して平均します。</p>
+  <noscript><p class="interactive-explanation">TTAでは意味を保つ変換だけを使い、Segmentationはmaskを逆変換してから平均します。</p></noscript>
+</div>
 
 Segmentationではmaskを元座標へ逆変換してから平均します。Classificationなら確率やlogitを平均します。
 

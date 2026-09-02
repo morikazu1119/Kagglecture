@@ -31,16 +31,26 @@ tags:
 
 ## 仕組み {#mechanism}
 
-```mermaid
-flowchart LR
-  A[Train] --> B1[Base model A]
-  A --> B2[Base model B]
-  B1 --> C1[OOF prediction A]
-  B2 --> C2[OOF prediction B]
-  C1 --> D[Meta model]
-  C2 --> D
-  D --> E[Final prediction]
-```
+Stackingで最重要なのは、**Meta modelが見るTrain予測をOOFにすること**です。下の模式例で、OOF予測とin-sample予測を切り替えると、in-sample側が不自然にtargetへ近づく様子を確認できます。
+
+<div class="interactive-viz" data-interactive="stacking-oof">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">Meta modelへ渡す予測を比較</div>
+      <p class="interactive-viz__subtitle">Base modelがそのrowを学習していないOOF予測を使うのが基本です。</p>
+    </div>
+    <span class="interactive-status" data-stack-status data-state="safe">Meta model用に安全</span>
+  </div>
+  <p class="interactive-note">模式例。表示するtargetと予測値は理解用の人工データです。</p>
+  <div class="interactive-control-row" role="group" aria-label="Meta modelへ渡す予測">
+    <span class="interactive-control-label">Train特徴</span>
+    <button type="button" class="interactive-button is-active" data-stack-mode="oof" aria-pressed="true">OOF予測</button>
+    <button type="button" class="interactive-button" data-stack-mode="train" aria-pressed="false">in-sample予測</button>
+  </div>
+  <div class="interactive-list" data-stack-rows></div>
+  <p class="interactive-explanation" data-stack-explanation aria-live="polite">各rowは、そのrowを学習していないfoldモデルの予測をMeta modelへ渡します。</p>
+  <noscript><p class="interactive-explanation">Meta modelのTrain特徴には、自分を学習していないBase modelから得たOOF予測を使います。</p></noscript>
+</div>
 
 Base modelが自分の学習に使った行を予測した値ではなく、**その行を学習していないfoldモデルの予測**をMeta modelへ渡します。scikit-learnのStackingも、final estimatorをcross-validated predictionsで学習します（[StackingRegressor](https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.StackingRegressor.html)）。
 

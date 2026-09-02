@@ -42,7 +42,7 @@ Skillには以下だけを書く。
 
 - `article-structure.md` — 記事構成・UX・記事タイプ別の構成
 - `citation-policy.md` — 出典・Evidence・参考文献ルール
-- `visualization.md` — 表・Mermaid・LaTeX・グラフ等の選択ルール
+- `visualization.md` — 表・Interactive・SVG・LaTeX・グラフ等の選択ルール
 
 ## SSOT
 

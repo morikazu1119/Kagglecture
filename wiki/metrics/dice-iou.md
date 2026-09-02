@@ -45,6 +45,43 @@ $$
 
 IoUはJaccard similarity coefficientとも呼ばれ、scikit-learnも「intersection / union」と定義しています（[jaccard_score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.jaccard_score.html)）。
 
+予測maskを左右へ動かし、重なりが減るとDice/IoUがどう下がるかを模式図で確認できます。
+
+<div class="interactive-viz" data-interactive="dice-iou-overlap">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">予測maskをずらしてOverlapを比較</div>
+      <p class="interactive-viz__subtitle">正解のみ、予測のみ、重なりを5×5 gridで表示します。</p>
+    </div>
+    <span class="interactive-status" data-mask-status data-state="safe">shift 0</span>
+  </div>
+  <p class="interactive-note">模式例。実画像・Competition maskではありません。</p>
+  <div class="interactive-control-row">
+    <span class="interactive-control-label">横方向shift</span>
+    <label class="interactive-range">
+      <input type="range" min="-2" max="2" step="1" value="0" data-mask-shift aria-label="予測maskの横方向shift">
+      <span class="interactive-range-labels"><span>-2</span><span>0</span><span>+2</span></span>
+    </label>
+  </div>
+  <div class="mask-layout">
+    <div class="mask-grid" data-mask-grid aria-label="正解maskと予測maskの重なり"></div>
+    <div>
+      <div class="metric-grid">
+        <div class="metric-card"><span>Dice</span><strong data-mask-dice>1.00</strong></div>
+        <div class="metric-card"><span>IoU</span><strong data-mask-iou>1.00</strong></div>
+        <div class="metric-card"><span>最良</span><strong>1.00</strong></div>
+      </div>
+      <div class="mask-legend">
+        <span><i class="is-ground-truth"></i>正解maskのみ</span>
+        <span><i class="is-prediction"></i>予測maskのみ</span>
+        <span><i class="is-both"></i>重なり</span>
+      </div>
+    </div>
+  </div>
+  <p class="interactive-explanation" data-mask-explanation aria-live="polite">予測maskをずらすとIntersectionが減り、DiceとIoUの両方が下がります。</p>
+  <noscript><p class="interactive-explanation">DiceとIoUは予測maskと正解maskの重なりを測り、完全一致なら1です。</p></noscript>
+</div>
+
 ## DiceとIoUの関係 {#relation}
 
 同じbinary maskなら単調な変換関係があります。

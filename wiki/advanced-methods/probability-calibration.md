@@ -39,6 +39,31 @@ AUCのようなranking指標では重要度が低い一方、LogLossやBrier Sco
 
 この場合「誰が上か」は合っていても、0.9という確率は高すぎます。Calibrationはこのscaleを補正します。
 
+下の模式Reliability表示で、補正前と補正後を切り替えられます。灰色が予測確率、緑がそのbinでの実際の正例率です。
+
+<div class="interactive-viz" data-interactive="calibration-toggle">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">Calibration前後の確率gap</div>
+      <p class="interactive-viz__subtitle">予測確率と実測正例率の距離が小さいほど、確率として解釈しやすくなります。</p>
+    </div>
+    <span class="interactive-status" data-cal-status data-state="danger">平均gap</span>
+  </div>
+  <p class="interactive-note">模式例。binごとの予測率・実測率は人工データです。</p>
+  <div class="interactive-control-row" role="group" aria-label="Calibration状態">
+    <span class="interactive-control-label">表示</span>
+    <button type="button" class="interactive-button is-active" data-cal-mode="raw" aria-pressed="true">補正前</button>
+    <button type="button" class="interactive-button" data-cal-mode="calibrated" aria-pressed="false">補正後</button>
+  </div>
+  <div class="calibration-legend">
+    <span><i></i>予測確率</span>
+    <span><i class="is-observed"></i>実測正例率</span>
+  </div>
+  <div class="calibration-list" data-cal-rows></div>
+  <p class="interactive-explanation" data-cal-explanation aria-live="polite">高確率binほど予測が実測率より高く、過信している模式例です。</p>
+  <noscript><p class="interactive-explanation">CalibrationはOOFまたは独立setで学習し、予測確率と実際の発生率のズレを補正します。</p></noscript>
+</div>
+
 ## 手法 {#methods}
 
 | 方法 | 特徴 | 注意 |

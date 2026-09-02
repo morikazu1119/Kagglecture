@@ -89,9 +89,14 @@ Kagglectureの記事は、**機械学習やKaggleの前提知識が薄い人で�
 
 1. 短い文章で十分 → 文章
 2. 比較が本質 → 表
-3. 関係・流れ → Mermaid / SVG
-4. 値や状態を変えると理解が深まる → Interactive
+3. 値・状態・条件を変えると理解が深まる → Interactiveを優先
+4. 単純な固定関係・処理フロー → HTML / CSS / SVG
 5. hover / zoom / 実測値探索が重要 → Plotly / Chart.js / Vega / D3
+6. Mermaid → 上記で適切に表せず、複雑な静的関係を短く保守する明確な利点がある場合のみ
+
+**フローだからMermaidにする、という選び方は禁止する。** fold、threshold、weight、overlap、sampling、calibration、leakage、分布差など操作対象がある概念は、Interactiveにできるかを先に検討する。
+
+理解用のsynthetic dataをInteractiveで使う場合は「模式例」「実測値ではない」等を明示する。Kaggle実測値に見える数値を作らない。
 
 Interactiveでも、JavaScriptなしで本文だけから最低限の結論が分かるようにする。
 
@@ -190,7 +195,10 @@ wiki/
 - 専門用語を説明なしで連鎖させていないか
 - 数式より先に直感を説明したか
 - 図で説明した方が速い箇所を文章だけにしていないか
+- 操作対象がある概念を静的フローだけで済ませていないか
+- Mermaidを安易なデフォルトとして使っていないか
 - Interactiveにする価値を一度判断したか
+- 模式データと実測値を明確に区別したか
 - Interactiveなしでも最低限理解できるか
 - Home → Category → Article の全リンクが404にならないか
 - 記事の戻り先がカテゴリになっているか
