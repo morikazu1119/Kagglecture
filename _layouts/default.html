@@ -11,6 +11,11 @@
   <body class="{% if page.url == '/' or page.type == 'category-index' %}index-page{% else %}article-page{% endif %}">
     <a class="skip-link" href="#content">本文へ移動</a>
 
+    {% assign back_href = '/' | relative_url %}
+    {% if page.url != '/' and page.type != 'category-index' %}
+      {% assign back_href = page.dir | relative_url %}
+    {% endif %}
+
     <header class="site-header">
       <div class="header-inner">
         <a class="site-brand" href="{{ '/' | relative_url }}" aria-label="Kagglecture 索引">
@@ -20,7 +25,7 @@
 
         {% unless page.url == '/' %}
         <nav class="header-nav" aria-label="メインナビゲーション">
-          <a id="back-link" class="header-link" href="{{ '/' | relative_url }}">← 戻る</a>
+          <a id="back-link" class="header-link" href="{{ back_href }}">← 戻る</a>
           <a class="header-link" href="{{ '/' | relative_url }}">索引</a>
         </nav>
         {% endunless %}
@@ -34,7 +39,7 @@
 
       {% unless page.url == '/' %}
       <nav class="page-bottom-nav" aria-label="ページ下部ナビゲーション">
-        <a id="back-link-bottom" class="bottom-link" href="{{ '/' | relative_url }}">← 戻る</a>
+        <a id="back-link-bottom" class="bottom-link" href="{{ back_href }}">← 戻る</a>
         <a class="bottom-link" href="{{ '/' | relative_url }}">索引</a>
       </nav>
       {% endunless %}
