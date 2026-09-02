@@ -18,6 +18,5 @@ Validationは、**「このモデル、本番の知らないデータでもち�
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/validation/group-kfold.html' | relative_url }}" aria-label="GroupKFold を開く">
     <h3>GroupKFold</h3>
     <p>同じ患者・ユーザー・セッションなどをTrainとValidationにまたがせない分割。</p>
-    <span class="card-arrow" aria-hidden="true">→</span>
   </a>
 </div>
