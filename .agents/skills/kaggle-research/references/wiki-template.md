@@ -37,7 +37,7 @@ tags:
 
 ## 基本原理
 
-数式が必要ならKaTeX/LaTeXを使う。処理関係・判断フローはMermaidを優先する。
+数式が必要ならLaTeX/MathJaxを使う。処理関係・判断フローはMermaidを優先する。
 
 ```mermaid
 flowchart LR
@@ -45,6 +45,29 @@ flowchart LR
     B --> C[Method A]
     B --> D[Method B]
 ```
+
+## 可視化の選択
+
+GitHub Pages側では以下が利用可能。詳細な記法は `wiki/visualization-guide.md` を参照する。
+
+| 表現したいもの | 優先する手段 |
+|---|---|
+| 処理フロー・階層・関係 | Mermaid |
+| 数式・評価指標・Loss | MathJax / LaTeX |
+| 手法比較・条件比較 | Markdown table |
+| 軽量な棒・線・散布図 | Chart.js |
+| hover・zoom付きグラフ | Plotly |
+| 宣言的な統計可視化 | Vega-Lite |
+| 特殊なカスタム可視化 | D3.js |
+| 地理・位置情報 | Leaflet |
+| 精密な模式図 | SVG |
+| 注意・補足・折りたたみ | HTML / CSS / details |
+| 動画・スライド | iframe |
+| 実験結果・外部図 | PNG / JPG / WebP / GIF |
+
+原則として主要Wikiページでは、文章だけで終わらせず、内容に応じて表と図を組み合わせる。ただし複雑なライブラリを使うこと自体を目的にしない。
+
+定量グラフは、出典から確認できる数値だけで作る。数値を推測・補間・捏造しない。
 
 ## 一般的な手法
 
@@ -110,6 +133,8 @@ flowchart TD
 ## 定量グラフ
 
 出典から比較可能な数値が複数得られた場合のみ使用する。
+
+単純な比較ならMermaid `xychart-beta` またはChart.js、hoverやzoomが有益ならPlotly、複数軸や宣言的な統計表現ならVega-Liteを優先する。
 
 ```mermaid
 xychart-beta
