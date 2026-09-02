@@ -19,14 +19,14 @@ tags:
 
 **Accuracyは、全sampleのうち予測labelが正解した割合です。**
 
-最も直感的な分類指標ですが、95%がnegativeのデータで全件negativeと予測してもAccuracy 95%になるため、**クラス不均衡では単独で使うと危険**です（[scikit-learn: accuracy_score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html)）。
+式は非常に単純ですが、class imbalanceでは「多数派classだけ当てるmodel」が高得点に見えるため、**scoreの高さだけではmodelが本当に役立っているか判断できません**（[scikit-learn: accuracy_score](https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html)）。
 
 <nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
   <a href="#formula">数式</a>
+  <a href="#imbalance">不均衡の罠</a>
   <a href="#use-cases">使う場面</a>
   <a href="#comparison">使い分け</a>
   <a href="#pitfalls">注意点</a>
-  <a href="#quick-reference">Quick Reference</a>
 </nav>
 
 ## 数式 {#formula}
@@ -36,6 +36,28 @@ Accuracy = \frac{TP + TN}{TP + TN + FP + FN}
 $$
 
 multiclassでも「正解labelと一致したsample数 / 全sample数」と考えれば同じです。
+
+## 不均衡だと何が起きるか {#imbalance}
+
+たとえば100件中95件がNegative、5件がPositiveのdatasetを考えます。何も学習せず**全件Negativeと予測**しても95件は正解なのでAccuracyは95%です。
+
+<div class="model-architecture" aria-label="クラス不均衡でAccuracyが高く見える模式図">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">Positiveを1件も拾えていなくてもAccuracy 95%</div><p class="model-architecture__subtitle">多数派classが95%を占めると、majority baselineだけで高いAccuracyが出ます。</p></div>
+    <span class="model-architecture__badge">imbalance example</span>
+  </div>
+  <div class="html-bar-chart">
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">Negative 95件</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:95"></span></span><span class="html-bar-value">全件正解</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Positive 5件</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:5"></span></span><span class="html-bar-value">全件見逃し</span></div>
+  </div>
+  <div class="comparison-board" style="margin-bottom:0">
+    <section class="comparison-card is-primary"><h4>Accuracy</h4><dl><dt>正解</dt><dd>95 / 100</dd><dt>Score</dt><dd>0.95</dd></dl></section>
+    <section class="comparison-card"><h4>Positive Recall</h4><dl><dt>正解</dt><dd>0 / 5</dd><dt>Score</dt><dd>0.00</dd></dl></section>
+  </div>
+  <p class="model-architecture__caption">模式例です。このためAccuracyを見る前にclass shareとmajority baselineを確認する必要があります。</p>
+</div>
+
+「Accuracy 95%」だけを見ると強そうですが、少数classを検出する目的なら完全に失敗しています。**Accuracyは全sampleを同じ1票として数える**ので、件数の多いclassがscoreを支配します。
 
 ## 使う場面 {#use-cases}
 
@@ -54,9 +76,9 @@ multiclassでも「正解labelと一致したsample数 / 全sample数」と考�
 
 ## 注意点 {#pitfalls}
 
-### 多数派classだけ当てる
+### Majority baselineを見ない
 
-class shareとAccuracy baselineを最初に比較します。最大classが90%ならAccuracy 90%は何も学習していない可能性があります。
+最大classが90%ならAccuracy 90%は、全件をmajority classへ出すだけで達成できます。model scoreだけでなくbaselineとの差を見ます。
 
 ### threshold依存
 
@@ -66,13 +88,13 @@ Probabilityをlabelへ変換するdecision ruleでAccuracyは変わります。C
 
 scikit-learnのmultilabel Accuracyはsample内のlabel setが完全一致するsubset accuracyです。Competition定義と一致するか確認します。
 
-## Quick Reference {#quick-reference}
+## Quick Reference
 
-- 1が最良。
+- Accuracy = 正解数 / 全sample数。
 - class比を必ず確認する。
 - majority baselineと比較する。
 - 不均衡ならBalanced Accuracy/F1/PR系を検討する。
-- probability metricではない。
+- probabilityの質を直接測るMetricではない。
 
 ## 関連項目
 
