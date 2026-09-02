@@ -183,14 +183,6 @@
   outline-offset: 3px;
 }
 
-.card-arrow {
-  display: inline-block;
-  margin-top: var(--s2);
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 600;
-}
-
 .site-search {
   position: fixed;
   left: var(--sidebar-width);
