@@ -17,12 +17,7 @@ Trainingは、**「モデルをどう学習させるか」**に関する手法�
 ## Articles
 
 <div class="dictionary-grid">
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/early-stopping.html' | relative_url }}" aria-label="Early Stopping を開く">
-    <h3>Early Stopping</h3>
-    <p>Validation改善が止まった時点で学習を止め、best checkpointを使う。</p>
-  </a>
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/target-encoding.html' | relative_url }}" aria-label="Target Encoding を開く">
-    <h3>Target Encoding</h3>
-    <p>カテゴリごとのtarget統計を特徴量化する。fold内計算によるLeakage対策が必須。</p>
-  </a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/early-stopping.html' | relative_url }}" aria-label="Early Stopping を開く"><h3>Early Stopping</h3><p>Validation改善が止まった時点で学習を止め、best checkpointを使う。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/target-encoding.html' | relative_url }}" aria-label="Target Encoding を開く"><h3>Target Encoding</h3><p>カテゴリごとのtarget統計を特徴量化する。fold内計算によるLeakage対策が必須。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/data-augmentation.html' | relative_url }}" aria-label="Data Augmentation を開く"><h3>Data Augmentation</h3><p>targetを保つ変換で学習sampleを増やし、不要な変化への過適合を抑える。</p></a>
 </div>
