@@ -36,22 +36,27 @@ XGBoostはgradientだけでなく2階微分情報も使ってtreeのsplitやleaf
 
 ## 主要Parameter {#parameters}
 
-| Parameter | 役割 |
-|---|---|
-| `max_depth` | treeの深さ上限 |
-| `min_child_weight` | 小さすぎるleafを抑える |
-| `learning_rate` / `eta` | 1 treeの寄与を縮める |
-| `subsample` | row sampling |
-| `colsample_bytree` | feature sampling |
-| `reg_alpha`, `reg_lambda` | L1/L2正則化 |
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th scope="col">Parameter</th><th scope="col">役割</th><th scope="col">大きく/強くしたときの主な方向</th></tr></thead>
+  <tbody>
+    <tr><th scope="row"><code>max_depth</code></th><td>treeの深さ上限</td><td>表現力↑ / 過学習リスク↑</td></tr>
+    <tr><th scope="row"><code>min_child_weight</code></th><td>小さすぎるleafを抑える</td><td>大きいほど保守的</td></tr>
+    <tr><th scope="row"><code>learning_rate</code> / <code>eta</code></th><td>1 treeの寄与を縮める</td><td>小さいほど多くのroundが必要</td></tr>
+    <tr><th scope="row"><code>subsample</code></th><td>row sampling</td><td>小さくするとregularization / diversity</td></tr>
+    <tr><th scope="row"><code>colsample_bytree</code></th><td>feature sampling</td><td>小さくするとfeature依存を抑える</td></tr>
+    <tr><th scope="row"><code>reg_alpha</code>, <code>reg_lambda</code></th><td>L1/L2正則化</td><td>強くするとleaf weightを抑える</td></tr>
+  </tbody>
+</table></div>
 
 XGBoost公式も、深いtreeはmodel complexityとoverfittingを増やし、learning rateは更新を保守的にすると説明しています（[documentation](https://xgboost.readthedocs.io/en/latest/r_docs/R-package/docs/reference/xgboost.html)）。
 
 ## 使い分け {#comparison}
 
-- 高速なleaf-wise探索を重視: [LightGBM]({{ '/wiki/modeling/lightgbm.html' | relative_url }})
-- categoricalが多くencodingを減らしたい: [CatBoost]({{ '/wiki/modeling/catboost.html' | relative_url }})
-- robustなGBDT baselineと正則化制御: XGBoost
+<div class="comparison-board" aria-label="XGBoostと他GBDTの使い分け">
+  <section class="comparison-card"><h4><a href="{{ '/wiki/modeling/lightgbm.html' | relative_url }}">LightGBM</a></h4><dl><dt>重視</dt><dd>高速なleaf-wise探索</dd><dt>特徴</dt><dd>histogram / native categorical</dd></dl></section>
+  <section class="comparison-card"><h4><a href="{{ '/wiki/modeling/catboost.html' | relative_url }}">CatBoost</a></h4><dl><dt>重視</dt><dd>categorical処理を減らす</dd><dt>特徴</dt><dd>ordered boosting</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>XGBoost</h4><dl><dt>重視</dt><dd>robustなGBDT baseline</dd><dt>特徴</dt><dd>正則化・samplingを細かく制御</dd></dl></section>
+</div>
 
 同じtabularでも3者の誤差は完全一致しないため、OOF比較してensemble候補にします。
 
