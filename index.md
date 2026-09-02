@@ -1,63 +1,62 @@
 ---
 layout: default
 title: Kagglecture
-description: Kaggleで使われる実践的な手法を体系的に学ぶWiki
+description: Kaggleの手法・評価指標・Validation・上位解法を調べるためのリファレンスWiki
 ---
 
 # Kagglecture
 
-**Kaggleで「何を使うか」だけでなく、「なぜ効くのか・いつ使うのか」まで学ぶためのWikiです。**
+**Kaggleで使われる手法や考え方を、必要なときにすぐ引けるリファレンスWikiです。**
 
-上位解法や公開記事をもとに、Validation、評価指標、モデル改善、アンサンブル、コンペ固有の工夫まで整理します。
+Validation、評価指標、モデル、学習手法、Ensemble、Leaderboard戦略、上位解法のユニークな工夫まで、実例と参考文献付きで整理します。
 
 <div class="hero-actions">
-  <a class="primary-button" href="wiki/">学習を始める</a>
-  <a class="secondary-button" href="wiki/#topics">テーマから探す</a>
+  <a class="primary-button" href="wiki/">Wikiを開く</a>
+  <a class="secondary-button" href="wiki/#categories">カテゴリから探す</a>
 </div>
 
-## 学ぶ順番
-
-```mermaid
-flowchart LR
-    A[問題と評価指標] --> B[Validation設計]
-    B --> C[Baseline]
-    C --> D[モデル・特徴量改善]
-    D --> E[Ensemble・後処理]
-    E --> F[上位解法から学ぶ]
-```
+## 主なカテゴリ
 
 <div class="learning-grid">
   <div class="learning-card">
-    <div class="card-step">01</div>
-    <h3>Validation</h3>
-    <p>KFold、Stratified、Group、Time Seriesなど、正しいデータ分割を学ぶ。</p>
+    <h3>Validation & Split</h3>
+    <p>KFold、Stratified、Group、Time Series、Leakageなど。</p>
   </div>
   <div class="learning-card">
-    <div class="card-step">02</div>
     <h3>Metrics</h3>
-    <p>AUC、F1、LogLoss、RMSEなど、評価指標と最適化の関係を理解する。</p>
+    <p>AUC、F1、LogLoss、RMSE、MAE、Ranking指標など。</p>
   </div>
   <div class="learning-card">
-    <div class="card-step">03</div>
-    <h3>Methods</h3>
-    <p>特徴量、Augmentation、Pseudo Label、TTA、Ensembleなどを使い分ける。</p>
+    <h3>Modeling & Training</h3>
+    <p>GBDT、CNN、Transformer、Loss、Sampling、Augmentationなど。</p>
   </div>
   <div class="learning-card">
-    <div class="card-step">04</div>
+    <h3>Advanced Methods</h3>
+    <p>Pseudo Label、External Data、TTA、Calibration、Post-processingなど。</p>
+  </div>
+  <div class="learning-card">
+    <h3>Ensemble</h3>
+    <p>Averaging、Weighted Blend、Rank Average、Stacking、Fold/Seed Ensemble。</p>
+  </div>
+  <div class="learning-card">
+    <h3>Competition Strategy</h3>
+    <p>CV-LB correlation、Leaderboard overfitting、Shake-up、再現性。</p>
+  </div>
+  <div class="learning-card">
     <h3>Winning Solutions</h3>
-    <p>実際の上位解法から、一般化できる勝ち筋とユニークな工夫を学ぶ。</p>
+    <p>上位解法で実際に使われた手法と、コンペ固有の工夫。</p>
+  </div>
+  <div class="learning-card">
+    <h3>By Modality</h3>
+    <p>Tabular、Computer Vision、NLP、Time Series、Audio、Multimodal。</p>
   </div>
 </div>
 
-## このWikiで重視すること
+## このWikiの方針
 
-| 観点 | 学ぶ内容 |
+| 観点 | 内容 |
 |---|---|
-| **再現性** | Public LBだけではなく、CVで判断できるようにする |
-| **使い分け** | 手法名ではなく、適用条件と失敗条件を理解する |
-| **実戦性** | 実際のKaggle上位解法・Writeupを具体例にする |
-| **根拠** | 数値や順位などの主張には参考文献を付ける |
-
-<div class="next-step">
-  <strong>Next:</strong> <a href="wiki/">Kaggle Research Wikiを見る →</a>
-</div>
+| **実戦性** | Kaggleの公開Writeupや上位解法を具体例にする |
+| **使い分け** | いつ使うか、何と比較するか、失敗条件まで整理する |
+| **根拠** | 数値・順位・採用実績には参考文献を付ける |
+| **見やすさ** | 表・図・数式を必要な箇所だけ使い、短く検索しやすくまとめる |
