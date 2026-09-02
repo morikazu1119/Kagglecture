@@ -31,13 +31,12 @@ tags:
 
 ## 使う場面 {#use-cases}
 
-| 状況 | KFold |
-|---|---|
-| 各行がほぼ独立 | 向いている |
-| 回帰で単純な表形式データ | 候補 |
-| クラス不均衡が強い分類 | StratifiedKFoldを優先 |
-| 同じ患者・ユーザーから複数行 | GroupKFoldを優先 |
-| 未来を予測する時系列 | Time-based splitを優先 |
+<div class="comparison-board" aria-label="KFoldが向く状況と代替Split">
+  <section class="comparison-card is-primary"><h4>各行がほぼ独立</h4><dl><dt>判断</dt><dd>KFoldが向いている</dd><dt>例</dt><dd>単純な表形式回帰</dd></dl></section>
+  <section class="comparison-card"><h4>クラス不均衡が強い</h4><dl><dt>判断</dt><dd>StratifiedKFoldを優先</dd><dt>守るもの</dt><dd>class比率</dd></dl></section>
+  <section class="comparison-card"><h4>同一患者・userが複数行</h4><dl><dt>判断</dt><dd>GroupKFoldを優先</dd><dt>守るもの</dt><dd>group境界</dd></dl></section>
+  <section class="comparison-card"><h4>未来を予測する時系列</h4><dl><dt>判断</dt><dd>Time-based splitを優先</dd><dt>守るもの</dt><dd>時間順序</dd></dl></section>
+</div>
 
 ## 仕組み {#mechanism}
 
@@ -72,13 +71,18 @@ tags:
 
 ## 使い分け {#comparison}
 
-| 手法 | 守るもの | 主な用途 |
-|---|---|---|
-| Hold-out | 1回だけ分離 | 高速な初期実験 |
-| **KFold** | 各行を均等に評価 | 独立サンプル |
-| StratifiedKFold | クラス比 | 不均衡分類 |
-| [GroupKFold]({{ '/wiki/validation/group-kfold.html' | relative_url }}) | group境界 | 患者・user等 |
-| TimeSeriesSplit | 時間順序 | 時系列 |
+<div class="html-table-wrap">
+<table class="html-table">
+  <thead><tr><th scope="col">手法</th><th scope="col">守るもの</th><th scope="col">主な用途</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Hold-out</th><td>1回だけ分離</td><td>高速な初期実験</td></tr>
+    <tr><th scope="row">KFold</th><td>各行を均等に評価</td><td>独立サンプル</td></tr>
+    <tr><th scope="row">StratifiedKFold</th><td>クラス比</td><td>不均衡分類</td></tr>
+    <tr><th scope="row"><a href="{{ '/wiki/validation/group-kfold.html' | relative_url }}">GroupKFold</a></th><td>group境界</td><td>患者・user等</td></tr>
+    <tr><th scope="row">TimeSeriesSplit</th><td>時間順序</td><td>時系列</td></tr>
+  </tbody>
+</table>
+</div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 
