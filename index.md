@@ -11,23 +11,24 @@ Kaggle の公開 Writeup・Discussion・Notebook・GitHub・技術記事を **�
 
 ## Start here
 
-- **[Kaggle Research Wiki](wiki/)** — 統合された知識を読む
-- **[Raw Sources](raw/)** — 調査した一次・二次ソースを確認する
-- **[GitHub Repository](https://github.com/morikazu1119/Kagglecture)** — ソースを見る
+- **[Kaggle Research Wiki](wiki/)** — 調査結果を統合した知識ベース
+- **[GitHub Repository](https://github.com/morikazu1119/Kagglecture)** — WikiのMarkdownと調査Skill
 
 ## Knowledge Pipeline
 
 ```mermaid
 flowchart LR
-    A[Kaggle Writeup] --> R[Raw Sources]
-    B[Japanese Articles] --> R
-    C[English Articles] --> R
-    D[GitHub / Papers] --> R
-    R --> V[Verify & Cross-check]
+    A[Kaggle Writeup] --> V[Verify & Cross-check]
+    B[Japanese Articles] --> V
+    C[English Articles] --> V
+    D[GitHub / Papers] --> V
     V --> E[Evidence Grading]
-    E --> W[Research Wiki]
+    E --> W[Wiki Markdown]
+    W --> R[Inline URLs & References]
     W --> X[Cross-linked Knowledge]
 ```
+
+調査ソース専用の `raw/` ディレクトリは持ちません。各Wikiページの具体的な主張に出典URLを直接紐付け、ページ末尾にも参考文献をまとめます。
 
 ## 調査する領域
 
