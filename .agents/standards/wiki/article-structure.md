@@ -107,10 +107,11 @@ permalink: /wiki/validation/
 
 なぜ機能するかを直感的に説明する。
 
-- 関係・処理フロー: Mermaid / SVG
+- 値・状態・条件を変えると理解が深まる: Interactive visualizationを優先
+- 固定された単純な関係・処理フロー: HTML / CSS / SVG
 - 数式が本質: LaTeX
-- 状態や値を変えると理解が深まる: Interactive visualization
 - 単純な概念: 短い文章
+- Mermaidは、Interactive化しても理解が増えず、SVG/CSSより保守性が明確に高い複雑な静的関係に限る
 
 可視化の詳細は `visualization.md` に従う。
 
@@ -152,15 +153,15 @@ permalink: /wiki/validation/
 
 ### Validation / Split
 
-定義、使う場面、split図 / Interactive、比較、Kaggle実例、leakage / mismatch、Quick Reference の順を基本とする。
+定義、使う場面、split Interactive / 静的図、比較、Kaggle実例、leakage / mismatch、Quick Reference の順を基本とする。
 
-特に「何を分離単位にするか」を明確にする。
+特に「何を分離単位にするか」を明確にする。foldやsplitを切り替えることで理解が深まる場合はInteractiveを優先する。
 
 ### Metric
 
 定義、直感、数式、値の意味、使う場面、比較、Kaggle実例、最適化上の注意の順を基本とする。
 
-thresholdやrankingを操作すると理解しやすい場合はInteractiveを検討する。
+threshold、ranking、overlap、outlierなどを操作すると理解しやすい場合はInteractiveを優先する。
 
 ### Modeling / Training
 
@@ -168,7 +169,7 @@ thresholdやrankingを操作すると理解しやすい場合はInteractiveを�
 
 ### Ensemble / Post-processing / Inference
 
-定義、入出力の仕組み、使い分け、CV上の選択、Kaggle実例、overfit / leakage注意の順を基本とする。
+定義、入出力の仕組み、使い分け、CV上の選択、Kaggle実例、overfit / leakage注意の順を基本とする。weight、threshold、TTA構成など操作対象がある場合はInteractiveを検討する。
 
 ### Competition article
 
