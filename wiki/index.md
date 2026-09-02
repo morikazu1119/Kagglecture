@@ -7,6 +7,10 @@ title: Kaggle Research Wiki
 
 Kaggleの公開情報を、日本語・英語の両方から横断調査して整理する知識ベースです。
 
+## Start here
+
+- [Visualization Guide](visualization-guide.md) — Mermaid / LaTeX / Chart.js / Plotly / Vega-Lite / D3 / Leaflet / SVG / HTML の使い方
+
 ## Knowledge Map
 
 ```mermaid
