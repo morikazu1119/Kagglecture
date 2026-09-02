@@ -1,70 +1,58 @@
 <!DOCTYPE html>
-<html lang="{{ site.lang | default: "ja-JP" }}">
+<html lang="{{ site.lang | default: 'ja-JP' }}">
   <head>
     <meta charset="UTF-8">
-    {% seo %}
-    <link rel="preconnect" href="https://fonts.gstatic.com">
-    <link rel="preload" href="https://fonts.googleapis.com/css?family=Open+Sans:400,700&display=swap" as="style" type="text/css" crossorigin>
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="theme-color" content="#157878">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <link rel="stylesheet" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
+    <meta name="theme-color" content="#ffffff">
+    <title>{{ page.title | default: site.title }}</title>
+    <meta name="description" content="{{ page.description | default: site.description | escape }}">
     {% include head-custom.html %}
   </head>
-  <body>
-    <a id="skip-to-content" href="#content">本文へ移動</a>
+  <body class="{% if page.url == '/' or page.url == '/wiki/' %}index-page{% else %}article-page{% endif %}">
+    <a class="skip-link" href="#content">本文へ移動</a>
 
-    <header class="page-header" role="banner">
-      <h1 class="project-name">{{ page.title | default: site.title }}</h1>
-      <h2 class="project-tagline">{{ page.description | default: site.description }}</h2>
+    <header class="site-header">
+      <div class="header-inner">
+        <a class="site-brand" href="{{ '/' | relative_url }}">Kagglecture</a>
+        <nav class="header-nav" aria-label="メインナビゲーション">
+          {% unless page.url == '/' %}
+          <a id="back-link" class="header-link" href="{{ '/' | relative_url }}">← 戻る</a>
+          {% endunless %}
+          <a class="header-link" href="{{ '/wiki/' | relative_url }}">Wiki</a>
+        </nav>
+      </div>
     </header>
 
-    <main id="content" class="main-content" role="main">
-      {% unless page.url == '/' %}
-      <nav class="site-nav" aria-label="ページナビゲーション">
-        <a id="back-link" class="nav-link" href="{{ '/' | relative_url }}">← 前のページ</a>
-        <a class="nav-link" href="{{ '/' | relative_url }}">ホーム</a>
-        <a class="nav-link" href="{{ '/wiki/' | relative_url }}">Wiki一覧</a>
-      </nav>
-      {% endunless %}
-
-      {{ content }}
+    <main id="content" class="site-main">
+      <article class="content-shell">
+        {{ content }}
+      </article>
 
       {% unless page.url == '/' %}
       <nav class="page-bottom-nav" aria-label="ページ下部ナビゲーション">
-        <a id="back-link-bottom" class="nav-link" href="{{ '/' | relative_url }}">← 前のページ</a>
-        <a class="nav-link" href="{{ '/wiki/' | relative_url }}">Wiki一覧</a>
+        <a id="back-link-bottom" class="bottom-link" href="{{ '/' | relative_url }}">← 戻る</a>
+        <a class="bottom-link" href="{{ '/wiki/' | relative_url }}">Wiki</a>
       </nav>
       {% endunless %}
-
-      <footer class="site-footer">
-        <span>Kagglecture</span>
-      </footer>
     </main>
 
     <script>
       (() => {
-        const setBackBehavior = (id) => {
+        const bindBack = (id) => {
           const link = document.getElementById(id);
           if (!link) return;
-
           link.addEventListener('click', (event) => {
-            let referrer;
             try {
-              referrer = document.referrer ? new URL(document.referrer) : null;
-            } catch (_) {
-              referrer = null;
-            }
-
-            if (referrer && referrer.origin === window.location.origin) {
-              event.preventDefault();
-              window.history.back();
-            }
+              const referrer = document.referrer ? new URL(document.referrer) : null;
+              if (referrer && referrer.origin === window.location.origin) {
+                event.preventDefault();
+                window.history.back();
+              }
+            } catch (_) {}
           });
         };
-
-        setBackBehavior('back-link');
-        setBackBehavior('back-link-bottom');
+        bindBack('back-link');
+        bindBack('back-link-bottom');
       })();
     </script>
   </body>
