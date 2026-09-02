@@ -34,7 +34,7 @@
 
         {% unless page.url == '/' %}
         <nav class="header-nav" aria-label="メインナビゲーション">
-          <a id="back-link" class="header-link" href="{{ back_href }}">← 戻る</a>
+          <a id="back-link" class="header-link" href="{{ back_href }}">戻る</a>
           <a class="header-link" href="{{ '/' | relative_url }}">索引</a>
         </nav>
         {% endunless %}
@@ -74,7 +74,7 @@
 
       {% unless page.url == '/' %}
       <nav class="page-bottom-nav" aria-label="ページ下部ナビゲーション">
-        <a id="back-link-bottom" class="bottom-link" href="{{ back_href }}">← 戻る</a>
+        <a id="back-link-bottom" class="bottom-link" href="{{ back_href }}">戻る</a>
         <a class="bottom-link" href="{{ '/' | relative_url }}">索引</a>
       </nav>
       {% endunless %}
