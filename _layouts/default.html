@@ -8,22 +8,22 @@
     <meta name="description" content="{{ page.description | default: site.description | escape }}">
     {% include head-custom.html %}
   </head>
-  <body class="{% if page.url == '/' or page.url == '/wiki/' %}index-page{% else %}article-page{% endif %}">
+  <body class="{% if page.url == '/' %}index-page{% else %}article-page{% endif %}">
     <a class="skip-link" href="#content">本文へ移動</a>
 
     <header class="site-header">
       <div class="header-inner">
-        <a class="site-brand" href="{{ '/' | relative_url }}" aria-label="Kagglecture ホーム">
+        <a class="site-brand" href="{{ '/' | relative_url }}" aria-label="Kagglecture 索引">
           <span class="site-brand__mark" aria-hidden="true"></span>
           <span>Kagglecture</span>
         </a>
 
+        {% unless page.url == '/' %}
         <nav class="header-nav" aria-label="メインナビゲーション">
-          {% unless page.url == '/' %}
-          <a id="back-link" class="header-link" href="{{ '/wiki/' | relative_url }}">← 戻る</a>
-          {% endunless %}
-          <a class="header-link" href="{{ '/wiki/' | relative_url }}">Wiki</a>
+          <a id="back-link" class="header-link" href="{{ '/' | relative_url }}">← 戻る</a>
+          <a class="header-link" href="{{ '/' | relative_url }}">索引</a>
         </nav>
+        {% endunless %}
       </div>
     </header>
 
@@ -34,8 +34,8 @@
 
       {% unless page.url == '/' %}
       <nav class="page-bottom-nav" aria-label="ページ下部ナビゲーション">
-        <a id="back-link-bottom" class="bottom-link" href="{{ '/wiki/' | relative_url }}">← 戻る</a>
-        <a class="bottom-link" href="{{ '/wiki/' | relative_url }}">Wiki</a>
+        <a id="back-link-bottom" class="bottom-link" href="{{ '/' | relative_url }}">← 戻る</a>
+        <a class="bottom-link" href="{{ '/' | relative_url }}">索引</a>
       </nav>
       {% endunless %}
     </main>
