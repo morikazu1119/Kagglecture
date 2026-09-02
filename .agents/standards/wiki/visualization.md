@@ -11,7 +11,7 @@ Kagglectureの記事内で使う可視化の選択基準。描画ライブラリ
 1. この概念は図にすると理解が速くなるか
 2. ユーザーが操作すると理解がさらに深まるか
 3. 静的図で十分か、Interactiveにする価値があるか
-4. 2Dと3Dのどちらが情報を正確に伝えるか
+4. 2D / 2.5D / 3Dのどれが情報を最も理解しやすく伝えるか
 5. モバイル幅でも同じ意味を保てるか
 
 ## HTML-first requirement
@@ -37,9 +37,10 @@ Kagglectureの記事内で使う可視化の選択基準。描画ライブラリ
 3. 値・状態・条件を変えると理解が深まる → HTML / CSS / SVG Interactive
 4. 固定された関係・処理順 → HTML / CSS / inline SVG
 5. 少数の定量比較 → HTML / CSS bar / matrix / position encoding
-6. hover / zoom / 大量点探索が重要 → Chart.js / Plotly / Vega-Lite / D3
-7. 地理情報 → Leaflet
-8. 数式自体が本質 → MathJax / LaTeX
+6. model architecture / tensor depth / operation process → 2D / 2.5D / 3D HTML / CSS / SVG、必要ならInteractive
+7. hover / zoom / 大量点探索が重要 → Chart.js / Plotly / Vega-Lite / D3
+8. 地理情報 → Leaflet
+9. 数式自体が本質 → MathJax / LaTeX
 
 ### Mermaidの扱い
 
@@ -48,9 +49,10 @@ Mermaidは**原則使わない**。
 - 操作対象があればInteractiveを優先する。
 - 固定フローはHTML / CSS / inline SVGを優先する。
 - 複雑な静的関係でも、まずHTML/SVGで明快に表現できないか検討する。
+- 特にモデル記事で`Input → Block → Output`だけの単純flowをarchitecture図の代用にしない。
 - 「フローだからMermaid」という選択は禁止する。
 
-## 2D vs 3D
+## 2D vs 2.5D / 3D
 
 ### 2Dを優先するケース
 
@@ -62,18 +64,42 @@ Mermaidは**原則使わない**。
 - mobileで奥行き方向のラベルが潰れやすい。
 - hover前提になりやすい。
 
-### 3D / 2.5Dが有効なケース
+定量グラフの棒・点・軸を「見栄えのため」に3D化しない。
 
-奥行きそのものが概念理解に寄与する場合のみ使う。
+### 2.5D / 3Dが有効なケース
+
+**モデルarchitectureでは2.5D / 3Dを積極的に使ってよい。装飾的な奥行き・影・perspectiveも許容する。**
 
 例:
 
-- CNNのfeature map / channel stack
-- ViTやTransformerのlayer stack
+- CNNのinput / kernel / feature map / channel stack
+- ResNet等のblock stackとskip connection
+- ViT / Transformerのtoken、attention、encoder layer stack
 - 3次元volume / voxel / medical imaging
-- 空間構造・座標系そのものがtaskに関係する場合
+- encoder / decoder / multi-scale feature pyramid
+- repeated blockの深さやmodel hierarchy
 
-3Dは装飾目的で使わない。定量値の大小比較を3D barで表現しない。
+装飾的表現を使う場合も、何が構造上の意味を持つかをtext label、connector、captionで明示する。perspectiveの見た目からtensor sizeの定量比較をさせない。
+
+model architectureの詳細基準は`model-visualization.md`に従う。
+
+## Model architecture visualization
+
+モデル記事では、**構造図と演算プロセスの両方**を検討する。
+
+単純なbox flowだけではなく、テーマに応じて以下を可視化する。
+
+- tensorの縦横とchannel stack
+- patch / token配置
+- kernelの適用範囲と移動
+- stride / downsamplingによるshape変化
+- residual / skip / concat connection
+- attentionの参照関係
+- MLP / normalization / projectionの位置
+- tree split / leaf / boostingでの加算
+- encoder / decoder / head接続
+
+CNNのconvolution、Transformerのattention、tree splitなど、**演算の位置や状態を変えると理解が深まるものはInteractiveを優先**する。モデル構造が固定でも、演算自体が初見で理解しづらいならStaticだけで済ませない。
 
 ## Static vs Interactive
 
@@ -93,11 +119,14 @@ Mermaidは**原則使わない**。
 - Dice / IoUでmask overlapを動かす
 - RMSE / MAEで外れ値の影響を変える
 - augmentationやsamplingの適用前後を比較する
+- CNN kernelを移動してreceptive fieldとfeature mapの対応を見る
+- ViTのQuery patchを変えてattention先を見る
+- tree growthのstepを変えてsplit / leafの変化を見る
 
 ### Staticで十分なケース
 
-- 単純な処理順で、切替や値変更から新しい理解が増えない
-- 固定されたモデル構造
+- 単純な固定関係で、切替や値変更から新しい理解が増えない
+- architecture overviewのうち、演算Interactiveとは別に全体構造を見せる図
 - 1つの結論を示す小規模な比較
 - 数値を操作しても新しい理解が増えない比較
 
@@ -117,10 +146,11 @@ Staticでも文章だけで済ませず、図の方が理解が速い場合はHT
 
 ## Static HTML diagrams
 
-- `static-viz` / `html-diagram`を基本containerにする。
+- `static-viz` / `html-diagram` / `model-architecture`を基本containerにする。
 - data flowは`html-flow`のようにnodeとconnectorを明示する。
-- architecture depthは`layer-scene`等で2.5D表示してよい。
-- ViT等のpatch/token関係はgrid + token layoutの方がflowchartより明確ならそちらを使う。
+- architecture depthはlayer stackやtensor planeを2.5D / 3Dで表示してよい。
+- ViT等のpatch/token関係はgrid + token layoutを使い、encoder内部はResidual connectionまで見せる。
+- CNNはfeature-map stackだけでなくkernel / receptive fieldの対応も必要に応じて示す。
 - 色だけに意味を持たせず、text labelを併記する。
 - SVGは必ず`viewBox`を持ち、固定pixel幅にしない。
 
@@ -131,6 +161,7 @@ Staticでも文章だけで済ませず、図の方が理解が速い場合はHT
 - 「模式例」「理解用の例」「実測値ではない」などを図内または直前に明示する。
 - KaggleのCV / LB / ablation値に見える数値を捏造しない。
 - 実在Competitionの定量グラフを作る場合は、確認済み実測値だけを使い出典を付ける。
+- kernel値、attention weight、tree gain等を理解用に作る場合も模式値であることを明示する。
 
 ## Interactive UX rules
 
@@ -139,7 +170,7 @@ Staticでも文章だけで済ませず、図の方が理解が速い場合はHT
 - ボタン、slider、select等は何を変えるか明示する。
 - 操作後に「何が変わったか」を文章またはstatusで即時表示する。
 - hoverだけに重要情報を置かない。クリック・タップでも理解できるようにする。
-- 自動で延々動くanimationは使わない。必要ならユーザー操作で開始・停止できるようにする。
+- 自動で延々動くanimationは使わない。model operationはstep buttonやsliderでユーザーが進行を制御できるようにする。
 - `prefers-reduced-motion` を尊重する。
 - キーボード操作可能なnative controlを優先する。
 - `aria-pressed`、`aria-live`等を必要に応じて使う。
@@ -159,8 +190,9 @@ Staticでも文章だけで済ませず、図の方が理解が速い場合はHT
 - page-level horizontal overflowがない。
 - tableだけ必要に応じてwrapper内horizontal scrollになる。
 - labelがcontainer外へ飛び出さない。
-- SVG / diagram / chartが切れない。
+- SVG / diagram / chart / model architectureが切れない。
 - 2列・3列layoutがmobileで1列へreflowする。
+- 2.5D / 3Dはmobileでflat化しても意味が失われない。
 - interactive controlが44px前後のtouch targetを保つ。
 - dark modeでもcontrastが崩れない。
 - `prefers-reduced-motion`で3D transformやanimationが理解を妨げない。
@@ -184,6 +216,7 @@ Interactiveは本文の代替ではなく補助。
 - グラフのデータ元は追跡可能にする。
 - baselineが意味を持つ棒グラフでは軸の切断で差を誇張しない。
 - hover可能でも、軸・凡例・要点が静止状態で理解できるようにする。
+- 定量グラフでは装飾的3Dを使わない。
 
 ## Runtime
 
