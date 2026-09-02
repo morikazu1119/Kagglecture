@@ -11,11 +11,11 @@ Kaggleで使われる概念・手法・評価指標・コンペ戦略を、**必
 ## Categories {#categories}
 
 <div class="learning-grid">
-  <div class="learning-card">
+  <a class="learning-card learning-card-link" href="{{ '/wiki/validation/' | relative_url }}" aria-label="Validation & Split を開く">
     <h3>Validation & Split</h3>
     <p>Hold-out、KFold、Stratified、Group、Time Series、Adversarial Validation、Leakage。</p>
-    <p><a href="{{ '/wiki/validation/' | relative_url }}">Validation & Split →</a></p>
-  </div>
+    <span class="card-arrow" aria-hidden="true">→</span>
+  </a>
   <div class="learning-card">
     <h3>Metrics</h3>
     <p>Accuracy、Precision、Recall、F1、AUC、LogLoss、RMSE、MAE、Ranking指標。</p>
