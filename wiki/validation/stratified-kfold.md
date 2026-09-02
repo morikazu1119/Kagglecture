@@ -32,29 +32,45 @@ tags:
 
 ## 使う場面 {#use-cases}
 
-| データ | 選択 |
-|---|---|
-| 二値分類でpositiveが少ない | StratifiedKFold |
-| 多クラス分類で少数クラスがある | StratifiedKFold |
-| groupも守る必要がある | StratifiedGroupKFold |
-| 時系列分類 | 時間分割を優先 |
-| 回帰 | 通常はKFold。必要ならtargetをbin化する設計を慎重に検討 |
+<div class="comparison-board" aria-label="StratifiedKFoldを選ぶ状況">
+  <section class="comparison-card is-primary"><h4>二値分類でpositiveが少ない</h4><dl><dt>選択</dt><dd>StratifiedKFold</dd></dl></section>
+  <section class="comparison-card"><h4>多クラスで少数classがある</h4><dl><dt>選択</dt><dd>StratifiedKFold</dd></dl></section>
+  <section class="comparison-card"><h4>groupも守る必要がある</h4><dl><dt>選択</dt><dd>StratifiedGroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>時系列分類</h4><dl><dt>優先</dt><dd>時間分割</dd></dl></section>
+  <section class="comparison-card"><h4>回帰</h4><dl><dt>基本</dt><dd>KFold</dd><dt>補足</dt><dd>target bin化は設計を慎重に検討</dd></dl></section>
+</div>
 
 ## 仕組み {#mechanism}
 
 たとえば全体が「class 0 = 90%、class 1 = 10%」なら、各foldもおおむね90:10になるように分割します。通常KFoldでは偶然、少数クラスが一部foldへ偏ることがあります。
 
+<div class="static-viz html-chart" aria-label="StratifiedKFoldで各foldのpositive比率を揃える模式グラフ">
+  <div class="viz-heading"><div><div class="viz-title">少数classの比率をfold間で揃える</div><p class="viz-subtitle">棒の長さはpositive率。模式例では全体10%に対して各foldも10%へ近づけます。</p></div><span class="viz-badge">模式例</span></div>
+  <div class="html-bar-chart">
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">全体</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:10"></span></span><span class="html-bar-value">10%</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Fold 1</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:10"></span></span><span class="html-bar-value">10%</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Fold 2</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:10"></span></span><span class="html-bar-value">10%</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Fold 3</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:10"></span></span><span class="html-bar-value">10%</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Fold 4</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:10"></span></span><span class="html-bar-value">10%</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Fold 5</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:10"></span></span><span class="html-bar-value">10%</span></div>
+  </div>
+  <p class="viz-caption">比率は仕組みを説明する人工例です。実データでは整数制約やgroup制約により完全一致しない場合があります。</p>
+</div>
+
 scikit-learnも、StratifiedKFoldは各foldでクラス比をおおむね維持すると説明しています。ただしこれは**クラス比を守るための工学的な分割**で、データの独立性や本番分布を保証するものではありません（[scikit-learn](https://scikit-learn.org/stable/modules/cross_validation.html#stratified-k-fold)）。
 
 ## 使い分け {#comparison}
 
-| 手法 | クラス比 | group | 時間順序 |
-|---|---:|---:|---:|
-| KFold | × | × | × |
-| **StratifiedKFold** | ○ | × | × |
-| [GroupKFold]({{ '/wiki/validation/group-kfold.html' | relative_url }}) | × | ○ | × |
-| StratifiedGroupKFold | ○に近づける | ○ | × |
-| Time-based split | 設計次第 | 設計次第 | ○ |
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th scope="col">手法</th><th scope="col">クラス比</th><th scope="col">group</th><th scope="col">時間順序</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">KFold</th><td>×</td><td>×</td><td>×</td></tr>
+    <tr><th scope="row">StratifiedKFold</th><td class="status-good">○</td><td>×</td><td>×</td></tr>
+    <tr><th scope="row"><a href="{{ '/wiki/validation/group-kfold.html' | relative_url }}">GroupKFold</a></th><td>×</td><td class="status-good">○</td><td>×</td></tr>
+    <tr><th scope="row">StratifiedGroupKFold</th><td class="status-good">○に近づける</td><td class="status-good">○</td><td>×</td></tr>
+    <tr><th scope="row">Time-based split</th><td>設計次第</td><td>設計次第</td><td class="status-good">○</td></tr>
+  </tbody>
+</table></div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 
