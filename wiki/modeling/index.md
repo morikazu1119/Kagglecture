@@ -2,7 +2,9 @@
 layout: default
 title: Modeling
 description: Kaggleのモデル・アーキテクチャを調べるためのカテゴリ索引。
+summary: GBDT、CNN、Transformer、Foundation Model、モデル選択。
 type: category-index
+nav_order: 3
 permalink: /wiki/modeling/
 ---
 
