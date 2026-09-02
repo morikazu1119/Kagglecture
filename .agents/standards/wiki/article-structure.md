@@ -17,6 +17,7 @@ KagglectureはKaggleの辞書・リファレンスであり、カリキュラム
 - 公開UIのカードや「戻る」などに、`→` / `←` のような装飾目的の矢印記号を付けない。リンクであることはカード全体のhover・focus・cursor等で示す。
 - 内部処理、Skill、Jekyll、CDN、JavaScript、ディレクトリ構成を公開本文に書かない。
 - Kagglecture自身のGitHubリポジトリへのリンクを公開本文に置かない。
+- 公開記事の表・図・グラフはHTMLを土台にする。Markdown pipe tableを新規作成しない。
 
 ## Navigation hierarchy
 
@@ -101,23 +102,25 @@ permalink: /wiki/validation/
 
 ### 2. `## 使う場面`
 
-「いつ使うか」を短時間で判断できる形にする。文章より表が速いなら表を使う。
+「いつ使うか」を短時間で判断できる形にする。比較軸が本質ならHTML tableまたはcomparison cardsを使う。長文セルが多い場合はcard化を優先する。
 
 ### 3. `## 仕組み`
 
 なぜ機能するかを直感的に説明する。
 
-- 値・状態・条件を変えると理解が深まる: Interactive visualizationを優先
-- 固定された単純な関係・処理フロー: HTML / CSS / SVG
+- 値・状態・条件を変えると理解が深まる: HTML / CSS / SVG Interactiveを優先
+- 固定された単純な関係・処理フロー: HTML / CSS / inline SVG
+- 定量比較: 原則2DのHTML/CSS bar、matrix、position encoding、必要ならSVG chart
+- architecture depthや3D volumeなど奥行き自体が情報: 2.5D / 3D可視化を検討
 - 数式が本質: LaTeX
 - 単純な概念: 短い文章
-- Mermaidは、Interactive化しても理解が増えず、SVG/CSSより保守性が明確に高い複雑な静的関係に限る
+- Mermaidは原則使わない
 
 可視化の詳細は `visualization.md` に従う。
 
 ### 4. `## 使い分け`
 
-類似手法・代替手法と比較し、「何と迷うか」「どう選ぶか」に答える。
+類似手法・代替手法と比較し、「何と迷うか」「どう選ぶか」に答える。Markdown pipe tableではなくHTML table / comparison cardsを使う。
 
 ### 5. `## Kaggleでの実例`
 
@@ -131,7 +134,7 @@ permalink: /wiki/validation/
 - CV / LB / ablation差
 - なぜ有効だったか
 
-確認できない数値は推測しない。
+確認できない数値は推測しない。複数の実測値を比較する場合、条件が揃っていればHTML/CSS/SVGの定量図で可視化する。
 
 ### 6. `## 注意点`
 
@@ -139,7 +142,7 @@ permalink: /wiki/validation/
 
 ### 7. `## Quick Reference`
 
-再訪時に数秒で判断できる短い表またはチェックリストにする。
+再訪時に数秒で判断できるHTML comparison cards、短いHTML table、またはチェックリストにする。
 
 ### 8. `## 関連項目`
 
@@ -153,19 +156,21 @@ permalink: /wiki/validation/
 
 ### Validation / Split
 
-定義、使う場面、split Interactive / 静的図、比較、Kaggle実例、leakage / mismatch、Quick Reference の順を基本とする。
+定義、使う場面、split Interactive / HTML静的図、比較、Kaggle実例、leakage / mismatch、Quick Reference の順を基本とする。
 
-特に「何を分離単位にするか」を明確にする。foldやsplitを切り替えることで理解が深まる場合はInteractiveを優先する。
+特に「何を分離単位にするか」を明確にする。foldやsplitを切り替えることで理解が深まる場合はInteractiveを優先する。時間順序は2D timeline、group関係はgrid/card等、概念に合う配置を選ぶ。
 
 ### Metric
 
 定義、直感、数式、値の意味、使う場面、比較、Kaggle実例、最適化上の注意の順を基本とする。
 
-threshold、ranking、overlap、outlierなどを操作すると理解しやすい場合はInteractiveを優先する。
+threshold、ranking、overlap、outlierなどを操作すると理解しやすい場合はInteractiveを優先する。curve・ranking・比率など固定表示が有効なら2D HTML/SVG chartを使う。
 
 ### Modeling / Training
 
 定義、なぜ効くか、使う条件、比較、Kaggle実例 / ablation、失敗条件の順を基本とする。
+
+CNN feature mapやvolumeなど奥行きが概念理解に寄与する場合のみ2.5D/3Dを使う。parameter比較や性能比較を3D barにしない。
 
 ### Ensemble / Post-processing / Inference
 
@@ -184,6 +189,16 @@ threshold、ranking、overlap、outlierなどを操作すると理解しやす�
 9. 参考文献
 
 順位順にWriteupを要約するだけの記事にはしない。
+
+## Layout requirement
+
+図表を変更した記事は320 / 390 / 620 / 1003px相当で確認する。
+
+- page全体にhorizontal overflowを出さない。
+- wide table / matrixはcomponent内部だけで横スクロールさせる。
+- SVGは`viewBox`を持ち、container幅へ縮小する。
+- mobileで2列以上が読みにくい場合は1列へreflowする。
+- 2.5D/3D表現はmobile/reduced-motionでflattenしても意味が失われないようにする。
 
 ## Article frontmatter
 
