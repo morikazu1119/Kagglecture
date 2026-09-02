@@ -2,7 +2,9 @@
 layout: default
 title: Validation & Split
 description: KaggleのValidationとデータ分割手法を調べるためのカテゴリ索引。
+summary: Hold-out、KFold、Stratified、Group、Time Series、Adversarial Validation、Leakage。
 type: category-index
+nav_order: 1
 permalink: /wiki/validation/
 ---
 
