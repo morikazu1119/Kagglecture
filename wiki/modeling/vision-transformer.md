@@ -32,21 +32,45 @@ tags:
 
 ## 仕組み {#mechanism}
 
-```text
-Image -> Patchify -> Linear projection -> Patch tokens
-      -> Transformer blocks -> pooled/CLS feature -> Head
-```
+ViTでは画像をgrid状のpatchへ分け、各patchをtokenへ変換します。下は**画像の2D空間がtoken列へ変わること**を直接見せるHTML模式図です。
+
+<div class="static-viz html-diagram" aria-label="Vision Transformerのpatch token化模式図">
+  <div class="viz-heading">
+    <div><div class="viz-title">Image → patch → token → Transformer</div><p class="viz-subtitle">空間上の小領域をtokenへ変換し、self-attentionで離れた領域も直接関連付けます。</p></div>
+    <span class="viz-badge">2D + layer構造</span>
+  </div>
+  <div class="patch-token-layout">
+    <div>
+      <div class="patch-grid" aria-label="4×4に分割された画像patch">
+        <span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span>
+        <span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span>
+        <span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span>
+        <span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span><span class="patch-cell"></span>
+      </div>
+      <p class="viz-note">Imageを同じ大きさのpatchへ分割</p>
+    </div>
+    <div>
+      <div class="token-row" aria-label="Patch token列">
+        <span class="token-chip is-cls">CLS</span><span class="token-chip">P1</span><span class="token-chip">P2</span><span class="token-chip">P3</span><span class="token-chip">P4</span><span class="token-chip">P5</span><span class="token-chip">…</span><span class="token-chip">P16</span>
+      </div>
+      <div class="html-flow" style="--flow-columns: 3; margin-top: 16px">
+        <div class="flow-node"><strong>Linear projection</strong><span>patchをembeddingへ変換</span></div>
+        <div class="flow-node"><strong>Transformer blocks</strong><span>self-attentionでglobal interaction</span></div>
+        <div class="flow-node is-accent"><strong>Head / Decoder</strong><span>classification / segmentationへ接続</span></div>
+      </div>
+    </div>
+  </div>
+  <p class="viz-caption">patch数・token数は理解用の模式例です。実際のtoken数はresolutionとpatch sizeで変わります。</p>
+</div>
 
 self-attentionにより離れたpatch同士を早い層から直接関連付けられます。一方でCNNほど強い局所inductive biasを持たないため、pretrainingやaugmentationの影響が大きいことがあります。
 
 ## CNNとの比較 {#comparison}
 
-| 観点 | CNN | ViT |
-|---|---|---|
-| 局所性 | convolutionで強い | patch/self-attentionで学習 |
-| Global interaction | 深い層で広がる | attentionで直接扱いやすい |
-| 小データ | 比較的安定 | pretraining依存が大きい場合あり |
-| 計算量 | architecture依存 | token数増加でattention cost増 |
+<div class="comparison-board" aria-label="CNNとVision Transformerの比較">
+  <section class="comparison-card"><h4>CNN</h4><dl><dt>局所性</dt><dd>convolutionで強く組み込む</dd><dt>Global interaction</dt><dd>深い層でreceptive fieldが広がる</dd><dt>小データ</dt><dd>比較的安定</dd><dt>計算</dt><dd>architecture依存</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Vision Transformer</h4><dl><dt>局所性</dt><dd>patch / attentionから学習</dd><dt>Global interaction</dt><dd>attentionで直接扱いやすい</dd><dt>小データ</dt><dd>pretraining依存が大きい場合あり</dd><dt>計算</dt><dd>token数増加でattention costが増える</dd></dl></section>
+</div>
 
 どちらか一方へ決め打ちせず、同じCVでpretrained CNN/ViTを比較します。
 
