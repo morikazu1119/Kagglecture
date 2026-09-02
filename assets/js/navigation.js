@@ -12,41 +12,67 @@
     const drawer = document.querySelector("[data-site-drawer]");
     const backdrop = document.querySelector("[data-drawer-backdrop]");
     const closeButton = document.querySelector("[data-drawer-close]");
+    const mobileQuery = window.matchMedia("(max-width: 768px)");
 
     if (!toggle || !drawer || !backdrop || !closeButton) return;
 
-    drawer.inert = true;
+    const applyViewportMode = () => {
+      body.classList.remove("menu-open");
 
-    const setOpen = (open) => {
+      if (mobileQuery.matches) {
+        toggle.setAttribute("aria-expanded", "false");
+        drawer.setAttribute("aria-hidden", "true");
+        drawer.inert = true;
+      } else {
+        toggle.setAttribute("aria-expanded", "true");
+        drawer.setAttribute("aria-hidden", "false");
+        drawer.inert = false;
+      }
+    };
+
+    const setMobileOpen = (open, focus = true) => {
+      if (!mobileQuery.matches) return;
+
       body.classList.toggle("menu-open", open);
       toggle.setAttribute("aria-expanded", String(open));
       drawer.setAttribute("aria-hidden", String(!open));
       drawer.inert = !open;
+
+      if (!focus) return;
       if (open) closeButton.focus();
       else toggle.focus();
     };
 
     toggle.addEventListener("click", () => {
-      setOpen(!body.classList.contains("menu-open"));
+      setMobileOpen(!body.classList.contains("menu-open"));
     });
 
-    closeButton.addEventListener("click", () => setOpen(false));
-    backdrop.addEventListener("click", () => setOpen(false));
+    closeButton.addEventListener("click", () => setMobileOpen(false));
+    backdrop.addEventListener("click", () => setMobileOpen(false));
 
     drawer.querySelectorAll("a").forEach((link) => {
       link.addEventListener("click", () => {
-        body.classList.remove("menu-open");
-        toggle.setAttribute("aria-expanded", "false");
-        drawer.setAttribute("aria-hidden", "true");
-        drawer.inert = true;
+        if (mobileQuery.matches) setMobileOpen(false, false);
       });
     });
 
     document.addEventListener("keydown", (event) => {
-      if (event.key === "Escape" && body.classList.contains("menu-open")) {
-        setOpen(false);
+      if (
+        event.key === "Escape" &&
+        mobileQuery.matches &&
+        body.classList.contains("menu-open")
+      ) {
+        setMobileOpen(false);
       }
     });
+
+    if (typeof mobileQuery.addEventListener === "function") {
+      mobileQuery.addEventListener("change", applyViewportMode);
+    } else {
+      mobileQuery.addListener(applyViewportMode);
+    }
+
+    applyViewportMode();
   };
 
   const setupSearch = () => {
