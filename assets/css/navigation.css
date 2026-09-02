@@ -72,6 +72,12 @@
   overflow-y: auto;
   background: var(--bg);
   border-right: 1px solid var(--border);
+  transform: translateX(0);
+  transition: transform 180ms ease;
+}
+
+body.sidebar-closed .site-drawer {
+  transform: translateX(-100%);
 }
 
 .drawer-header {
@@ -89,11 +95,6 @@
 .drawer-title {
   font-size: 17px;
   font-weight: 700;
-}
-
-.drawer-close,
-.menu-toggle {
-  display: none;
 }
 
 .drawer-nav {
@@ -145,9 +146,18 @@
 }
 
 .site-header,
-.site-main {
+.site-main,
+.site-footer {
   width: calc(100% - var(--sidebar-width));
   margin-left: var(--sidebar-width);
+  transition: width 180ms ease, margin-left 180ms ease;
+}
+
+body.sidebar-closed .site-header,
+body.sidebar-closed .site-main,
+body.sidebar-closed .site-footer {
+  width: 100%;
+  margin-left: 0;
 }
 
 .site-main {
@@ -155,8 +165,6 @@
 }
 
 .site-footer {
-  width: calc(100% - var(--sidebar-width));
-  margin-left: var(--sidebar-width);
   padding-bottom: calc(var(--s5) + var(--search-bar-height));
 }
 
@@ -197,6 +205,11 @@
   box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.04);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  transition: left 180ms ease;
+}
+
+body.sidebar-closed .site-search {
+  left: 0;
 }
 
 .site-search__label,
@@ -327,7 +340,10 @@
 
   .site-header,
   .site-main,
-  .site-footer {
+  .site-footer,
+  body.sidebar-closed .site-header,
+  body.sidebar-closed .site-main,
+  body.sidebar-closed .site-footer {
     width: 100%;
     margin-left: 0;
   }
@@ -338,11 +354,6 @@
 
   .site-footer {
     padding-bottom: calc(var(--s5) + var(--search-bar-height));
-  }
-
-  .menu-toggle,
-  .drawer-close {
-    display: inline-flex;
   }
 
   .menu-toggle {
@@ -361,10 +372,10 @@
     transition: opacity 180ms ease;
   }
 
-  .site-drawer {
+  .site-drawer,
+  body.sidebar-closed .site-drawer {
     width: min(360px, calc(100% - 34px));
     transform: translateX(-100%);
-    transition: transform 180ms ease;
   }
 
   body.menu-open {
@@ -411,7 +422,8 @@
     padding-top: 8px;
   }
 
-  .site-search {
+  .site-search,
+  body.sidebar-closed .site-search {
     left: 0;
     padding: 10px var(--s2) 12px;
   }
@@ -434,6 +446,10 @@
 @media (prefers-reduced-motion: reduce) {
   .drawer-backdrop,
   .site-drawer,
+  .site-header,
+  .site-main,
+  .site-footer,
+  .site-search,
   .learning-card-link,
   .dictionary-card-link {
     transition: none;
