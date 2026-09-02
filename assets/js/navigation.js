@@ -15,10 +15,13 @@
 
     if (!toggle || !drawer || !backdrop || !closeButton) return;
 
+    drawer.inert = true;
+
     const setOpen = (open) => {
       body.classList.toggle("menu-open", open);
       toggle.setAttribute("aria-expanded", String(open));
       drawer.setAttribute("aria-hidden", String(!open));
+      drawer.inert = !open;
       if (open) closeButton.focus();
       else toggle.focus();
     };
@@ -35,6 +38,7 @@
         body.classList.remove("menu-open");
         toggle.setAttribute("aria-expanded", "false");
         drawer.setAttribute("aria-hidden", "true");
+        drawer.inert = true;
       });
     });
 
