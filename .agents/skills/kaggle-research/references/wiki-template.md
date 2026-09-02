@@ -25,9 +25,15 @@ tags:
 - 何に注意すべきか
 - エビデンスがどの程度強いか
 
+具体的な事実・数値・順位・採用実績には、その場で出典リンクを付ける。
+
+例:
+
+> 1st place solutionではGroupKFoldを採用している（[Kaggle Writeup](https://example.com/)）。
+
 ## 何が問題なのか
 
-この手法・設計が必要になる背景を説明する。
+この手法・設計が必要になる背景を説明する。外部情報に依存する主張にはURLを直接埋め込む。
 
 ## 基本原理
 
@@ -44,19 +50,19 @@ flowchart LR
 
 複数コンペで広く使われる手法を整理する。
 
-| 手法 | 目的 | 強み | 弱み | 主な適用条件 |
-|---|---|---|---|---|
-|  |  |  |  |  |
+| 手法 | 目的 | 強み | 弱み | 主な適用条件 | Source |
+|---|---|---|---|---|---|
+|  |  |  |  |  | [出典](https://example.com/) |
 
 ## 効果が強かった手法
 
 実際の上位解法で効果が報告されたものを整理する。
 
-| 手法 | Competition | Rank/Medal | Metric | Effect | Evidence |
-|---|---|---:|---|---|---|
-|  |  |  |  |  | A/B/C/D |
+| 手法 | Competition | Rank/Medal | Metric | Effect | Evidence | Source |
+|---|---|---:|---|---|---|---|
+|  |  |  |  |  | A/B/C/D | [出典](https://example.com/) |
 
-Effectに数値を入れる場合は必ず出典を付ける。
+Effectに数値を入れる場合は必ず同じ行または直後に出典を付ける。
 
 ## ユニークな手法
 
@@ -64,7 +70,7 @@ Effectに数値を入れる場合は必ず出典を付ける。
 
 ### コンペ固有部分
 
-何がそのデータ・評価・制約に固有だったか。
+何がそのデータ・評価・制約に固有だったか。具体的な解法へのリンクを付ける。
 
 ### 一般化可能な原理
 
@@ -91,7 +97,7 @@ flowchart TD
 - distribution shift
 - 推論時間制約
 
-など、テーマに該当するものを具体的に記載する。
+など、テーマに該当するものを具体的に記載する。実例を挙げる場合は出典リンクを付ける。
 
 ## 横断比較
 
@@ -99,7 +105,7 @@ flowchart TD
 
 | Competition | Data | Metric | Validation | Strong method | Unique insight | Source |
 |---|---|---|---|---|---|---|
-|  |  |  |  |  |  |  |
+|  |  |  |  |  |  | [出典](https://example.com/) |
 
 ## 定量グラフ
 
@@ -107,13 +113,13 @@ flowchart TD
 
 ```mermaid
 xychart-beta
-    title "Example: reported score improvements"
+    title "Reported score improvements"
     x-axis [MethodA, MethodB, MethodC]
     y-axis "Delta" 0 --> 1
-    bar [0.0, 0.0, 0.0]
+    bar [0.1, 0.2, 0.3]
 ```
 
-上記は構造例。実際のページでは0.0等のダミー値を残さない。十分な実測値がなければグラフ自体を作らない。
+上記は構造例。実際のページでは例示値をそのまま残さず、検証済みの実測値だけを使う。グラフ直下にデータ元URLを明示する。
 
 ## 実戦チェックリスト
 
@@ -131,8 +137,10 @@ xychart-beta
 
 ## 参考文献
 
-1. 著者/投稿者, “タイトル”, 媒体, 公開日. URL
-2. Kaggle Competition / Discussion / Writeup. URL
-3. GitHub repository / solution file. URL
+本文で利用した全ソースを列挙する。
 
-各参考文献について、本文のどの主張を支えるか追跡可能な状態にする。
+1. [著者/投稿者, “タイトル”, 媒体, 公開日](https://example.com/)
+2. [Kaggle Competition / Discussion / Writeup](https://example.com/)
+3. [GitHub repository / solution file](https://example.com/)
+
+URLだけの羅列にせず、何のソースか分かるリンクテキストにする。本文中の主張から対応する参考文献へ追跡できる状態にする。
