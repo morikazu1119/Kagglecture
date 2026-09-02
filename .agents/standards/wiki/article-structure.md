@@ -12,146 +12,140 @@ KagglectureはKaggleの辞書・リファレンスであり、カリキュラム
 - 読者の判断に不要な背景説明は削る。
 - 難しい補足は `<details>` に入れる。
 - 「学ぶ順番」「Step 1」「次に読む」などの順序付けをしない。
+- 長い記事はページ内リンクを置き、目的の節へ直接移動できるようにする。
+- 既存の関連Wikiページがある用語はcross-linkする。
 - 内部処理、Skill、Jekyll、CDN、JavaScript、ディレクトリ構成を公開本文に書かない。
 - Kagglecture自身のGitHubリポジトリへのリンクを公開本文に置かない。
-- 長い記事はページ内リンクを置き、目的の節へ直接移動できるようにする。
-- 既存の関連Wikiページがある用語は、初出または関連項目から参照できるようにする。
 
-## Page navigation
+## Navigation hierarchy
 
-主要セクションが4つ以上ある記事では、タイトル直後の定義の後に短いページ内ナビゲーションを置いてよい。
+公開導線は原則として次の3階層にする。
+
+```text
+Home
+  ↓
+Category
+  ↓
+Article
+```
 
 例:
 
+```text
+Kagglecture
+  ↓
+Validation & Split
+  ↓
+GroupKFold
+```
+
+### Home
+
+- ルート `index.md` が唯一のホーム・カテゴリ索引。
+- ホームのカテゴリカードから個別記事へ直接飛ばさない。
+- 実在するカテゴリページへリンクする。
+- `wiki/index.md` のような全体索引の重複ページは作らない。
+
+### Category index
+
+各主要カテゴリは必要に応じて `wiki/<category>/index.md` を持つ。
+
+Frontmatter例:
+
+```yaml
+---
+layout: default
+title: Validation & Split
+type: category-index
+permalink: /wiki/validation/
+---
+```
+
+カテゴリページでは、そのカテゴリに属する**実在記事だけ**を一覧化する。未作成記事をリンク風に表示しない。
+
+### Article
+
+記事は `wiki/<category>/<slug>.md` に置く。
+
+- カテゴリページから記事へ到達できること。
+- 記事の「戻る」は所属カテゴリへ戻ること。
+- 「索引」はホームへ戻ること。
+- 関連項目は学習順ではなく概念上の関連性で付ける。
+
+## URL rules
+
+- `_config.yml` の `url` / `baseurl` をGitHub Pages公開先と一致させる。
+- Liquid内では `relative_url` を使い、project siteのbase pathを落とさない。
+- `.md` のsource pathを公開URLとして使わない。
+- Categoryは `/wiki/<category>/`、記事はJekyllが生成する公開URLへリンクする。
+- 新規ページ作成後は **Home → Category → Article** の全経路が404にならないことを確認する。
+
+## Page navigation
+
+主要セクションが4つ以上ある記事では、定義の後に4〜7件程度のページ内ナビゲーションを置いてよい。
+
 ```html
 <nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
-  <a href="#使う場面">使う場面</a>
-  <a href="#仕組み">仕組み</a>
-  <a href="#使い分け">使い分け</a>
-  <a href="#kaggleでの実例">Kaggle実例</a>
-  <a href="#注意点">注意点</a>
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
 </nav>
 ```
 
-リンク数を増やしすぎず、4〜7件程度にする。
-
-## Internal links
-
-- ルート `index.md` が唯一の索引。
-- `wiki/index.md` のような重複ランディングページは作らない。
-- 新規記事作成時は `index.md` の適切なカテゴリから直接リンクする。
-- **ホーム `index.md` からの記事リンクは project root 相対で `wiki/.../<slug>.html` を使う。先頭 `/` を付けない。** 例: `wiki/validation/group-kfold.html`。
-- `_config.yml` の `url` と `baseurl` をGitHub Pagesの公開先と一致させる。
-- レイアウトや個別記事からのroot参照にはLiquidの `relative_url` を使い、`/wiki/...` のようなbase pathを欠いたroot-relative URLを直書きしない。
-- `.md` のsource pathをそのまま公開リンクとして決め打ちしない。
-- 新規記事を追加したら、ホームからその公開URLへ遷移できることを確認する。
-- 関連項目は**実在するページだけ**リンクする。未作成ページをリンク風に見せない。
-- 同じ用語へのリンクを1ページ中で何度も繰り返さない。
-- 学習順序ではなく、概念上の関連性でcross-linkする。
-
-## Standard structure
+## Standard article structure
 
 手法・概念の記事は原則として以下の順にする。不要な節は削除してよい。
 
 ### 1. `# 用語・手法名`
 
-直下に2〜4行で定義を書く。
-
-最低限、以下を答える。
-
-- 何か
-- 何のために使うか
-- 最重要の前提条件
+直下に2〜4行で、何か・何のためか・最重要の前提条件を書く。
 
 ### 2. `## 使う場面`
 
-「いつ使うか」を短時間で判断できる形にする。
-
-文章より表が速い場合は表を優先する。
-
-```markdown
-| 状況 | 適するか | 理由 |
-|---|---|---|
-|  |  |  |
-```
-
-対象データ、前提条件、避ける条件を具体化する。
+「いつ使うか」を短時間で判断できる形にする。文章より表が速いなら表を使う。
 
 ### 3. `## 仕組み`
 
 なぜ機能するかを直感的に説明する。
 
-- 関係・処理フロー → Mermaid
+- 関係・処理フロー → Mermaid / SVG
 - 数式が本質 → LaTeX
 - 状態や値を変えると理解が深まる → Interactive visualization
 - 単純な概念 → 短い文章
 
 可視化の詳細は `visualization.md` に従う。
 
-図と文章で同じ説明を重複させない。
-
 ### 4. `## 使い分け`
 
-類似手法・代替手法との違いを示す。
-
-```markdown
-| 手法 | 強み | 弱み | 適用条件 |
-|---|---|---|---|
-|  |  |  |  |
-```
-
-「何と迷うか」「どう選ぶか」に答える。
+類似手法・代替手法と比較し、「何と迷うか」「どう選ぶか」に答える。
 
 ### 5. `## Kaggleでの実例`
 
-Kagglectureの中核となる節。
+実際のCompetition / Solution / Writeupでの使われ方を示す。
 
-理論ではなく、実際のCompetition / Solution / Writeupでの使われ方を示す。
+可能なら次を確認する。
 
-可能な範囲で以下を含める。
-
-```markdown
-| Competition | Rank / Medal | 使用方法 | Effect | Source |
-|---|---:|---|---|---|
-|  |  |  |  |  |
-```
-
-特に確認する項目:
-
-- 具体的に何をgroup / feature / target / threshold等として使ったか
-- fold数やValidation設計
-- 組み合わせたモデル・パイプライン
+- Rank / Medal
+- Validation設計
+- 具体的な使用方法
 - CV / LB / ablation差
-- なぜそのコンペで有効だったか
+- なぜ有効だったか
 
 確認できない数値は推測しない。
 
 ### 6. `## 注意点`
 
-テーマ固有の失敗条件を優先する。
-
-例:
-
-- Data leakage
-- Validation mismatch
-- Overfitting
-- Distribution shift
-- class imbalance
-- 計算コスト
-- 推論時間
-- group / split / threshold等の選択ミス
+テーマ固有の失敗条件を優先する。Leakage、Validation mismatch、Overfitting、Distribution shift、計算量など。
 
 ### 7. `## Quick Reference`
 
-再訪時に数秒で判断できる表またはチェックリストにする。
-
-本文の長い要約にはしない。
+再訪時に数秒で判断できる短い表またはチェックリストにする。
 
 ### 8. `## 関連項目`
 
-概念的に近い**実在ページ**を2〜6件程度置く。
-
-実在ページがない場合は節自体を省略する。
+概念的に近い**実在ページ**だけを2〜6件程度置く。存在しなければ節を省略する。
 
 ### 9. `## 参考文献`
 
@@ -161,31 +155,25 @@ Kagglectureの中核となる節。
 
 ### Validation / Split
 
-`定義 → 使う場面 → split図 / Interactive → 他splitとの比較 → Kaggle実例 → leakage / mismatch → Quick Reference`
+`定義 → 使う場面 → split図 / Interactive → 比較 → Kaggle実例 → leakage / mismatch → Quick Reference`
 
-特に「何を分離単位にするか」を明確にする。foldやsplitを切り替えることで理解が深まる場合はInteractiveを優先する。
+特に「何を分離単位にするか」を明確にする。
 
 ### Metric
 
-`定義 → 数式 → 値の意味 → 使う場面 → 他metricとの比較 → Kaggle実例 → 最適化上の注意`
+`定義 → 直感 → 数式 → 値の意味 → 使う場面 → 比較 → Kaggle実例 → 最適化上の注意`
 
-thresholdやrankingを操作するとmetric変化を理解しやすい場合はInteractiveを検討する。
+thresholdやrankingを操作すると理解しやすい場合はInteractiveを検討する。
 
 ### Modeling / Training
 
-`定義 → なぜ効くか → 使う条件 → 類似手法との比較 → Kaggle実例 / ablation → 失敗条件`
-
-モデル名やライブラリ名の羅列にしない。
+`定義 → なぜ効くか → 使う条件 → 比較 → Kaggle実例 / ablation → 失敗条件`
 
 ### Ensemble / Post-processing / Inference
 
-`定義 → 入出力の仕組み → 使い分け → CV上の選択方法 → Kaggle実例 → overfit / leakage注意`
-
-weightやthresholdの変化を理解する価値が高ければInteractiveを使う。Public LBだけで重みやthresholdを決める設計を推奨しない。
+`定義 → 入出力の仕組み → 使い分け → CV上の選択 → Kaggle実例 → overfit / leakage注意`
 
 ### Competition article
-
-個別コンペは以下を基本とする。
 
 1. コンペ概要
 2. Metric / Data / 制約
@@ -199,7 +187,7 @@ weightやthresholdの変化を理解する価値が高ければInteractiveを使
 
 順位順にWriteupを要約するだけの記事にはしない。
 
-## Frontmatter
+## Article frontmatter
 
 ```yaml
 ---
