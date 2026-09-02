@@ -45,12 +45,12 @@ multiclassでも「正解labelと一致したsample数 / 全sample数」と考�
 
 ## 使い分け {#comparison}
 
-| 指標 | 不均衡への強さ | 見るもの |
-|---|---:|---|
-| Accuracy | 低い | 全体正解率 |
-| Balanced Accuracy | 高い | classごとのRecall平均 |
-| F1 | 高い | Precision/Recall balance |
-| ROC-AUC | 比較的高い | ranking |
+<div class="comparison-board" aria-label="Accuracyと他の分類指標の比較">
+  <section class="comparison-card"><h4>Accuracy</h4><dl><dt>不均衡</dt><dd>弱い</dd><dt>見るもの</dt><dd>全体正解率</dd><dt>出力</dt><dd>hard label</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Balanced Accuracy</h4><dl><dt>不均衡</dt><dd>強い</dd><dt>見るもの</dt><dd>classごとのRecall平均</dd><dt>向く状況</dt><dd>多数派classが支配的</dd></dl></section>
+  <section class="comparison-card"><h4>F1</h4><dl><dt>不均衡</dt><dd>強い</dd><dt>見るもの</dt><dd>Precision / Recall balance</dd><dt>特徴</dt><dd>threshold依存</dd></dl></section>
+  <section class="comparison-card"><h4>ROC-AUC</h4><dl><dt>不均衡</dt><dd>比較的強い</dd><dt>見るもの</dt><dd>ranking</dd><dt>特徴</dt><dd>threshold非依存</dd></dl></section>
+</div>
 
 ## 注意点 {#pitfalls}
 
