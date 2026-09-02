@@ -27,14 +27,15 @@
       const container = document.createElement("div");
       container.className = "mermaid";
       container.textContent = block.textContent;
-
       const wrapper = block.closest("div.language-mermaid") || block.parentElement;
       wrapper.replaceWith(container);
     }
 
+    const dark = window.matchMedia('(prefers-color-scheme: dark)').matches;
     mermaid.initialize({
       startOnLoad: false,
-      securityLevel: "strict"
+      securityLevel: "strict",
+      theme: dark ? "dark" : "neutral"
     });
 
     await mermaid.run({ querySelector: ".mermaid" });
