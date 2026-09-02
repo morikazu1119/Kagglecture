@@ -39,6 +39,34 @@ $$
 
 重要なのは、**単体スコアだけでなく予測誤差の違い**です。ほぼ同じ予測をする2モデルより、少し弱くても失敗箇所が異なるモデルを混ぜた方が改善することがあります。
 
+下の模式OOFではModel A/Bの重みを動かせます。重みを変えるとrowごとの補完関係と全体RMSEが同時に変わります。
+
+<div class="interactive-viz" data-interactive="blend-weight">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">Model A / Bのblend weightを動かす</div>
+      <p class="interactive-viz__subtitle">単体性能だけでなく、どのsampleで誤差を補い合うかを見るのがEnsembleの要点です。</p>
+    </div>
+    <span class="interactive-status" data-blend-status data-state="safe">A 50% / B 50%</span>
+  </div>
+  <p class="interactive-note">模式例。target・予測・RMSEは理解用の人工データです。</p>
+  <div class="interactive-control-row">
+    <span class="interactive-control-label">Aの重み</span>
+    <label class="interactive-range">
+      <input type="range" min="0" max="100" step="5" value="50" data-blend-weight aria-label="Model Aのblend weight">
+      <span class="interactive-range-labels"><span>0%（Bのみ）</span><span>100%（Aのみ）</span></span>
+    </label>
+  </div>
+  <div class="metric-grid">
+    <div class="metric-card"><span>Blend RMSE</span><strong data-blend-rmse>0.000</strong></div>
+    <div class="metric-card"><span>Model A</span><strong>weight = w</strong></div>
+    <div class="metric-card"><span>Model B</span><strong>weight = 1-w</strong></div>
+  </div>
+  <div class="interactive-list" data-blend-rows></div>
+  <p class="interactive-explanation" data-blend-explanation aria-live="polite">重みは同じfoldのOOF予測で決めます。</p>
+  <noscript><p class="interactive-explanation">Weighted Averageの重みはPublic LBではなく、同じValidation splitのOOF予測で比較して決めます。</p></noscript>
+</div>
+
 ## 使う場面 {#use-cases}
 
 | 状況 | Weighted Average |
