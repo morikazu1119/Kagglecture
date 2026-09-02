@@ -34,15 +34,14 @@ tags:
 
 判断基準は、**本番で未知になる単位をgroupにする**ことです。
 
-| データ | groupの例 | 選択 |
-|---|---|---|
-| 医療画像 | `patient_id` | GroupKFold |
-| 同一ユーザーの行動ログ | `user_id` | GroupKFold |
-| 検索・推薦 | `session_id` / `search_id` | GroupKFold |
-| 音声・画像投稿 | author / speaker | GroupKFold系 |
-| groupあり + クラス不均衡 | patient / user等 | StratifiedGroupKFold候補 |
-| 各行が独立 | なし | KFold / StratifiedKFold |
-| 未来を予測する時系列 | timestamp | Time-based splitを優先 |
+<div class="comparison-board" aria-label="データ種別ごとのgroup設計">
+  <section class="comparison-card is-primary"><h4>医療画像</h4><dl><dt>group</dt><dd><code>patient_id</code></dd><dt>選択</dt><dd>GroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>行動ログ</h4><dl><dt>group</dt><dd><code>user_id</code></dd><dt>選択</dt><dd>GroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>検索・推薦</h4><dl><dt>group</dt><dd><code>session_id</code> / <code>search_id</code></dd><dt>選択</dt><dd>GroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>音声・画像投稿</h4><dl><dt>group</dt><dd>author / speaker</dd><dt>選択</dt><dd>GroupKFold系</dd></dl></section>
+  <section class="comparison-card"><h4>group + クラス不均衡</h4><dl><dt>group</dt><dd>patient / user等</dd><dt>選択</dt><dd>StratifiedGroupKFold候補</dd></dl></section>
+  <section class="comparison-card"><h4>未来予測</h4><dl><dt>独立軸</dt><dd>timestamp</dd><dt>選択</dt><dd>Time-based splitを優先</dd></dl></section>
+</div>
 
 <div class="callout tip">
   <div class="callout-title">groupの決め方</div>
@@ -83,30 +82,12 @@ tags:
   </div>
 
   <div class="gkf-grid" data-gkf-grid>
-    <div class="gkf-row">
-      <div class="gkf-group-label">Patient A</div>
-      <div class="gkf-samples"><span class="gkf-sample is-validation">A1</span><span class="gkf-sample is-validation">A2</span><span class="gkf-sample is-validation">A3</span></div>
-    </div>
-    <div class="gkf-row">
-      <div class="gkf-group-label">Patient B</div>
-      <div class="gkf-samples"><span class="gkf-sample is-train">B1</span><span class="gkf-sample is-train">B2</span></div>
-    </div>
-    <div class="gkf-row">
-      <div class="gkf-group-label">Patient C</div>
-      <div class="gkf-samples"><span class="gkf-sample is-train">C1</span><span class="gkf-sample is-train">C2</span><span class="gkf-sample is-train">C3</span></div>
-    </div>
-    <div class="gkf-row">
-      <div class="gkf-group-label">Patient D</div>
-      <div class="gkf-samples"><span class="gkf-sample is-validation">D1</span><span class="gkf-sample is-validation">D2</span></div>
-    </div>
-    <div class="gkf-row">
-      <div class="gkf-group-label">Patient E</div>
-      <div class="gkf-samples"><span class="gkf-sample is-train">E1</span><span class="gkf-sample is-train">E2</span><span class="gkf-sample is-train">E3</span></div>
-    </div>
-    <div class="gkf-row">
-      <div class="gkf-group-label">Patient F</div>
-      <div class="gkf-samples"><span class="gkf-sample is-train">F1</span><span class="gkf-sample is-train">F2</span></div>
-    </div>
+    <div class="gkf-row"><div class="gkf-group-label">Patient A</div><div class="gkf-samples"><span class="gkf-sample is-validation">A1</span><span class="gkf-sample is-validation">A2</span><span class="gkf-sample is-validation">A3</span></div></div>
+    <div class="gkf-row"><div class="gkf-group-label">Patient B</div><div class="gkf-samples"><span class="gkf-sample is-train">B1</span><span class="gkf-sample is-train">B2</span></div></div>
+    <div class="gkf-row"><div class="gkf-group-label">Patient C</div><div class="gkf-samples"><span class="gkf-sample is-train">C1</span><span class="gkf-sample is-train">C2</span><span class="gkf-sample is-train">C3</span></div></div>
+    <div class="gkf-row"><div class="gkf-group-label">Patient D</div><div class="gkf-samples"><span class="gkf-sample is-validation">D1</span><span class="gkf-sample is-validation">D2</span></div></div>
+    <div class="gkf-row"><div class="gkf-group-label">Patient E</div><div class="gkf-samples"><span class="gkf-sample is-train">E1</span><span class="gkf-sample is-train">E2</span><span class="gkf-sample is-train">E3</span></div></div>
+    <div class="gkf-row"><div class="gkf-group-label">Patient F</div><div class="gkf-samples"><span class="gkf-sample is-train">F1</span><span class="gkf-sample is-train">F2</span></div></div>
   </div>
 
   <p class="interactive-explanation" data-gkf-explanation aria-live="polite">Fold 1: Validationに入ったpatientは丸ごと分離され、同じpatientのsampleはTrain側に残りません。</p>
@@ -117,13 +98,18 @@ GroupKFoldでは、各groupは全foldを通じてちょうど1回Validation側�
 
 ## 使い分け {#comparison}
 
-| 手法 | group分離 | クラス比 | 主な用途 |
-|---|---:|---:|---|
-| **KFold** | × | × | 各sampleが独立 |
-| **StratifiedKFold** | × | ○ | 独立sample + クラス不均衡 |
-| **GroupKFold** | ○ | × | 同一主体の重複を防ぐ |
-| **StratifiedGroupKFold** | ○ | ○に近づける | group分離 + クラス比維持 |
-| **Time-based split** | 設計次第 | × | 未来予測・時系列 |
+<div class="html-table-wrap">
+<table class="html-table">
+  <thead><tr><th scope="col">手法</th><th scope="col">group分離</th><th scope="col">クラス比</th><th scope="col">主な用途</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">KFold</th><td>×</td><td>×</td><td>各sampleが独立</td></tr>
+    <tr><th scope="row">StratifiedKFold</th><td>×</td><td class="status-good">○</td><td>独立sample + クラス不均衡</td></tr>
+    <tr><th scope="row">GroupKFold</th><td class="status-good">○</td><td>×</td><td>同一主体の重複を防ぐ</td></tr>
+    <tr><th scope="row">StratifiedGroupKFold</th><td class="status-good">○</td><td class="status-good">○に近づける</td><td>group分離 + クラス比維持</td></tr>
+    <tr><th scope="row">Time-based split</th><td>設計次第</td><td>×</td><td>未来予測・時系列</td></tr>
+  </tbody>
+</table>
+</div>
 
 `StratifiedGroupKFold`はgroupを分離しながら、各foldのクラス比も可能な限り揃えます。groupごとのラベル偏りが大きい分類問題で候補になります（[scikit-learn: StratifiedGroupKFold](https://scikit-learn.org/stable/modules/cross_validation.html#stratifiedgroupkfold)）。
 
@@ -131,12 +117,18 @@ GroupKFoldでは、各groupは全foldを通じてちょうど1回Validation側�
 
 Kaggleでは、**何をgroupと定義したか**がValidation設計そのものになります。
 
-| Competition | Rank | group | Validation設計 | Source |
-|---|---:|---|---|---|
-| FlightRank 2025 | 2nd | search session | 10-fold GroupKFoldで同一検索内の候補をまとめて分離 | [2nd Place Solution](https://www.kaggle.com/competitions/aeroclub-recsys-2025/writeups/flightrank-2025-2nd-place-solution) |
-| March Machine Learning Mania 2026 | 4th | season | season単位でGroupKFold | [4th Place Solution](https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/4th-place-solution-for-the-march-machine-learning) |
-| BirdCLEF 2022 | 23rd | author | authorをgroupにしたStratifiedGroupKFold | [23th Place Solution](https://www.kaggle.com/competitions/birdclef-2022/writeups/bilzard-23th-place-solution) |
-| 26-shinnen-3Dpathology | 1st team solution | crop_id / patient | 5-fold GroupKFoldで同一患者由来画像を分離 | [1st place solution](https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614) |
+<div class="html-table-wrap">
+<table class="html-table">
+  <thead><tr><th scope="col">Competition</th><th scope="col">Rank</th><th scope="col">group</th><th scope="col">Validation設計</th><th scope="col">Source</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">FlightRank 2025</th><td>2nd</td><td>search session</td><td>10-fold GroupKFoldで同一検索内の候補をまとめて分離</td><td><a href="https://www.kaggle.com/competitions/aeroclub-recsys-2025/writeups/flightrank-2025-2nd-place-solution">2nd Place Solution</a></td></tr>
+    <tr><th scope="row">March Machine Learning Mania 2026</th><td>4th</td><td>season</td><td>season単位でGroupKFold</td><td><a href="https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/4th-place-solution-for-the-march-machine-learning">4th Place Solution</a></td></tr>
+    <tr><th scope="row">BirdCLEF 2022</th><td>23rd</td><td>author</td><td>authorをgroupにしたStratifiedGroupKFold</td><td><a href="https://www.kaggle.com/competitions/birdclef-2022/writeups/bilzard-23th-place-solution">23th Place Solution</a></td></tr>
+    <tr><th scope="row">26-shinnen-3Dpathology</th><td>1st team solution</td><td>crop_id / patient</td><td>5-fold GroupKFoldで同一患者由来画像を分離</td><td><a href="https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614">1st place solution</a></td></tr>
+  </tbody>
+</table>
+</div>
+<p class="table-caption">横幅が足りない場合は表の内部だけ横スクロールします。ページ全体はoverflowしません。</p>
 
 共通しているのは、**検索候補・録音・画像などのsampleそのものではなく、そのsampleを生み出した独立単位をgroupにしていること**です。
 
@@ -160,14 +152,14 @@ Distinct group数は`n_splits`以上必要です（[scikit-learn: GroupKFold](ht
 
 ## Quick Reference {#quick-reference}
 
-| 状況 | 選択 |
-|---|---|
-| 同一患者から複数sample | GroupKFold |
-| 同一user / sessionから複数行 | GroupKFold |
-| groupあり + クラス不均衡 | StratifiedGroupKFold |
-| 行が独立 + クラス不均衡 | StratifiedKFold |
-| 時系列で未来予測 | Time-based split |
-| groupの意味が不明 | データ生成過程を確認 |
+<div class="comparison-board" aria-label="GroupKFoldのQuick Reference">
+  <section class="comparison-card is-primary"><h4>同一患者から複数sample</h4><dl><dt>選択</dt><dd>GroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>同一user / sessionから複数行</h4><dl><dt>選択</dt><dd>GroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>group + クラス不均衡</h4><dl><dt>選択</dt><dd>StratifiedGroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>行が独立 + クラス不均衡</h4><dl><dt>選択</dt><dd>StratifiedKFold</dd></dl></section>
+  <section class="comparison-card"><h4>時系列で未来予測</h4><dl><dt>選択</dt><dd>Time-based split</dd></dl></section>
+  <section class="comparison-card"><h4>groupの意味が不明</h4><dl><dt>最初にすること</dt><dd>データ生成過程を確認</dd></dl></section>
+</div>
 
 **迷ったら「本番テストで初めて現れる独立単位は何か？」を考え、その単位がfoldをまたがないようにします。**
 
