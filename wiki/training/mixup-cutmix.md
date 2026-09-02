@@ -2,7 +2,7 @@
 layout: default
 title: Mixup / CutMix
 description: 複数sampleとlabelを混ぜ、新しい中間sampleを作ってNeural Networkのmemorizationと過学習を抑えるaugmentation。
-summary: Mixupは画像・labelを線形混合し、CutMixは領域を貼り替えて面積比でlabelを混合する。
+summary: Mixupは入力全体とlabelを線形混合し、CutMixは領域を貼り替えて面積比でlabelを混合する。
 type: reference
 domain: kaggle
 topic: mixup-cutmix
@@ -19,11 +19,12 @@ tags:
 
 # Mixup / CutMix
 
-**MixupとCutMixは、2つの学習sampleを混ぜて新しいsampleを作り、labelも混合するNeural Network向けData Augmentationです。**
+**MixupとCutMixは、2つの学習sampleを混ぜて新しいsampleを作り、入力を混ぜた割合に合わせてlabelも混ぜるNeural Network向けData Augmentationです。**
 
-Mixupは入力全体を線形補間し、CutMixは画像の矩形領域を別sampleへ置き換えます。単なる幾何変換より強いregularizationとして使われます。
+Mixupは画像全体を線形補間し、CutMixは一方の画像領域をもう一方へ貼り付けます。重要なのは、**入力だけを混ぜず、教師labelも同じ割合で変える**ことです。
 
 <nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#overview">違い</a>
   <a href="#mixup">Mixup</a>
   <a href="#cutmix">CutMix</a>
   <a href="#kaggle-examples">Kaggle実例</a>
@@ -31,9 +32,29 @@ Mixupは入力全体を線形補間し、CutMixは画像の矩形領域を別sam
   <a href="#quick-reference">Quick Reference</a>
 </nav>
 
+## まず見た目の違い {#overview}
+
+<div class="model-architecture" aria-label="MixupとCutMixの入力の混ぜ方">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">同じ2 sampleを使っても、MixupとCutMixでは混ぜ方が違う</div><p class="model-architecture__subtitle">Mixupは全pixelを重ね、CutMixは局所領域だけを別sampleへ置き換えます。</p></div>
+    <span class="model-architecture__badge">input mixing</span>
+  </div>
+  <div class="sample-visual-pair">
+    <div class="sample-tile"><strong>Sample A</strong><br><br>Class A<br>label = [1, 0]<br><br>画像全体がA</div>
+    <div class="sample-tile"><strong>Sample B</strong><br><br>Class B<br>label = [0, 1]<br><br>画像全体がB</div>
+    <div class="sample-tile is-mixed"><strong>Mixup</strong><br><br>AとBを全体で重ねる<br>λ=0.7なら<br>label = [0.7, 0.3]</div>
+  </div>
+  <div class="sample-visual-pair" style="margin-top:14px">
+    <div class="sample-tile"><strong>Sample A</strong><br><br>背景として残る領域</div>
+    <div class="sample-tile"><strong>Sample B</strong><br><br>貼り付けるpatch</div>
+    <div class="sample-tile is-cutmix"><strong>CutMix</strong><br><br>矩形だけBへ置換<br>B面積30%なら<br>label ≈ [0.7, 0.3]</div>
+  </div>
+  <p class="model-architecture__caption">模式例。実際の画像内容ではなく、混合方法とlabelの対応を示しています。</p>
+</div>
+
 ## Mixup {#mixup}
 
-2 sample $(x_i,y_i)$, $(x_j,y_j)$を係数$\lambda$で混ぜます。
+2 sample $(x_i,y_i)$, $(x_j,y_j)$を係数$\lambda$で混ぜます。先に直感を書くと、**入力を70:30で混ぜたら正解labelも70:30にする**処理です。
 
 $$
 \tilde{x}=\lambda x_i+(1-\lambda)x_j
@@ -43,11 +64,32 @@ $$
 \tilde{y}=\lambda y_i+(1-\lambda)y_j
 $$
 
-原論文は、sample間でより線形な振る舞いを促しmemorizationを抑えるregularizationとして提案しています（[mixup paper](https://arxiv.org/abs/1710.09412)）。
+<div class="model-architecture" aria-label="Mixupの演算プロセス">
+  <div class="model-stage-row" style="--model-cols:5">
+    <div class="model-stage"><div class="model-tensor is-wide"><span>Image A<br>label A</span></div><span class="model-stage__label">Sample i</span></div>
+    <div class="model-stage"><div class="model-op-box"><span><strong>× λ</strong><br>例: 0.7</span></div><span class="model-stage__label">weight</span></div>
+    <div class="model-stage"><div class="model-tensor is-wide"><span>Image B<br>label B</span></div><span class="model-stage__label">Sample j</span></div>
+    <div class="model-stage"><div class="model-op-box"><span><strong>× (1−λ)</strong><br>例: 0.3</span></div><span class="model-stage__label">weight</span></div>
+    <div class="model-stage"><div class="model-tensor is-accent is-wide"><span>Mixed input<br>soft label</span></div><span class="model-stage__label">Train sample</span></div>
+  </div>
+</div>
+
+原論文は、sample間でより線形な振る舞いを促しmemorizationを抑えるregularizationとしてMixupを提案しています（[mixup paper](https://arxiv.org/abs/1710.09412)）。
 
 ## CutMix {#cutmix}
 
-CutMixでは画像全体を透明に混ぜず、一方の画像patchをもう一方へ貼り付け、貼り付け面積に応じてlabelを混ぜます。局所情報を保ちながらstrong augmentationを作りやすい方法です。
+CutMixでは画像全体を透明に重ねず、**矩形領域を別sampleへ置換**します。labelの混合比は通常、その矩形が占める面積比から決めます。
+
+<div class="model-architecture" aria-label="CutMixの領域置換とlabel混合">
+  <div class="model-stage-row" style="--model-cols:4">
+    <div class="model-stage"><div class="model-tensor"><span>Image A</span></div><span class="model-stage__label">Base image</span></div>
+    <div class="model-stage"><div class="model-tensor is-wide"><span>Image B<br>random rectangle</span></div><span class="model-stage__label">Patch source</span></div>
+    <div class="model-stage"><div class="sample-tile is-cutmix" style="min-height:92px"><strong>Paste region</strong><br>局所だけB</div><span class="model-stage__label">Mixed image</span></div>
+    <div class="model-stage"><div class="model-tensor is-accent is-wide"><span>Area ratioで<br>label mix</span></div><span class="model-stage__label">Soft target</span></div>
+  </div>
+</div>
+
+Mixupより元画像の局所textureやobject partが残りやすいため、画像taskで強いregularizationとして使われます（[CutMix paper](https://arxiv.org/abs/1905.04899)）。
 
 ## Kaggleでの実例 {#kaggle-examples}
 
@@ -73,8 +115,8 @@ Detection/segmentation/sequence generationではlabel構造も整合的に変換
 
 ## Quick Reference {#quick-reference}
 
-- Mixupは入力とlabelを線形混合。
-- CutMixは領域を貼り替えてlabelを面積比で混合。
+- Mixupは入力全体とlabelを同じ比率で線形混合。
+- CutMixは領域を貼り替え、面積比でlabelを混合。
 - Trainだけに適用する。
 - taskのlabel構造を壊さない実装にする。
 - 「強いaugmentationだから採用」ではなくOOFでablationする。
