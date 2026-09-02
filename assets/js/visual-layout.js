@@ -1,6 +1,6 @@
 (() => {
   const TABLE_SELECTOR = '.content-shell table';
-  const VISUAL_SELECTOR = '.interactive-viz, .static-viz, .html-chart, .html-diagram, .html-table-wrap';
+  const VISUAL_SELECTOR = '.interactive-viz, .static-viz, .html-chart, .html-diagram, .html-table-wrap, .model-architecture';
 
   function enhanceTable(table) {
     table.classList.add('html-table');

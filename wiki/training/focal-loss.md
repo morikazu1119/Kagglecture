@@ -18,17 +18,37 @@ tags:
 
 # Focal Loss
 
-**Focal Lossは、Cross Entropyに「簡単に正解できているsampleの重みを下げる係数」を加え、hard exampleへ学習を集中させるLossです。**
+**Focal Lossは、Cross Entropyへ「簡単に正解できているsampleほど重みを小さくする係数」を掛け、hard exampleへ学習を集中させるLossです。**
 
 大量のeasy negativeがlossを支配するdense object detection向けに提案されました（[Focal Loss paper](https://arxiv.org/abs/1708.02002)）。classificationやsegmentationでも不均衡対策候補として使われます。
 
 <nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#intuition">直感</a>
   <a href="#formula">数式</a>
   <a href="#effect">何が変わるか</a>
   <a href="#kaggle-examples">Kaggle実例</a>
   <a href="#pitfalls">注意点</a>
   <a href="#quick-reference">Quick Reference</a>
 </nav>
+
+## まず直感 {#intuition}
+
+通常のCross Entropyでは、easy sampleもhard sampleもlossへ寄与します。Focal Lossでは、正解classへの予測確率$p_t$が高いeasy sampleほど$(1-p_t)^\gamma$が小さくなり、lossの重みが急速に下がります。
+
+<div class="model-architecture" aria-label="Focal Lossでeasy sampleの重みが下がる模式図">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">γ=2なら、confidenceが高いeasy sampleほどほぼ無視される</div><p class="model-architecture__subtitle">下はfocal factor $(1-p_t)^2$だけを比較しています。lossそのものの実測値ではありません。</p></div>
+    <span class="model-architecture__badge">focal factor</span>
+  </div>
+  <div class="html-bar-chart" aria-label="p_tごとのfocal factor">
+    <div class="html-bar-row"><span class="html-bar-label">Easy · pₜ=0.95</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:0.25"></span></span><span class="html-bar-value">0.0025</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Mostly correct · pₜ=0.70</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:9"></span></span><span class="html-bar-value">0.09</span></div>
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">Hard · pₜ=0.20</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:64"></span></span><span class="html-bar-value">0.64</span></div>
+  </div>
+  <p class="model-architecture__caption">同じγ=2でも、pₜ=0.95のsampleは係数0.0025、pₜ=0.20のhard sampleは0.64です。つまりhard sampleの相対的重要度が大きくなります。</p>
+</div>
+
+この仕組みは「少数classだから直接重くする」のとは少し違います。**現在のmodelが簡単に正解しているかどうか**で重みを変えるのがFocal Lossの特徴です。
 
 ## 数式 {#formula}
 
@@ -38,15 +58,26 @@ $$
 FL(p_t)=-(1-p_t)^\gamma\log(p_t)
 $$
 
-$\gamma=0$なら通常のCross Entropyに近く、$\gamma$を大きくすると高confidenceで正解しているsampleの寄与が急速に小さくなります。class weight用の$\alpha$を併用する形も一般的です。
+ここで$-\log(p_t)$が通常のCross Entropy部分、$(1-p_t)^\gamma$がeasy sampleを抑えるfocal factorです。
 
-## 何が変わるか {#effect}
+- $\gamma=0$: focal factorは1になり、通常のCross Entropyに近い。
+- $\gamma$を大きくする: 高confidenceで正解しているsampleの寄与をさらに強く落とす。
+- $\alpha$を併用する形: class imbalance自体へのclass weightingも追加できる。
 
-- easy negativeを大量に学習し続ける影響を減らす。
-- hard/misclassified sampleの相対的な寄与を上げる。
-- class imbalanceを**件数再配分ではなくloss weighting側**から扱える。
+## 学習時に何が変わるか {#effect}
 
-ただしhard sampleにはlabel noiseも含まれます。Focal Lossが常に不均衡問題の正解とは限りません。
+<div class="model-architecture" aria-label="Focal Lossの学習プロセス">
+  <div class="model-stage-row" style="--model-cols:4">
+    <div class="model-stage"><div class="model-tensor is-wide"><span>Model prediction<br>pₜ</span></div><span class="model-stage__label">confidence</span></div>
+    <div class="model-stage"><div class="model-op-box"><span><strong>Focal factor</strong><br>(1−pₜ)^γ</span></div><span class="model-stage__label">easyを抑制</span></div>
+    <div class="model-stage"><div class="model-op-box"><span><strong>Cross Entropy</strong><br>−log(pₜ)</span></div><span class="model-stage__label">base loss</span></div>
+    <div class="model-stage"><div class="model-tensor is-accent is-wide"><span>Weighted loss<br>hard sample中心</span></div><span class="model-stage__label">backprop</span></div>
+  </div>
+</div>
+
+結果として、easy negativeを大量に学習し続ける影響を減らし、misclassified / low-confidence sampleの相対的なgradient寄与を上げます。
+
+ただしhard sampleには**本当に難しいsampleだけでなくlabel noiseも含まれる**点が重要です。誤annotationを強調すると逆効果になります。
 
 ## Kaggleでの実例 {#kaggle-examples}
 
@@ -72,10 +103,10 @@ F1/Dice/AUCなどCompetition Metricに直接一致するわけではありませ
 
 ## Quick Reference {#quick-reference}
 
-- easy sampleのlossを抑えてhard sampleを重視する。
+- focal factorは$(1-p_t)^\gamma$。
+- confidenceが高いeasy sampleほど重みが小さくなる。
 - `gamma=0`はCEに近い。
-- class imbalance候補だが万能ではない。
-- label noiseが多いと逆効果になり得る。
+- hard sampleを重視するためlabel noiseに弱くなることがある。
 - BCE/CE + weightやsamplingと同じOOFで比較する。
 
 ## 関連項目

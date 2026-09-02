@@ -52,6 +52,37 @@
   overflow-wrap: anywhere;
 }
 
+/* Narrow screens use a single vertical flow so processing order remains visible. */
+@media (max-width: 720px) {
+  .html-flow {
+    grid-template-columns: 1fr;
+    gap: 28px;
+  }
+
+  .html-flow .flow-node:not(:last-child)::after {
+    display: block;
+    top: calc(100% + 5px);
+    left: 50%;
+    width: 1px;
+    height: 14px;
+    background: var(--border-strong);
+  }
+
+  .html-flow .flow-node:not(:last-child)::before {
+    display: block;
+    top: calc(100% + 16px);
+    left: calc(50% - 4px);
+    width: 0;
+    height: 0;
+    border: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid var(--border-strong);
+    background: transparent;
+    transform: none;
+  }
+}
+
 @media (max-width: 560px) {
   .html-matrix {
     grid-template-columns: auto repeat(var(--matrix-cols, 2), minmax(30px, 1fr));
