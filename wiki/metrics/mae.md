@@ -39,10 +39,10 @@ $$
 
 ## RMSEとの比較 {#comparison}
 
-| 指標 | 誤差の重み | 特徴 |
-|---|---|---|
-| **MAE** | 線形 | 外れ値の影響が比較的小さい |
-| RMSE | 二乗 | 大きなミスを強く罰する |
+<div class="comparison-board" aria-label="MAEとRMSEの比較">
+  <section class="comparison-card is-primary"><h4>MAE</h4><dl><dt>誤差の重み</dt><dd>線形</dd><dt>外れ値</dt><dd>影響が比較的小さい</dd><dt>直感</dt><dd>平均的な絶対的な外れ幅</dd></dl></section>
+  <section class="comparison-card"><h4>RMSE</h4><dl><dt>誤差の重み</dt><dd>二乗</dd><dt>外れ値</dt><dd>大きなミスを強く罰する</dd><dt>直感</dt><dd>大外しをより重く見る</dd></dl></section>
+</div>
 
 どちらが上位互換という関係ではありません。Competition Metricに合わせて最適化します。
 

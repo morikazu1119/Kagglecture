@@ -48,12 +48,12 @@ $$
 
 ## 使い分け {#comparison}
 
-| Metric | 確率の大きさを評価 | 順位を評価 | threshold必要 |
-|---|---:|---:|---:|
-| **LogLoss** | ○ | 間接的 | × |
-| ROC-AUC | × | ○ | × |
-| F1 | × | × | ○ |
-| Accuracy | × | × | ○ |
+<div class="comparison-board" aria-label="LogLossと代表分類Metricの比較">
+  <section class="comparison-card is-primary"><h4>LogLoss</h4><dl><dt>評価</dt><dd>確率の大きさ</dd><dt>ranking</dt><dd>間接的</dd><dt>threshold</dt><dd>不要</dd></dl></section>
+  <section class="comparison-card"><h4>ROC-AUC</h4><dl><dt>評価</dt><dd>順位</dd><dt>確率scale</dt><dd>評価しない</dd><dt>threshold</dt><dd>不要</dd></dl></section>
+  <section class="comparison-card"><h4>F1</h4><dl><dt>評価</dt><dd>Precision / Recall</dd><dt>確率scale</dt><dd>評価しない</dd><dt>threshold</dt><dd>必要</dd></dl></section>
+  <section class="comparison-card"><h4>Accuracy</h4><dl><dt>評価</dt><dd>0/1正解率</dd><dt>確率scale</dt><dd>評価しない</dd><dt>threshold</dt><dd>必要</dd></dl></section>
+</div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 

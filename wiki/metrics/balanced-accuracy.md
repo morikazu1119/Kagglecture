@@ -39,6 +39,23 @@ $$
 
 3 classなら各classが1/3ずつscoreへ効きます。
 
+<div class="static-viz html-chart" aria-label="データ件数とBalanced Accuracy上の重みの違い">
+  <div class="viz-heading"><div><div class="viz-title">件数が違っても、Metric上は各classを同じ重さで見る</div><p class="viz-subtitle">上はデータ比率、下は3-class Balanced Accuracyで各class Recallが占める重みです。</p></div><span class="viz-badge">模式例</span></div>
+  <p class="viz-note">データ構成</p>
+  <div class="html-bar-chart">
+    <div class="html-bar-row"><span class="html-bar-label">Class A</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:85"></span></span><span class="html-bar-value">85%</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Class B</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:8"></span></span><span class="html-bar-value">8%</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Class C</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:6"></span></span><span class="html-bar-value">6%</span></div>
+  </div>
+  <p class="viz-note" style="margin-top:16px !important">Balanced Accuracyへの重み</p>
+  <div class="html-bar-chart">
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">Recall A</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:33.3"></span></span><span class="html-bar-value">1/3</span></div>
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">Recall B</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:33.3"></span></span><span class="html-bar-value">1/3</span></div>
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">Recall C</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:33.3"></span></span><span class="html-bar-value">1/3</span></div>
+  </div>
+  <p class="viz-caption">85/8/6%は概念説明用の比率です。合計が丸めで100%にならない場合があります。</p>
+</div>
+
 ## Accuracyとの違い {#comparison}
 
 85%を占めるclass Aを全部正解し、少数class B/Cを全滅させた場合、Accuracyは高く見えます。一方Balanced AccuracyではB/CのRecall=0が同じ重みで効くため低くなります。

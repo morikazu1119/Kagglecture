@@ -34,6 +34,17 @@ tags:
 
 LightGBMは連続値をbinへまとめるHistogram方式を使い、split探索を高速化します。またlevelごとではなく、最もlossを減らすleafを優先して分割する**leaf-wise**成長を使います（[公式](https://lightgbm.readthedocs.io/en/stable/Features.html)）。
 
+<div class="static-viz html-diagram" aria-label="LightGBMのleaf-wise成長の模式図">
+  <div class="viz-heading"><div><div class="viz-title">最も改善量が大きいleafを先に深くする</div><p class="viz-subtitle">全leafを同じ深さまで揃えるのではなく、loss reductionが大きい局所へsplitを集中させます。</p></div><span class="viz-badge">leaf-wise模式図</span></div>
+  <div class="html-flow" style="--flow-columns:4">
+    <div class="flow-node"><strong>Root</strong><span>全sample</span></div>
+    <div class="flow-node"><strong>Split</strong><span>2 leafへ分割</span></div>
+    <div class="flow-node is-accent"><strong>Best leaf</strong><span>gain最大のleafをさらにsplit</span></div>
+    <div class="flow-node"><strong>Regularize</strong><span>num_leaves / min_data_in_leafで制約</span></div>
+  </div>
+  <p class="viz-caption">構造は概念説明用です。同じleaf数なら表現力が高い一方、局所的に深くなり過学習しやすい点が重要です。</p>
+</div>
+
 このため同じleaf数なら強い表現力を持ちますが、`num_leaves`や`min_data_in_leaf`が緩すぎると細かい局所パターンへfitしやすくなります。
 
 ## 使う場面 {#use-cases}
@@ -45,11 +56,11 @@ LightGBMは連続値をbinへまとめるHistogram方式を使い、split探索�
 
 ## XGBoost/CatBoostとの比較 {#comparison}
 
-| Model | 強み | 最初に意識する点 |
-|---|---|---|
-| **LightGBM** | 高速、leaf-wise、native categorical | `num_leaves`, leaf size |
-| [XGBoost]({{ '/wiki/modeling/xgboost.html' | relative_url }}) | robustな正則化、成熟した実装 | depth, child weight, sampling |
-| [CatBoost]({{ '/wiki/modeling/catboost.html' | relative_url }}) | categorical処理、ordered boosting | cat指定、iterations/depth |
+<div class="comparison-board" aria-label="LightGBM XGBoost CatBoostの比較">
+  <section class="comparison-card is-primary"><h4>LightGBM</h4><dl><dt>強み</dt><dd>高速、leaf-wise、native categorical</dd><dt>最初に見る</dt><dd><code>num_leaves</code>、leaf size</dd></dl></section>
+  <section class="comparison-card"><h4><a href="{{ '/wiki/modeling/xgboost.html' | relative_url }}">XGBoost</a></h4><dl><dt>強み</dt><dd>robustな正則化、成熟した実装</dd><dt>最初に見る</dt><dd>depth、child weight、sampling</dd></dl></section>
+  <section class="comparison-card"><h4><a href="{{ '/wiki/modeling/catboost.html' | relative_url }}">CatBoost</a></h4><dl><dt>強み</dt><dd>categorical処理、ordered boosting</dd><dt>最初に見る</dt><dd>cat指定、iterations / depth</dd></dl></section>
+</div>
 
 優劣はdataset依存です。同じfoldでOOFを作り、単体だけでなくerror diversityも比較します。
 

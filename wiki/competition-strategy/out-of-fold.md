@@ -31,27 +31,31 @@ tags:
 
 ## 仕組み {#mechanism}
 
-5-foldならFold 1の行はFold 2〜5相当のTrain部分で学習したモデル、Fold 2の行は別のTrain部分で学習したモデルから予測を受けます。
+5-foldなら各rowは、自分がValidationだったfoldで**自分を見ていないmodel**から予測を受けます。その予測を元のrow順へ戻すとcomplete OOF vectorになります。
 
-```text
-row A in Fold 1 -> model trained without Fold 1 -> OOF pred A
-row B in Fold 2 -> model trained without Fold 2 -> OOF pred B
-...
-全rowを元順序へ戻す -> complete OOF vector
-```
+<div class="static-viz html-diagram" aria-label="Out-of-Fold Prediction生成フロー">
+  <div class="viz-heading"><div><div class="viz-title">各rowを「そのrowを学習していないmodel」で予測する</div><p class="viz-subtitle">foldごとの未見予測を最後に元のrow順へ連結します。</p></div><span class="viz-badge">OOF pipeline</span></div>
+  <div class="html-flow" style="--flow-columns:4">
+    <div class="flow-node"><strong>Fold assignment</strong><span>各rowのValidation foldを固定</span></div>
+    <div class="flow-node"><strong>Train without fold</strong><span>Validation foldを除いてfit</span></div>
+    <div class="flow-node is-accent"><strong>Predict held-out rows</strong><span>未見rowだけを予測</span></div>
+    <div class="flow-node"><strong>Restore row order</strong><span>全foldをcomplete OOF vectorへ連結</span></div>
+  </div>
+  <p class="viz-caption">predictionだけでなく、Target Encoding・標準化・特徴選択などのfitもfold内へ閉じる必要があります。</p>
+</div>
 
 scikit-learnの`cross_val_predict`も、各sampleが属さないTrain subsetでfitされたestimatorから予測を生成します（[cross_val_predict](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.cross_val_predict.html)）。
 
 ## 使い道 {#uses}
 
-| 用途 | なぜOOFが必要か |
-|---|---|
-| CV Metric | 未見予測として測るため |
-| F1 threshold | Train全体の未見確率で選ぶため |
-| Blend weight | 各モデルを同じ行で比較するため |
-| Stacking | Meta modelのLeakageを防ぐため |
-| Calibration | in-sample confidenceを避けるため |
-| Error analysis | 失敗行を公平に見るため |
+<div class="comparison-board" aria-label="OOF Predictionの使い道">
+  <section class="comparison-card is-primary"><h4>CV Metric</h4><dl><dt>理由</dt><dd>未見予測として公平に測る</dd></dl></section>
+  <section class="comparison-card"><h4>F1 threshold</h4><dl><dt>理由</dt><dd>Train全体の未見確率でoperating pointを選ぶ</dd></dl></section>
+  <section class="comparison-card"><h4>Blend weight</h4><dl><dt>理由</dt><dd>各modelを同じrowで比較する</dd></dl></section>
+  <section class="comparison-card"><h4>Stacking</h4><dl><dt>理由</dt><dd>Meta modelへのLeakageを防ぐ</dd></dl></section>
+  <section class="comparison-card"><h4>Calibration</h4><dl><dt>理由</dt><dd>in-sample confidenceを避ける</dd></dl></section>
+  <section class="comparison-card"><h4>Error analysis</h4><dl><dt>理由</dt><dd>失敗rowを公平な未見条件で見る</dd></dl></section>
+</div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 

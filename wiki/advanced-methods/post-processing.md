@@ -32,13 +32,18 @@ tags:
 
 ## 代表パターン {#patterns}
 
-| Task | Post-processing例 |
-|---|---|
-| Classification | threshold、class multiplier、prior correction |
-| Segmentation | pixel threshold、small component removal、morphology |
-| Time series | clipping、smoothing、monotonic constraint |
-| Structured prediction | assignment、taxonomy、known impossible class除外 |
-| Probability metric | calibration、極端値clipping |
+<div class="comparison-board" aria-label="Task別Post-processingの代表例">
+  <section class="comparison-card"><h4>Classification</h4><dl><dt>代表例</dt><dd>threshold、class multiplier、prior correction</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Segmentation</h4><dl><dt>代表例</dt><dd>pixel threshold、small component removal、morphology</dd></dl></section>
+  <section class="comparison-card"><h4>Time series</h4><dl><dt>代表例</dt><dd>clipping、smoothing、monotonic constraint</dd></dl></section>
+  <section class="comparison-card"><h4>Structured prediction</h4><dl><dt>代表例</dt><dd>assignment、taxonomy、known impossible class除外</dd></dl></section>
+  <section class="comparison-card"><h4>Probability metric</h4><dl><dt>代表例</dt><dd>calibration、極端値clipping</dd></dl></section>
+</div>
+
+<div class="static-viz html-diagram" aria-label="Post-processingの位置を示す処理フロー">
+  <div class="viz-heading"><div><div class="viz-title">学習済み予測を、Metricとtask構造に合わせて最終出力へ変換する</div><p class="viz-subtitle">rule自体もOOFで検証し、testへは同じ処理を一度適用します。</p></div><span class="viz-badge">推論pipeline</span></div>
+  <div class="html-flow" style="--flow-columns:4"><div class="flow-node"><strong>Model</strong><span>raw probability / score / mask</span></div><div class="flow-node"><strong>OOFでrule検証</strong><span>threshold / constraint / cleanup</span></div><div class="flow-node is-accent"><strong>Post-processing</strong><span>選択済みruleだけ適用</span></div><div class="flow-node"><strong>Submission</strong><span>Competition形式へ変換</span></div></div>
+</div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 

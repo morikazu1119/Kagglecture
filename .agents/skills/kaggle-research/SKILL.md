@@ -74,12 +74,14 @@ Kagglectureの記事は、**機械学習やKaggleの前提知識が薄い人で�
 7. 効果主張のEvidenceを判定する。
 8. 初見ユーザーがつまずく専門用語・前提知識を特定する。
 9. 既存カテゴリ・既存記事・cross-link先を確認する。
-10. 文章・表・静的図・Interactiveのどれが最短で理解できるか判断する。
+10. 文章・HTML table・HTML/SVG静的図・Interactiveのどれが最短で理解できるか判断する。
 11. 操作で理解が深まるならInteractive visualizationを設計する。
-12. 記事を作成・更新する。
-13. 所属カテゴリの `index.md` を更新する。
-14. 新カテゴリならルート `index.md` からカテゴリページへリンクする。
-15. **Home → Category → Article** の導線、ページ内リンク、Citation、図表、モバイル表示を確認する。
+12. 操作不要でも図の方が速いならHTML / CSS / SVGで静的可視化する。
+13. 記事を作成・更新する。
+14. 所属カテゴリの `index.md` を更新する。
+15. 新カテゴリならルート `index.md` からカテゴリページへリンクする。
+16. **Home → Category → Article** の導線、ページ内リンク、Citation、図表、モバイル表示を確認する。
+17. 320 / 390 / 620 / 1003px相当でvisual layoutを確認し、page-level overflowを残さない。
 
 ## Visual reasoning requirement
 
@@ -88,17 +90,22 @@ Kagglectureの記事は、**機械学習やKaggleの前提知識が薄い人で�
 表現方法は次の基準で選ぶ。
 
 1. 短い文章で十分 → 文章
-2. 比較が本質 → 表
-3. 値・状態・条件を変えると理解が深まる → Interactiveを優先
-4. 単純な固定関係・処理フロー → HTML / CSS / SVG
-5. hover / zoom / 実測値探索が重要 → Plotly / Chart.js / Vega / D3
-6. Mermaid → 上記で適切に表せず、複雑な静的関係を短く保守する明確な利点がある場合のみ
+2. 比較が本質 → raw HTML table / comparison cards
+3. 値・状態・条件を変えると理解が深まる → HTML / CSS / SVG Interactiveを優先
+4. 単純な固定関係・処理フロー → HTML / CSS / inline SVG
+5. 少数の定量比較 → HTML / CSS bar / matrix / position encoding
+6. hover / zoom / 実測値探索が重要 → Plotly / Chart.js / Vega / D3
+7. 3D → architecture depth・volume等、奥行き自体が情報の場合のみ
 
-**フローだからMermaidにする、という選び方は禁止する。** fold、threshold、weight、overlap、sampling、calibration、leakage、分布差など操作対象がある概念は、Interactiveにできるかを先に検討する。
+**公開記事にMarkdown pipe tableを新規作成しない。** 表・グラフ・図はHTMLを土台にする。
 
-理解用のsynthetic dataをInteractiveで使う場合は「模式例」「実測値ではない」等を明示する。Kaggle実測値に見える数値を作らない。
+**フローだからMermaidにする、という選び方は禁止する。** fold、threshold、weight、overlap、sampling、calibration、leakage、分布差など操作対象がある概念は、Interactiveにできるかを先に検討する。Mermaidは原則使わず、HTML/SVGで代替する。
 
-Interactiveでも、JavaScriptなしで本文だけから最低限の結論が分かるようにする。
+数値比較・順位・割合・時間変化などは2Dを原則とする。3D perspectiveによって定量値を誤読しやすくなる表現は使わない。CNN feature mapや3D volume等、奥行きが概念理解に寄与する場合のみ2.5D/3Dを使う。
+
+理解用のsynthetic dataを可視化で使う場合は「模式例」「実測値ではない」等を明示する。Kaggle実測値に見える数値を作らない。
+
+Interactiveでも、JavaScriptなしで本文と初期HTMLから最低限の結論が分かるようにする。
 
 ## Navigation requirement
 
@@ -181,7 +188,7 @@ wiki/
 1. `wiki/.../<article>.md` — 辞書記事
 2. `wiki/<category>/index.md` — カテゴリ内の記事索引
 3. 新カテゴリの場合のみ `index.md` — ホームからカテゴリへの導線
-4. 必要な場合のみ `assets/` — Interactive visualization等の共通UI資産
+4. 必要な場合のみ `assets/` — HTML/SVG static visual、Interactive visualization、共通UI資産
 
 ## Final checks
 
@@ -196,10 +203,14 @@ wiki/
 - 数式より先に直感を説明したか
 - 図で説明した方が速い箇所を文章だけにしていないか
 - 操作対象がある概念を静的フローだけで済ませていないか
-- Mermaidを安易なデフォルトとして使っていないか
+- 静的図をMarkdown記法だけで済ませずHTML/SVGで表現したか
+- 公開記事にMarkdown pipe tableを追加していないか
+- 数値比較に不要な3Dを使っていないか
 - Interactiveにする価値を一度判断したか
 - 模式データと実測値を明確に区別したか
 - Interactiveなしでも最低限理解できるか
+- 320 / 390 / 620 / 1003pxでpage-level overflowがないか
+- table overflowがwrapper内だけに閉じているか
 - Home → Category → Article の全リンクが404にならないか
 - 記事の戻り先がカテゴリになっているか
 - `article-structure.md` / `citation-policy.md` / `visualization.md` に沿っているか

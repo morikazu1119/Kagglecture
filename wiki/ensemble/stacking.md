@@ -34,19 +34,9 @@ tags:
 Stackingで最重要なのは、**Meta modelが見るTrain予測をOOFにすること**です。下の模式例で、OOF予測とin-sample予測を切り替えると、in-sample側が不自然にtargetへ近づく様子を確認できます。
 
 <div class="interactive-viz" data-interactive="stacking-oof">
-  <div class="interactive-viz__header">
-    <div>
-      <div class="interactive-viz__title">Meta modelへ渡す予測を比較</div>
-      <p class="interactive-viz__subtitle">Base modelがそのrowを学習していないOOF予測を使うのが基本です。</p>
-    </div>
-    <span class="interactive-status" data-stack-status data-state="safe">Meta model用に安全</span>
-  </div>
+  <div class="interactive-viz__header"><div><div class="interactive-viz__title">Meta modelへ渡す予測を比較</div><p class="interactive-viz__subtitle">Base modelがそのrowを学習していないOOF予測を使うのが基本です。</p></div><span class="interactive-status" data-stack-status data-state="safe">Meta model用に安全</span></div>
   <p class="interactive-note">模式例。表示するtargetと予測値は理解用の人工データです。</p>
-  <div class="interactive-control-row" role="group" aria-label="Meta modelへ渡す予測">
-    <span class="interactive-control-label">Train特徴</span>
-    <button type="button" class="interactive-button is-active" data-stack-mode="oof" aria-pressed="true">OOF予測</button>
-    <button type="button" class="interactive-button" data-stack-mode="train" aria-pressed="false">in-sample予測</button>
-  </div>
+  <div class="interactive-control-row" role="group" aria-label="Meta modelへ渡す予測"><span class="interactive-control-label">Train特徴</span><button type="button" class="interactive-button is-active" data-stack-mode="oof" aria-pressed="true">OOF予測</button><button type="button" class="interactive-button" data-stack-mode="train" aria-pressed="false">in-sample予測</button></div>
   <div class="interactive-list" data-stack-rows></div>
   <p class="interactive-explanation" data-stack-explanation aria-live="polite">各rowは、そのrowを学習していないfoldモデルの予測をMeta modelへ渡します。</p>
   <noscript><p class="interactive-explanation">Meta modelのTrain特徴には、自分を学習していないBase modelから得たOOF予測を使います。</p></noscript>
@@ -56,11 +46,11 @@ Base modelが自分の学習に使った行を予測した値ではなく、**�
 
 ## 使い分け {#comparison}
 
-| 手法 | 組合せ方 | 過学習リスク | 計算量 |
-|---|---|---:|---:|
-| Weighted Average | 手動/最適化した重み | 低〜中 | 低 |
-| **Stacking** | Meta modelが学習 | 中〜高 | 高 |
-| Rank Average | 順位化して平均 | 低〜中 | 低 |
+<div class="comparison-board" aria-label="Ensemble手法の使い分け">
+  <section class="comparison-card"><h4>Weighted Average</h4><dl><dt>組合せ</dt><dd>手動/最適化した重み</dd><dt>過学習</dt><dd>低〜中</dd><dt>計算量</dt><dd>低</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Stacking</h4><dl><dt>組合せ</dt><dd>Meta modelが学習</dd><dt>過学習</dt><dd>中〜高</dd><dt>計算量</dt><dd>高</dd></dl></section>
+  <section class="comparison-card"><h4>Rank Average</h4><dl><dt>組合せ</dt><dd>順位化して平均</dd><dt>過学習</dt><dd>低〜中</dd><dt>計算量</dt><dd>低</dd></dl></section>
+</div>
 
 データ量が小さい、候補モデルが少ない、OOF差が微小ならWeighted Averageの方が安全なことがあります。
 

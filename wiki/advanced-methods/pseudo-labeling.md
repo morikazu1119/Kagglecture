@@ -35,21 +35,9 @@ Testやexternal unlabeled dataの構造を学習へ取り込める一方、間�
 Pseudo Labelingでは、Teacher modelの予測を全部そのまま使うのではなく、confidenceなどで採用範囲を制御します。下の模式例ではthresholdを動かし、**採用数と誤label混入のtrade-off**を確認できます。
 
 <div class="interactive-viz" data-interactive="pseudo-label-threshold">
-  <div class="interactive-viz__header">
-    <div>
-      <div class="interactive-viz__title">Pseudo Labelのconfidence threshold</div>
-      <p class="interactive-viz__subtitle">thresholdを上げると採用数は減り、低confidence sampleを除外できます。</p>
-    </div>
-    <span class="interactive-status" data-pl-status data-state="safe">threshold 90% / 採用 3 / 誤り 0</span>
-  </div>
+  <div class="interactive-viz__header"><div><div class="interactive-viz__title">Pseudo Labelのconfidence threshold</div><p class="interactive-viz__subtitle">thresholdを上げると採用数は減り、低confidence sampleを除外できます。</p></div><span class="interactive-status" data-pl-status data-state="safe">threshold 90% / 採用 3 / 誤り 0</span></div>
   <p class="interactive-note">模式例。confidenceと正誤は理解用の人工データで、Kaggle実測値ではありません。</p>
-  <div class="interactive-control-row">
-    <span class="interactive-control-label">Threshold</span>
-    <label class="interactive-range">
-      <input type="range" min="60" max="98" step="1" value="90" data-pl-threshold aria-label="Pseudo Label confidence threshold">
-      <span class="interactive-range-labels"><span>60%</span><span>98%</span></span>
-    </label>
-  </div>
+  <div class="interactive-control-row"><span class="interactive-control-label">Threshold</span><label class="interactive-range"><input type="range" min="60" max="98" step="1" value="90" data-pl-threshold aria-label="Pseudo Label confidence threshold"><span class="interactive-range-labels"><span>60%</span><span>98%</span></span></label></div>
   <div class="sample-grid" data-pl-grid aria-label="Pseudo label候補"></div>
   <p class="interactive-explanation" data-pl-explanation aria-live="polite">thresholdを上げるほど採用数は減ります。実データではOOFでnoiseとcoverageを比較します。</p>
   <noscript><p class="interactive-explanation">全件を採用せず、高confidenceや複数model一致などでpseudo labelのnoiseを制御します。</p></noscript>
@@ -59,12 +47,12 @@ Pseudo Labelingでは、Teacher modelの予測を全部そのまま使うので�
 
 ## 選び方 {#selection}
 
-| 方法 | 長所 | リスク |
-|---|---|---|
-| 高confidenceのみ | ノイズを減らす | 易しいsampleに偏る |
-| 複数モデル一致 | 信頼性を上げやすい | 同じ誤りなら防げない |
-| Soft label | 不確実性を残す | Loss設計が必要 |
-| 複数round | 徐々に拡張 | 誤り増幅の危険 |
+<div class="comparison-board" aria-label="Pseudo Labelの選別方法">
+  <section class="comparison-card is-primary"><h4>高confidenceのみ</h4><dl><dt>長所</dt><dd>ノイズを減らしやすい</dd><dt>リスク</dt><dd>易しいsampleへ偏る</dd></dl></section>
+  <section class="comparison-card"><h4>複数モデル一致</h4><dl><dt>長所</dt><dd>信頼性を上げやすい</dd><dt>リスク</dt><dd>同じ誤りなら防げない</dd></dl></section>
+  <section class="comparison-card"><h4>Soft label</h4><dl><dt>長所</dt><dd>不確実性を残せる</dd><dt>リスク</dt><dd>Loss設計が必要</dd></dl></section>
+  <section class="comparison-card"><h4>複数round</h4><dl><dt>長所</dt><dd>徐々に対象を拡張</dd><dt>リスク</dt><dd>誤り増幅の危険</dd></dl></section>
+</div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 

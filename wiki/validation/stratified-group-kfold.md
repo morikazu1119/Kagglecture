@@ -33,34 +33,44 @@ tags:
 
 ## 使う場面 {#use-cases}
 
-| 状況 | 選択 |
-|---|---|
-| 患者ごとに複数画像 + 疾患率が偏る | StratifiedGroupKFold |
-| authorごとに複数音声 + species偏り | StratifiedGroupKFold |
-| groupはあるがtarget比は安定 | GroupKFold |
-| groupなしの不均衡分類 | StratifiedKFold |
-| 時間順序が本質 | 時間分割を優先 |
+<div class="comparison-board" aria-label="StratifiedGroupKFoldを選ぶ状況">
+  <section class="comparison-card is-primary"><h4>患者ごとに複数画像 + 疾患率が偏る</h4><dl><dt>選択</dt><dd>StratifiedGroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>authorごとに複数音声 + species偏り</h4><dl><dt>選択</dt><dd>StratifiedGroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>groupはあるがtarget比は安定</h4><dl><dt>選択</dt><dd>GroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>groupなしの不均衡分類</h4><dl><dt>選択</dt><dd>StratifiedKFold</dd></dl></section>
+  <section class="comparison-card"><h4>時間順序が本質</h4><dl><dt>優先</dt><dd>時間分割</dd></dl></section>
+</div>
 
 ## 仕組み {#mechanism}
 
-通常のStratifiedKFoldはsampleを自由に移動できますが、StratifiedGroupKFoldでは**groupを分割できません**。
+通常のStratifiedKFoldはsampleを自由に移動できますが、StratifiedGroupKFoldでは**groupを分割できません**。下の模式図では1つのpatient内のsampleが必ず同じboxに残ります。
 
-```text
-Patient A: positive, positive, positive -> 全部同じfold
-Patient B: negative, negative          -> 全部同じfold
-Patient C: positive, negative          -> 全部同じfold
-```
-
-このgroup単位の配置を調整して、各foldのclass distributionをできるだけ近づけます。group構造が極端なら完全なstratificationは不可能です。
+<div class="static-viz html-diagram" aria-label="Groupを分割せずclass比を揃える模式図">
+  <div class="viz-heading"><div><div class="viz-title">groupを丸ごと配置し、その中でclass比を近づける</div><p class="viz-subtitle">1 patientを複数foldへ分割しないことが最優先です。</p></div><span class="viz-badge">模式例</span></div>
+  <div class="comparison-board">
+    <section class="comparison-card"><h4>Patient A</h4><dl><dt>samples</dt><dd>positive / positive / positive</dd><dt>制約</dt><dd>3件とも同じfold</dd></dl></section>
+    <section class="comparison-card"><h4>Patient B</h4><dl><dt>samples</dt><dd>negative / negative</dd><dt>制約</dt><dd>2件とも同じfold</dd></dl></section>
+    <section class="comparison-card"><h4>Patient C</h4><dl><dt>samples</dt><dd>positive / negative</dd><dt>制約</dt><dd>2件とも同じfold</dd></dl></section>
+  </div>
+  <div class="html-flow" style="--flow-columns: 3">
+    <div class="flow-node"><strong>Groupを壊さない</strong><span>patient単位で候補foldを選ぶ</span></div>
+    <div class="flow-node"><strong>class比を評価</strong><span>配置後のpositive率を確認</span></div>
+    <div class="flow-node is-accent"><strong>最もbalancedな配置</strong><span>group制約内で近づける</span></div>
+  </div>
+  <p class="viz-caption">group構造が極端なら完全なstratificationは不可能です。比率よりgroup leakage防止を優先します。</p>
+</div>
 
 ## 使い分け {#comparison}
 
-| 手法 | group分離 | class比維持 |
-|---|---:|---:|
-| KFold | × | × |
-| StratifiedKFold | × | ○ |
-| GroupKFold | ○ | × |
-| **StratifiedGroupKFold** | ○ | ○に近づける |
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th scope="col">手法</th><th scope="col">group分離</th><th scope="col">class比維持</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">KFold</th><td>×</td><td>×</td></tr>
+    <tr><th scope="row">StratifiedKFold</th><td>×</td><td class="status-good">○</td></tr>
+    <tr><th scope="row">GroupKFold</th><td class="status-good">○</td><td>×</td></tr>
+    <tr><th scope="row">StratifiedGroupKFold</th><td class="status-good">○</td><td class="status-good">○に近づける</td></tr>
+  </tbody>
+</table></div>
 
 **group leakageを防ぐ方がclass比をきれいにするより重要**です。group制約を外してまでstratifyしません。
 

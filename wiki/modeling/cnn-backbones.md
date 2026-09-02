@@ -23,6 +23,7 @@ tags:
 KaggleではResNet、EfficientNet、ConvNeXt、RegNetなどをclassification backboneやU-Net/FPN encoderとして使います。Transformerが普及した現在も、計算効率・小中規模データ・segmentationで強い選択肢です。
 
 <nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#mechanism">仕組み</a>
   <a href="#families">代表family</a>
   <a href="#use-cases">使う場面</a>
   <a href="#kaggle-examples">Kaggle実例</a>
@@ -30,14 +31,32 @@ KaggleではResNet、EfficientNet、ConvNeXt、RegNetなどをclassification bac
   <a href="#quick-reference">Quick Reference</a>
 </nav>
 
+## 仕組み {#mechanism}
+
+画像の縦横サイズはstageが進むほど小さくなり、channel方向の特徴表現は豊かになります。ここでは**奥行きがfeature channelの概念理解に役立つため、定量グラフではなく2.5DのHTML layer stack**で示します。
+
+<div class="static-viz html-diagram" aria-label="CNNで画像から高次特徴へ変換する模式図">
+  <div class="viz-heading">
+    <div><div class="viz-title">局所特徴を段階的に抽象化する</div><p class="viz-subtitle">空間解像度を圧縮しながら、edge → texture → part → semantic featureへ変換します。</p></div>
+    <span class="viz-badge">architecture模式図</span>
+  </div>
+  <div class="layer-scene" style="--layer-count: 4">
+    <div class="layer-block"><strong>Input / Stem</strong><span>RGB image<br>局所filterでedge・contrastを抽出</span></div>
+    <div class="layer-block"><strong>Early stages</strong><span>高解像度<br>texture・細かいpattern</span></div>
+    <div class="layer-block"><strong>Deep stages</strong><span>低解像度・多channel<br>part・shapeを統合</span></div>
+    <div class="layer-block is-accent"><strong>Task head / Encoder output</strong><span>Classification head、FPN、U-Net decoder等へ渡す</span></div>
+  </div>
+  <p class="viz-caption">この奥行き表現はfeature-mapの層構造を示すための模式図で、channel数やtensor sizeの実測値ではありません。</p>
+</div>
+
 ## 代表family {#families}
 
-| Family | 特徴 |
-|---|---|
-| ResNet | residual connectionで深いCNNを学習しやすくする |
-| EfficientNet | depth/width/resolutionをcompound scaling |
-| ConvNeXt | Transformer時代の設計を取り込んだmodern CNN |
-| RegNet | 規則的なdesign spaceから効率的architectureを作る |
+<div class="comparison-board" aria-label="代表的なCNN familyの比較">
+  <section class="comparison-card"><h4>ResNet</h4><dl><dt>核</dt><dd>Residual connection</dd><dt>特徴</dt><dd>深いCNNを安定して学習しやすい</dd></dl></section>
+  <section class="comparison-card"><h4>EfficientNet</h4><dl><dt>核</dt><dd>Compound scaling</dd><dt>特徴</dt><dd>depth / width / resolutionをバランスよく拡大</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>ConvNeXt</h4><dl><dt>核</dt><dd>Modern CNN design</dd><dt>特徴</dt><dd>Transformer時代の設計知見をCNNへ反映</dd></dl></section>
+  <section class="comparison-card"><h4>RegNet</h4><dl><dt>核</dt><dd>Regular design space</dd><dt>特徴</dt><dd>規則的な設計から効率的architectureを作る</dd></dl></section>
+</div>
 
 EfficientNetはdepth・width・resolutionをバランスよく拡大するcompound scalingを提案しています（[EfficientNet paper](https://arxiv.org/abs/1905.11946)）。
 

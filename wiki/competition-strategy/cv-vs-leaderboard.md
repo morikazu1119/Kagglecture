@@ -32,12 +32,12 @@ Public LBはTestの一部sampleだけで計算されるため、小差を追い�
 
 ## 役割分担 {#roles}
 
-| Signal | 主な役割 |
-|---|---|
-| OOF/CV | モデル・特徴・blendの選択 |
-| fold別score | 安定性・分布差の診断 |
-| Public LB | 提出形式、class mapping、大きな分布ズレの確認 |
-| Private LB | 最終評価。Competition中は見えない |
+<div class="comparison-board" aria-label="CVとLeaderboardの役割分担">
+  <section class="comparison-card is-primary"><h4>OOF / CV</h4><dl><dt>主な役割</dt><dd>モデル・特徴・blendの選択</dd><dt>見えるもの</dt><dd>再現可能なlocal selection signal</dd></dl></section>
+  <section class="comparison-card"><h4>fold別score</h4><dl><dt>主な役割</dt><dd>安定性・分布差の診断</dd><dt>見えるもの</dt><dd>特定fold依存の改善</dd></dl></section>
+  <section class="comparison-card"><h4>Public LB</h4><dl><dt>主な役割</dt><dd>提出形式、class mapping、大きな分布ズレ確認</dd><dt>注意</dt><dd>小差をselection signalにしすぎない</dd></dl></section>
+  <section class="comparison-card"><h4>Private LB</h4><dl><dt>主な役割</dt><dd>最終評価</dd><dt>制約</dt><dd>Competition中は見えない</dd></dl></section>
+</div>
 
 ## CV-LBがズレる原因 {#mismatch}
 
@@ -53,7 +53,18 @@ Public LBはTestの一部sampleだけで計算されるため、小差を追い�
 
 Predicting Student Health Risk 2026の4位解法は、最終submissionがPublic 0.95094で#414、Private 0.95084で#4でした。7-fold OOF 0.95063を信頼し、Publicの微小差でモデルを置き換えなかったことを主要lessonとして挙げています（[4th Place Solution](https://www.kaggle.com/c/playground-series-s6e7/writeups/4th-place-from-414-to-4-trusting-oof-when-the)）。
 
-同Competitionの別Writeupでは、固定100候補でPrivateとのSpearman相関がOOF 0.867、Public 0.768、Privateとのmedian absolute score gapがOOF 0.000074、Public 0.000220と報告されています（[Why shouldn't you even consider using LB probing](https://www.kaggle.com/competitions/playground-series-s6e7/writeups/why-you-shouldnt-even-consider-using-lb-probing-i)）。これはPublic LBの小差をselection signalにしすぎる危険を定量的に示す例です。
+同Competitionの別Writeupでは、固定100候補でPrivateとのSpearman相関がOOF 0.867、Public 0.768、Privateとのmedian absolute score gapがOOF 0.000074、Public 0.000220と報告されています（[Why shouldn't you even consider using LB probing](https://www.kaggle.com/competitions/playground-series-s6e7/writeups/why-you-shouldnt-even-consider-using-lb-probing-i)）。
+
+<div class="static-viz html-chart" aria-label="OOFとPublic LeaderboardのPrivateへの相関比較">
+  <div class="viz-heading"><div><div class="viz-title">同じ100候補ではOOFの方がPrivateとの整合が高かった</div><p class="viz-subtitle">Spearman correlation with Private。大きいほどcandidate rankingがPrivateと整合します。</p></div><span class="viz-badge">Kaggle Writeup実測値</span></div>
+  <div class="html-bar-chart">
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">OOF</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:86.7"></span></span><span class="html-bar-value">0.867</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Public LB</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:76.8"></span></span><span class="html-bar-value">0.768</span></div>
+  </div>
+  <p class="viz-caption">出典: Alvin Li, “Why shouldn't you even consider using LB probing in Playground Competitions”, 2026。比較条件は同Writeupの固定100候補です。</p>
+</div>
+
+この例ではPrivateとのmedian absolute score gapもOOF 0.000074、Public 0.000220で、OOFの方が小さかったと報告されています。Public LBの小差をselection signalにしすぎる危険を定量的に示す例です。
 
 Tabular Playground Series Nov 2022の1位解法も主要ポイントに“Trust your CV its easy to overfit”を挙げています（[1st Place Solution](https://www.kaggle.com/competitions/tabular-playground-series-nov-2022/writeups/1st-place-solution)）。
 

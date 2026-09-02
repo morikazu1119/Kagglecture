@@ -34,6 +34,17 @@ tags:
 
 正例1件と負例1件をランダムに選んだとき、**正例の予測スコアを負例より高くできる確率**として理解すると直感的です。
 
+<div class="static-viz html-diagram" aria-label="ROC-AUCのranking直感を示す模式図">
+  <div class="viz-heading"><div><div class="viz-title">正例を負例より上へ並べられるか</div><p class="viz-subtitle">位置は予測scoreの高低。正例が右側へ、負例が左側へ分かれるほどrankingが良くなります。</p></div><span class="viz-badge">模式例</span></div>
+  <div class="html-flow" style="--flow-columns:4">
+    <div class="flow-node"><strong>Negative</strong><span>score 0.12</span></div>
+    <div class="flow-node"><strong>Negative</strong><span>score 0.34</span></div>
+    <div class="flow-node is-accent"><strong>Positive</strong><span>score 0.71</span></div>
+    <div class="flow-node is-accent"><strong>Positive</strong><span>score 0.91</span></div>
+  </div>
+  <p class="viz-caption">score値は人工例です。ROC-AUCは固定thresholdでlabel化せず、ranking全体を評価します。</p>
+</div>
+
 ROC曲線はthresholdを動かしたときのTrue Positive RateとFalse Positive Rateの組合せを描き、その曲線下面積がAUCです。
 
 ## 使う場面 {#use-cases}
@@ -44,12 +55,12 @@ ROC曲線はthresholdを動かしたときのTrue Positive RateとFalse Positive
 
 ## 使い分け {#comparison}
 
-| Metric | 見るもの | threshold依存 |
-|---|---|---:|
-| **ROC-AUC** | 全thresholdでの順位性能 | なし |
-| F1 | Precision/Recallのバランス | あり |
-| LogLoss | 確率の正しさ・自信度 | なし |
-| Accuracy | 0/1正解率 | あり |
+<div class="comparison-board" aria-label="ROC-AUCと他Metricの比較">
+  <section class="comparison-card is-primary"><h4>ROC-AUC</h4><dl><dt>見るもの</dt><dd>全thresholdでのranking</dd><dt>threshold</dt><dd>不要</dd><dt>確率scale</dt><dd>評価しない</dd></dl></section>
+  <section class="comparison-card"><h4>F1</h4><dl><dt>見るもの</dt><dd>Precision / Recall balance</dd><dt>threshold</dt><dd>必要</dd><dt>出力</dt><dd>hard label</dd></dl></section>
+  <section class="comparison-card"><h4>LogLoss</h4><dl><dt>見るもの</dt><dd>確率の正しさ・自信度</dd><dt>threshold</dt><dd>不要</dd><dt>ranking</dt><dd>主目的ではない</dd></dl></section>
+  <section class="comparison-card"><h4>Accuracy</h4><dl><dt>見るもの</dt><dd>0/1正解率</dd><dt>threshold</dt><dd>必要</dd><dt>不均衡</dt><dd>弱い</dd></dl></section>
+</div>
 
 AUCが同じでも、予測確率0.51と0.99の「確率としての質」は区別しません。確率較正が重要ならLogLossなども確認します。
 

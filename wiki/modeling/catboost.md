@@ -35,6 +35,17 @@ tags:
 
 CatBoostは数値だけでなくcategorical、text、embedding featuresも扱えます。カテゴリ処理ではorderingを使い、あるsampleの統計を作るときにそのsample自身のtargetを直接使うLeakageを抑える設計があります（[CatBoost FAQ](https://catboost.ai/docs/en/concepts/faq)）。
 
+<div class="static-viz html-diagram" aria-label="CatBoostのordered categorical処理の模式図">
+  <div class="viz-heading"><div><div class="viz-title">現在のrowより前の情報でカテゴリ統計を作る</div><p class="viz-subtitle">orderingを使い、自分自身のtargetを直接カテゴリ統計へ混ぜにくくします。</p></div><span class="viz-badge">ordered処理模式図</span></div>
+  <div class="html-flow" style="--flow-columns:4">
+    <div class="flow-node"><strong>Permutation</strong><span>sample順序を定義</span></div>
+    <div class="flow-node"><strong>Past rows</strong><span>先に現れたtarget統計</span></div>
+    <div class="flow-node is-accent"><strong>Current row</strong><span>自分のtargetを使わず特徴化</span></div>
+    <div class="flow-node"><strong>Boosting</strong><span>ordered predictionで学習</span></div>
+  </div>
+  <p class="viz-caption">内部アルゴリズムを簡略化した模式図です。Ordered Boostingでも外側のCVや前処理Leakageは別途防ぐ必要があります。</p>
+</div>
+
 ## 使う場面 {#use-cases}
 
 - 文字列カテゴリや高cardinalityカテゴリが多い。
@@ -44,11 +55,11 @@ CatBoostは数値だけでなくcategorical、text、embedding featuresも扱え
 
 ## 使い分け {#comparison}
 
-| Model | 特徴 |
-|---|---|
-| [LightGBM]({{ '/wiki/modeling/lightgbm.html' | relative_url }}) | 高速、leaf-wise、histogram |
-| [XGBoost]({{ '/wiki/modeling/xgboost.html' | relative_url }}) | 正則化制御、成熟したGBDT |
-| **CatBoost** | categorical + ordered処理 |
+<div class="comparison-board" aria-label="CatBoost LightGBM XGBoostの比較">
+  <section class="comparison-card"><h4><a href="{{ '/wiki/modeling/lightgbm.html' | relative_url }}">LightGBM</a></h4><dl><dt>特徴</dt><dd>高速、leaf-wise、histogram</dd><dt>categorical</dt><dd>native対応あり</dd></dl></section>
+  <section class="comparison-card"><h4><a href="{{ '/wiki/modeling/xgboost.html' | relative_url }}">XGBoost</a></h4><dl><dt>特徴</dt><dd>正則化制御、成熟したGBDT</dd><dt>強み</dt><dd>sampling/regularizationの制御</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>CatBoost</h4><dl><dt>特徴</dt><dd>categorical + ordered処理</dd><dt>強み</dt><dd>手作業encodingを減らしやすい</dd></dl></section>
+</div>
 
 カテゴリが多いからCatBoostが必ず勝つわけではありません。native categorical、Target Encoding + LightGBM、XGBoostを同一CVで比較します。
 

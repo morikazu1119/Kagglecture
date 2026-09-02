@@ -42,26 +42,10 @@ $$
 下の模式OOFではModel A/Bの重みを動かせます。重みを変えるとrowごとの補完関係と全体RMSEが同時に変わります。
 
 <div class="interactive-viz" data-interactive="blend-weight">
-  <div class="interactive-viz__header">
-    <div>
-      <div class="interactive-viz__title">Model A / Bのblend weightを動かす</div>
-      <p class="interactive-viz__subtitle">単体性能だけでなく、どのsampleで誤差を補い合うかを見るのがEnsembleの要点です。</p>
-    </div>
-    <span class="interactive-status" data-blend-status data-state="safe">A 50% / B 50%</span>
-  </div>
+  <div class="interactive-viz__header"><div><div class="interactive-viz__title">Model A / Bのblend weightを動かす</div><p class="interactive-viz__subtitle">単体性能だけでなく、どのsampleで誤差を補い合うかを見るのがEnsembleの要点です。</p></div><span class="interactive-status" data-blend-status data-state="safe">A 50% / B 50%</span></div>
   <p class="interactive-note">模式例。target・予測・RMSEは理解用の人工データです。</p>
-  <div class="interactive-control-row">
-    <span class="interactive-control-label">Aの重み</span>
-    <label class="interactive-range">
-      <input type="range" min="0" max="100" step="5" value="50" data-blend-weight aria-label="Model Aのblend weight">
-      <span class="interactive-range-labels"><span>0%（Bのみ）</span><span>100%（Aのみ）</span></span>
-    </label>
-  </div>
-  <div class="metric-grid">
-    <div class="metric-card"><span>Blend RMSE</span><strong data-blend-rmse>0.000</strong></div>
-    <div class="metric-card"><span>Model A</span><strong>weight = w</strong></div>
-    <div class="metric-card"><span>Model B</span><strong>weight = 1-w</strong></div>
-  </div>
+  <div class="interactive-control-row"><span class="interactive-control-label">Aの重み</span><label class="interactive-range"><input type="range" min="0" max="100" step="5" value="50" data-blend-weight aria-label="Model Aのblend weight"><span class="interactive-range-labels"><span>0%（Bのみ）</span><span>100%（Aのみ）</span></span></label></div>
+  <div class="metric-grid"><div class="metric-card"><span>Blend RMSE</span><strong data-blend-rmse>0.000</strong></div><div class="metric-card"><span>Model A</span><strong>weight = w</strong></div><div class="metric-card"><span>Model B</span><strong>weight = 1-w</strong></div></div>
   <div class="interactive-list" data-blend-rows></div>
   <p class="interactive-explanation" data-blend-explanation aria-live="polite">重みは同じfoldのOOF予測で決めます。</p>
   <noscript><p class="interactive-explanation">Weighted Averageの重みはPublic LBではなく、同じValidation splitのOOF予測で比較して決めます。</p></noscript>
@@ -69,13 +53,13 @@ $$
 
 ## 使う場面 {#use-cases}
 
-| 状況 | Weighted Average |
-|---|---|
-| 強いモデルが2〜10本程度ある | 向いている |
-| seed違いを安定化したい | 向いている |
-| 異なるGBDT/NN/Transformerを混ぜたい | 向いている |
-| 予測スケールが大きく違う | Rank Averageや変換を検討 |
-| 2段目モデルで非線形に組み合わせたい | Stackingを検討 |
+<div class="comparison-board" aria-label="Weighted Averageが向く状況">
+  <section class="comparison-card is-primary"><h4>強いモデルが2〜10本程度</h4><dl><dt>判断</dt><dd>Weighted Averageが扱いやすい</dd></dl></section>
+  <section class="comparison-card"><h4>seed違いを安定化</h4><dl><dt>判断</dt><dd>同じarchitectureでも平均でvarianceを減らせる</dd></dl></section>
+  <section class="comparison-card"><h4>GBDT / NN / Transformerを混ぜる</h4><dl><dt>判断</dt><dd>誤差diversityがあれば有力</dd></dl></section>
+  <section class="comparison-card"><h4>予測scaleが大きく違う</h4><dl><dt>代替</dt><dd>Rank Averageやscale変換を検討</dd></dl></section>
+  <section class="comparison-card"><h4>非線形な組合せを学びたい</h4><dl><dt>代替</dt><dd>Stackingを検討</dd></dl></section>
+</div>
 
 ## 重みの決め方 {#weight-selection}
 

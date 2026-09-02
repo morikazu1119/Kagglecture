@@ -1,0 +1,82 @@
+.static-viz svg,
+.html-chart svg,
+.html-diagram svg,
+.interactive-viz svg {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  height: auto;
+}
+
+.matrix-scroll {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-gutter: stable;
+}
+
+.matrix-scroll > .html-matrix {
+  min-width: 520px;
+}
+
+.matrix-scroll:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 3px;
+}
+
+/* 4列以上の表はスマホで潰さず、表自身だけ横スクロールさせる。 */
+.html-table:has(tr > :nth-child(4)) {
+  min-width: 560px;
+}
+
+.flow-node,
+.layer-block,
+.comparison-card,
+.metric-card,
+.interactive-list-row,
+.calibration-row,
+.html-bar-row {
+  min-width: 0;
+}
+
+.flow-node strong,
+.flow-node span,
+.layer-block strong,
+.layer-block span,
+.comparison-card dd,
+.metric-card strong,
+.interactive-list-row strong,
+.calibration-row strong,
+.html-bar-label {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .html-matrix {
+    grid-template-columns: auto repeat(var(--matrix-cols, 2), minmax(30px, 1fr));
+    gap: 3px;
+  }
+
+  .matrix-cell {
+    padding: 6px 4px;
+    font-size: 9px;
+    line-height: 1.3;
+  }
+}
+
+@media (max-width: 390px) {
+  .interactive-button,
+  .interactive-check {
+    min-height: 44px;
+  }
+
+  .html-bar-row {
+    grid-template-columns: minmax(68px, 0.85fr) minmax(72px, 1.35fr) auto;
+  }
+
+  .html-bar-label,
+  .html-bar-value {
+    font-size: 11px;
+  }
+}
