@@ -1,6 +1,8 @@
 title: Kagglecture
 description: Kaggleの手法・評価指標・Validation・上位解法を調べるためのリファレンスWiki
 lang: ja-JP
+url: "https://morikazu1119.github.io"
+baseurl: "/Kagglecture"
 markdown: kramdown
 kramdown:
   math_engine: mathjax
