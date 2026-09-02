@@ -44,10 +44,10 @@ $$
 
 ## MAEとの比較 {#comparison}
 
-| 指標 | 大きな誤差への罰 | 外れ値への敏感さ |
-|---|---|---|
-| **RMSE** | 強い | 高い |
-| MAE | 線形 | 低め |
+<div class="comparison-board" aria-label="RMSEとMAEの比較">
+  <section class="comparison-card is-primary"><h4>RMSE</h4><dl><dt>誤差の重み</dt><dd>二乗</dd><dt>大きな誤差</dt><dd>強く罰する</dd><dt>外れ値</dt><dd>敏感</dd></dl></section>
+  <section class="comparison-card"><h4>MAE</h4><dl><dt>誤差の重み</dt><dd>線形</dd><dt>大きな誤差</dt><dd>誤差量に比例</dd><dt>外れ値</dt><dd>比較的影響が小さい</dd></dl></section>
+</div>
 
 大きな誤差自体が重要な失敗ならRMSEが自然です。外れ値がノイズで、全誤差を同じ重みで扱いたいならMAEが合いやすくなります。
 
