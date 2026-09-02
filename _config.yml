@@ -1,5 +1,5 @@
 title: Kagglecture
-description: Kaggleで使われる実践的な手法を体系的に学ぶWiki
+description: Kaggleの手法・評価指標・Validation・上位解法を調べるためのリファレンスWiki
 lang: ja-JP
 remote_theme: pages-themes/cayman@v0.2.0
 plugins:
