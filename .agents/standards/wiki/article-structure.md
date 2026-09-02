@@ -40,8 +40,11 @@ KagglectureはKaggleの辞書・リファレンスであり、カリキュラム
 - ルート `index.md` が唯一の索引。
 - `wiki/index.md` のような重複ランディングページは作らない。
 - 新規記事作成時は `index.md` の適切なカテゴリから直接リンクする。
-- 公開URLはGitHub Pagesのbase pathを考慮し、必要に応じてLiquidの `relative_url` を使う。
+- **ホーム `index.md` からの記事リンクは project root 相対で `wiki/.../<slug>.html` を使う。先頭 `/` を付けない。** 例: `wiki/validation/group-kfold.html`。
+- `_config.yml` の `url` と `baseurl` をGitHub Pagesの公開先と一致させる。
+- レイアウトや個別記事からのroot参照にはLiquidの `relative_url` を使い、`/wiki/...` のようなbase pathを欠いたroot-relative URLを直書きしない。
 - `.md` のsource pathをそのまま公開リンクとして決め打ちしない。
+- 新規記事を追加したら、ホームからその公開URLへ遷移できることを確認する。
 - 関連項目は**実在するページだけ**リンクする。未作成ページをリンク風に見せない。
 - 同じ用語へのリンクを1ページ中で何度も繰り返さない。
 - 学習順序ではなく、概念上の関連性でcross-linkする。
