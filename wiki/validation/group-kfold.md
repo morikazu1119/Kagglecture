@@ -7,7 +7,7 @@ domain: kaggle
 topic: group-kfold
 created: 2026-09-02
 updated: 2026-09-02
-source_count: 6
+source_count: 7
 tags:
   - kaggle
   - validation
@@ -17,134 +17,161 @@ tags:
 
 # GroupKFold
 
-**GroupKFoldは、同じ患者・ユーザー・セッション・撮影者などの「同一グループ」がTrainとValidationの両方に入らないように分割するCross Validationです。**
+**GroupKFoldは、同じ患者・ユーザー・セッションなどの「同一グループ」がTrainとValidationの両方に入らないように分割するCross Validationです。**
 
-同じ主体から複数サンプルが生成されるデータでは、通常のKFoldだと非常によく似たサンプルがTrainとValidationに分かれ、CVを過大評価することがあります。GroupKFoldはこの問題を避けるために使います（[scikit-learn: GroupKFold](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html)）。
+同じ主体から複数サンプルが生成されるデータでは、通常のKFoldで似たサンプルがTrainとValidationに分かれ、CVを過大評価することがあります。GroupKFoldはそのリークを防ぐために使います（[scikit-learn: GroupKFold](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html)）。
 
-## 使う場面
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
 
-判断基準は、**テスト時に未知になる単位をgroupにする**ことです。
+## 使う場面 {#use-cases}
 
-| データ | groupの例 | GroupKFold |
+判断基準は、**本番で未知になる単位をgroupにする**ことです。
+
+| データ | groupの例 | 選択 |
 |---|---|---|
-| 医療画像 | patient_id | 適する |
-| 同一ユーザーの行動ログ | user_id | 適する |
-| 検索・推薦 | session_id / search_id | 適する |
-| 音声・画像投稿 | author / speaker | 適する |
-| 複数年の大会データ | season | 条件次第で適する |
-| 各行が独立した表形式データ | なし | 通常は不要 |
-| 時系列で未来を予測 | timestamp | Time-based splitを優先 |
+| 医療画像 | `patient_id` | GroupKFold |
+| 同一ユーザーの行動ログ | `user_id` | GroupKFold |
+| 検索・推薦 | `session_id` / `search_id` | GroupKFold |
+| 音声・画像投稿 | author / speaker | GroupKFold系 |
+| groupあり + クラス不均衡 | patient / user等 | StratifiedGroupKFold候補 |
+| 各行が独立 | なし | KFold / StratifiedKFold |
+| 未来を予測する時系列 | timestamp | Time-based splitを優先 |
 
 <div class="callout tip">
-  <div class="callout-title">最重要</div>
-  groupは「データ上同じIDだから」ではなく、TrainからValidationへ情報が伝わってはいけない単位で決める。
+  <div class="callout-title">groupの決め方</div>
+  「同じIDがあるか」ではなく、TrainからValidationへ情報が伝わってはいけない独立単位を考える。
 </div>
 
-## 仕組み
+## 仕組み {#mechanism}
 
-GroupKFoldでは、1つのgroupは必ず1つのValidation foldにだけ所属します。scikit-learnの実装でも、各groupは全foldを通じてちょうど1回test側に現れる仕様です（[scikit-learn: GroupKFold](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html)）。
+下の図で **通常のKFold / GroupKFold** と **Fold 1〜3** を切り替えると、同じpatientがTrainとValidationにまたがるかを確認できます。
 
-```mermaid
-flowchart LR
-    subgraph G1[Patient A]
-      A1[Image 1]
-      A2[Image 2]
-      A3[Image 3]
-    end
+<div class="interactive-viz" data-interactive="group-kfold">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">同じpatientを分離できているか</div>
+      <p class="interactive-viz__subtitle">緑 = Validation。赤い左線 = 同じpatientがTrain / Validationの両方に存在。</p>
+    </div>
+    <span class="interactive-status" data-gkf-status data-state="safe">group leakage: 0 / 6</span>
+  </div>
 
-    subgraph G2[Patient B]
-      B1[Image 1]
-      B2[Image 2]
-    end
+  <div class="interactive-controls">
+    <div class="interactive-control-row" role="group" aria-label="分割方法">
+      <span class="interactive-control-label">分割方法</span>
+      <button type="button" class="interactive-button" data-gkf-mode="kfold" aria-pressed="false">通常のKFold</button>
+      <button type="button" class="interactive-button is-active" data-gkf-mode="group" aria-pressed="true">GroupKFold</button>
+    </div>
 
-    subgraph G3[Patient C]
-      C1[Image 1]
-      C2[Image 2]
-    end
+    <div class="interactive-control-row" role="group" aria-label="Validation fold">
+      <span class="interactive-control-label">Validation</span>
+      <button type="button" class="interactive-button is-active" data-gkf-fold="1" aria-pressed="true">Fold 1</button>
+      <button type="button" class="interactive-button" data-gkf-fold="2" aria-pressed="false">Fold 2</button>
+      <button type="button" class="interactive-button" data-gkf-fold="3" aria-pressed="false">Fold 3</button>
+    </div>
+  </div>
 
-    G1 --> T[Train]
-    G2 --> T
-    G3 --> V[Validation]
-```
+  <div class="gkf-legend" aria-label="凡例">
+    <span class="gkf-legend-item"><span class="gkf-legend-dot"></span>Train</span>
+    <span class="gkf-legend-item"><span class="gkf-legend-dot is-validation"></span>Validation</span>
+  </div>
 
-患者Cの画像だけをValidationに置き、同じ患者Cの別画像がTrainに混ざらないようにします。
+  <div class="gkf-grid" data-gkf-grid>
+    <div class="gkf-row">
+      <div class="gkf-group-label">Patient A</div>
+      <div class="gkf-samples"><span class="gkf-sample is-validation">A1</span><span class="gkf-sample is-validation">A2</span><span class="gkf-sample is-validation">A3</span></div>
+    </div>
+    <div class="gkf-row">
+      <div class="gkf-group-label">Patient B</div>
+      <div class="gkf-samples"><span class="gkf-sample is-train">B1</span><span class="gkf-sample is-train">B2</span></div>
+    </div>
+    <div class="gkf-row">
+      <div class="gkf-group-label">Patient C</div>
+      <div class="gkf-samples"><span class="gkf-sample is-train">C1</span><span class="gkf-sample is-train">C2</span><span class="gkf-sample is-train">C3</span></div>
+    </div>
+    <div class="gkf-row">
+      <div class="gkf-group-label">Patient D</div>
+      <div class="gkf-samples"><span class="gkf-sample is-validation">D1</span><span class="gkf-sample is-validation">D2</span></div>
+    </div>
+    <div class="gkf-row">
+      <div class="gkf-group-label">Patient E</div>
+      <div class="gkf-samples"><span class="gkf-sample is-train">E1</span><span class="gkf-sample is-train">E2</span><span class="gkf-sample is-train">E3</span></div>
+    </div>
+    <div class="gkf-row">
+      <div class="gkf-group-label">Patient F</div>
+      <div class="gkf-samples"><span class="gkf-sample is-train">F1</span><span class="gkf-sample is-train">F2</span></div>
+    </div>
+  </div>
 
-## 使い分け
+  <p class="interactive-explanation" data-gkf-explanation aria-live="polite">Fold 1: Validationに入ったpatientは丸ごと分離され、同じpatientのsampleはTrain側に残りません。</p>
+  <noscript><p class="interactive-explanation">GroupKFoldではpatient単位で丸ごとTrain / Validationを分離するため、同じpatientが両側にまたがりません。</p></noscript>
+</div>
 
-| 手法 | グループ分離 | クラス比維持 | 主な用途 |
+GroupKFoldでは、各groupは全foldを通じてちょうど1回Validation側に現れます（[scikit-learn: GroupKFold](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html)）。重要なのは、**sampleではなくgroupの境界を守ること**です。
+
+## 使い分け {#comparison}
+
+| 手法 | group分離 | クラス比 | 主な用途 |
 |---|---:|---:|---|
-| **KFold** | × | × | 各サンプルが独立 |
-| **StratifiedKFold** | × | ○ | クラス不均衡の分類 |
+| **KFold** | × | × | 各sampleが独立 |
+| **StratifiedKFold** | × | ○ | 独立sample + クラス不均衡 |
 | **GroupKFold** | ○ | × | 同一主体の重複を防ぐ |
-| **StratifiedGroupKFold** | ○ | ○に近づける | group分離とクラス比の両方が重要 |
+| **StratifiedGroupKFold** | ○ | ○に近づける | group分離 + クラス比維持 |
 | **Time-based split** | 設計次第 | × | 未来予測・時系列 |
 
-`StratifiedGroupKFold`は、groupを分離しながら各foldのクラス比も可能な限り維持する手法です。GroupKFoldだけではラベル比が大きく崩れる分類問題で候補になります（[scikit-learn: Cross-validation / StratifiedGroupKFold](https://scikit-learn.org/stable/modules/cross_validation.html#stratifiedgroupkfold)）。
+`StratifiedGroupKFold`はgroupを分離しながら、各foldのクラス比も可能な限り揃えます。groupごとのラベル偏りが大きい分類問題で候補になります（[scikit-learn: StratifiedGroupKFold](https://scikit-learn.org/stable/modules/cross_validation.html#stratifiedgroupkfold)）。
 
-## Kaggleでの実例
+## Kaggleでの実例 {#kaggle-examples}
 
-GroupKFoldで重要なのは、コンペごとに**何をgroupと見なしたか**です。
+Kaggleでは、**何をgroupと定義したか**がValidation設計そのものになります。
 
-| Competition | Rank | group | 理由 | Source |
+| Competition | Rank | group | Validation設計 | Source |
 |---|---:|---|---|---|
-| FlightRank 2025 | 2nd | search session | 同じ検索セッションの候補をfold間で分離し、behavioral featureのleakageを防ぐ | [2nd Place Solution](https://www.kaggle.com/competitions/aeroclub-recsys-2025/writeups/flightrank-2025-2nd-place-solution) |
-| March Machine Learning Mania 2026 | 4th | season | season単位でGroupKFoldを行い、シーズンをまたいだ評価にする | [4th Place Solution](https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/4th-place-solution-for-the-march-machine-learning) |
-| BirdCLEF 2022 | 23rd | author | 同じ録音投稿者がTrainとValidationに現れないようにする | [23th Place Solution](https://www.kaggle.com/competitions/birdclef-2022/writeups/bilzard-23th-place-solution) |
-| 26-shinnen-3Dpathology | 1st team solution | crop_id / patient単位 | 同一患者由来の画像をfold間で分離 | [1st place solution](https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614) |
+| FlightRank 2025 | 2nd | search session | 10-fold GroupKFoldで同一検索内の候補をまとめて分離 | [2nd Place Solution](https://www.kaggle.com/competitions/aeroclub-recsys-2025/writeups/flightrank-2025-2nd-place-solution) |
+| March Machine Learning Mania 2026 | 4th | season | season単位でGroupKFold | [4th Place Solution](https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/4th-place-solution-for-the-march-machine-learning) |
+| BirdCLEF 2022 | 23rd | author | authorをgroupにしたStratifiedGroupKFold | [23th Place Solution](https://www.kaggle.com/competitions/birdclef-2022/writeups/bilzard-23th-place-solution) |
+| 26-shinnen-3Dpathology | 1st team solution | crop_id / patient | 5-fold GroupKFoldで同一患者由来画像を分離 | [1st place solution](https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614) |
 
-### FlightRank 2025
+共通しているのは、**検索候補・録音・画像などのsampleそのものではなく、そのsampleを生み出した独立単位をgroupにしていること**です。
 
-2位解法では、検索セッションをgroupとしたGroupKFoldを採用しています。同一検索内のフライト候補は相互に強く関連するため、同じsessionがTrainとValidationに分かれると、behavioral feature作成時に情報が混ざる可能性があります。解法では10-fold GroupKFoldを用い、同じ検索セッションのフライトをまとめて分離しています（[FlightRank 2025: 2nd Place Solution](https://www.kaggle.com/competitions/aeroclub-recsys-2025/writeups/flightrank-2025-2nd-place-solution)）。
+## 注意点 {#pitfalls}
 
-### BirdCLEF 2022
+### groupが細かすぎる
 
-23位解法では`author`をgroupとしてStratifiedGroupKFoldを使用しています。著者ごとの録音環境や投稿傾向がTrainとValidationの両方に入ることを避ける狙いです。Writeupでも同じAuthorをtrainingとevaluationに出さないことを明示しています（[BirdCLEF 2022: 23th Place Solution](https://www.kaggle.com/competitions/birdclef-2022/writeups/bilzard-23th-place-solution)）。
+患者ごとに複数画像があるのに`image_id`をgroupにすると、ほぼ各画像が別groupになり、患者リークを防げません。予測対象の独立単位より細かいIDをgroupにしないことが重要です。
 
-### 3D Pathology
+### 時間方向のリークは別問題
 
-日本語の1位チーム解法では、`crop_id`やpatient単位を使った5-fold GroupKFoldが採用されています。患者由来の複数画像を独立サンプルとしてランダム分割しない設計です（[26-shinnen-3Dpathology: 1st place solution](https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614)）。
+GroupKFoldはgroup分離を保証しますが、時間順序は保証しません。未来データがTrain、過去データがValidationになると問題ならTime-based splitやPurged系CVが必要です。Ubiquant Market Predictionの1位解法でも、用途に応じてPurgedGroupTimeSeries / TimeSeriesSplit等を使い分けています（[Ubiquant Market Prediction: 1st Place Solution](https://www.kaggle.com/competitions/ubiquant-market-prediction/writeups/k-i-y-1st-place-solution-our-betting-strategy)）。
 
-## 注意点
+### ラベル比が崩れる
 
-### groupの選び方を間違えると意味がない
+groupごとにラベル分布が偏ると、fold間のpositive比率などが大きく変わることがあります。その場合はStratifiedGroupKFoldを候補にします。ただしgroup制約が強いほど完全なstratificationは難しくなります（[scikit-learn: StratifiedGroupKFold](https://scikit-learn.org/stable/modules/cross_validation.html#stratifiedgroupkfold)）。
 
-たとえば患者ごとに複数画像があるのに`image_id`をgroupにしても、ほぼ各サンプルが独立groupになるため患者リークは防げません。**予測対象の独立単位より細かいIDをgroupにしない**ことが重要です。
+### group数が少なすぎる
 
-### GroupKFoldは時系列制約を保証しない
+Distinct group数は`n_splits`以上必要です（[scikit-learn: GroupKFold](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html)）。group数が少ない場合はfold数を減らすか、評価設計そのものを見直します。
 
-seasonやuserで分けても、未来データがTrainに入り過去データをValidationにする可能性があります。時間順序そのものが評価条件なら、GroupKFoldではなくTime-based splitやPurged系のCVを検討します。Ubiquant Market Predictionの1位解法でも、feature engineeringやparameter tuningではPurgedGroupTimeSeries / TimeSeriesSplitを使い、training用CVでは別のsplitを検討していました（[Ubiquant Market Prediction: 1st Place Solution](https://www.kaggle.com/competitions/ubiquant-market-prediction/writeups/k-i-y-1st-place-solution-our-betting-strategy)）。
-
-### ラベル比が崩れることがある
-
-groupごとにラベル分布が偏っていると、あるfoldだけpositiveが多いといった状況が起こります。その場合はStratifiedGroupKFoldを候補にします。ただしgroup制約が強いほど完全なstratificationは難しくなります（[scikit-learn: StratifiedGroupKFold](https://scikit-learn.org/stable/modules/cross_validation.html#stratifiedgroupkfold)）。
-
-### fold数よりgroup数が少ないと使えない
-
-GroupKFoldでは、distinct group数が`n_splits`以上必要です（[scikit-learn: GroupKFold](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html)）。
-
-## Quick Reference
+## Quick Reference {#quick-reference}
 
 | 状況 | 選択 |
 |---|---|
-| 同一患者から複数サンプル | GroupKFold |
-| 同一ユーザーから複数行 | GroupKFold |
+| 同一患者から複数sample | GroupKFold |
+| 同一user / sessionから複数行 | GroupKFold |
 | groupあり + クラス不均衡 | StratifiedGroupKFold |
 | 行が独立 + クラス不均衡 | StratifiedKFold |
 | 時系列で未来予測 | Time-based split |
-| groupの意味が分からない | データ生成過程を先に確認 |
+| groupの意味が不明 | データ生成過程を確認 |
 
-**迷ったら「本番テストで初めて現れる単位は何か？」を考え、その単位がfoldをまたがないようにします。**
+**迷ったら「本番テストで初めて現れる独立単位は何か？」を考え、その単位がfoldをまたがないようにします。**
 
-## 関連項目
-
-- KFold
-- StratifiedKFold
-- StratifiedGroupKFold
-- Time-based Split
-- Data Leakage
-- CV-LB Correlation
-
-## 参考文献
+## 参考文献 {#references}
 
 1. [scikit-learn, “GroupKFold”](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.GroupKFold.html)
 2. [scikit-learn, “Cross-validation: StratifiedGroupKFold”](https://scikit-learn.org/stable/modules/cross_validation.html#stratifiedgroupkfold)
