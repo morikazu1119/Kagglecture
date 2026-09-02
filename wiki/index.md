@@ -59,13 +59,12 @@ mindmap
 
 ```mermaid
 flowchart TD
-    A[Public article] --> B{一次情報?}
-    B -->|Yes| C[事実をrawへ記録]
-    B -->|No| D[一次情報を探索]
-    D --> C
-    C --> E[複数ソースで照合]
-    E --> F[Evidence Grade]
-    F --> G[Wikiへ統合]
+    A[公開記事・Writeup] --> B[一次情報を確認]
+    B --> C[複数ソースで照合]
+    C --> D[Evidence Grade]
+    D --> E[Wiki Markdownへ統合]
+    E --> F[本文に出典URL]
+    F --> G[参考文献一覧]
     G --> H[関連ページと相互リンク]
 ```
 
@@ -78,9 +77,11 @@ flowchart TD
 | C | 複数の独立した上位解法で同傾向 |
 | D | 単一記事・経験談・推測。参考扱い |
 
-## Source Layer
+## References Policy
 
-調査元は [Raw Sources](../raw/README.md) に記録します。
+ソース保存専用ディレクトリは作りません。各Wiki Markdownを自己完結させ、具体的な事実・数値・順位・手法には対応するURLを本文中に直接埋め込みます。
+
+各ページ末尾には `## 参考文献` を置き、使用したKaggle Discussion、Notebook、GitHub、論文、技術記事などを一覧化します。
 
 ## Research Skill
 
