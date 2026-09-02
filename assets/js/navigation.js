@@ -60,10 +60,13 @@
 
     if (!input || !results || !empty) return;
 
+    const setItemVisible = (item, visible) => {
+      item.hidden = !visible;
+      item.style.display = visible ? "block" : "none";
+    };
+
     const reset = () => {
-      items.forEach((item) => {
-        item.hidden = true;
-      });
+      items.forEach((item) => setItemVisible(item, false));
       results.classList.remove("is-visible");
       empty.classList.remove("is-visible");
     };
@@ -81,7 +84,7 @@
       items.forEach((item) => {
         const haystack = normalize(item.dataset.searchText);
         const match = terms.every((term) => haystack.includes(term));
-        item.hidden = !match;
+        setItemVisible(item, match);
         if (match) visibleCount += 1;
       });
 
