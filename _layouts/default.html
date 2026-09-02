@@ -16,13 +16,13 @@
       {% assign back_href = page.dir | relative_url %}
     {% endif %}
 
-    {% assign category_pages = site.pages | where: "type", "category-index" | sort: "title" %}
+    {% assign category_pages = site.pages | where: "type", "category-index" | sort: "nav_order" %}
     {% assign reference_pages = site.pages | where: "type", "reference" | sort: "title" %}
 
     <header class="site-header">
       <div class="header-inner">
         <div class="header-start">
-          <button class="menu-toggle" type="button" data-menu-toggle aria-controls="site-drawer" aria-expanded="false" aria-label="メニューを開く">
+          <button class="menu-toggle" type="button" data-menu-toggle aria-controls="site-drawer" aria-expanded="false" aria-label="一覧を開閉">
             <span class="menu-toggle__icon" aria-hidden="true"></span>
           </button>
 
@@ -43,27 +43,32 @@
 
     <div class="drawer-backdrop" data-drawer-backdrop aria-hidden="true"></div>
 
-    <aside id="site-drawer" class="site-drawer" data-site-drawer aria-hidden="true" aria-label="Kagglecture メニュー">
+    <aside id="site-drawer" class="site-drawer" data-site-drawer aria-hidden="true" aria-label="Kagglecture 一覧">
       <div class="drawer-header">
-        <span class="drawer-title">メニュー</span>
-        <button class="drawer-close" type="button" data-drawer-close aria-label="メニューを閉じる">×</button>
+        <a class="drawer-brand" href="{{ '/' | relative_url }}" aria-label="Kagglecture ホーム">
+          <span class="site-brand__mark" aria-hidden="true"></span>
+          <span>Kagglecture</span>
+        </a>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="一覧を閉じる">×</button>
       </div>
 
       <nav class="drawer-nav" aria-label="記事一覧">
-        <a class="drawer-home" href="{{ '/' | relative_url }}">ホーム</a>
+        <a class="drawer-home{% if page.url == '/' %} is-active{% endif %}" href="{{ '/' | relative_url }}"{% if page.url == '/' %} aria-current="page"{% endif %}>ホーム</a>
 
-        {% for category in category_pages %}
-        <section class="drawer-section">
-          <a class="drawer-category" href="{{ category.url | relative_url }}">{{ category.title }}</a>
-          <div class="drawer-articles">
-            {% for item in reference_pages %}
-              {% if item.url contains category.url %}
-              <a class="drawer-article" href="{{ item.url | relative_url }}">{{ item.title }}</a>
-              {% endif %}
-            {% endfor %}
-          </div>
-        </section>
-        {% endfor %}
+        <div class="drawer-category-list">
+          {% for category in category_pages %}
+          <section class="drawer-section">
+            <a class="drawer-category{% if page.url contains category.url %} is-active{% endif %}" href="{{ category.url | relative_url }}"{% if page.url == category.url %} aria-current="page"{% endif %}>{{ category.title }}</a>
+            <div class="drawer-articles">
+              {% for item in reference_pages %}
+                {% if item.url contains category.url %}
+                <a class="drawer-article{% if page.url == item.url %} is-active{% endif %}" href="{{ item.url | relative_url }}"{% if page.url == item.url %} aria-current="page"{% endif %}>{{ item.title }}</a>
+                {% endif %}
+              {% endfor %}
+            </div>
+          </section>
+          {% endfor %}
+        </div>
       </nav>
     </aside>
 
