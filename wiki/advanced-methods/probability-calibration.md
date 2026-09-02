@@ -33,32 +33,21 @@ AUCのようなranking指標では重要度が低い一方、LogLossやBrier Sco
 
 モデルのrankingは正しくても、確率が過信気味なことがあります。
 
-```text
-予測0.9のsample群 -> 実際の正例率0.70
-```
+<div class="comparison-board" aria-label="Calibrationが必要な確率予測の模式例">
+  <section class="comparison-card"><h4>モデルの予測</h4><dl><dt>予測確率</dt><dd>0.90</dd><dt>意味</dt><dd>モデルは90%程度の自信を表現</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>実際の正例率</h4><dl><dt>観測率</dt><dd>0.70</dd><dt>診断</dt><dd>20ポイント過信している</dd></dl></section>
+</div>
+<p class="viz-note">模式例。0.90 / 0.70は説明用の人工値です。</p>
 
 この場合「誰が上か」は合っていても、0.9という確率は高すぎます。Calibrationはこのscaleを補正します。
 
 下の模式Reliability表示で、補正前と補正後を切り替えられます。灰色が予測確率、緑がそのbinでの実際の正例率です。
 
 <div class="interactive-viz" data-interactive="calibration-toggle">
-  <div class="interactive-viz__header">
-    <div>
-      <div class="interactive-viz__title">Calibration前後の確率gap</div>
-      <p class="interactive-viz__subtitle">予測確率と実測正例率の距離が小さいほど、確率として解釈しやすくなります。</p>
-    </div>
-    <span class="interactive-status" data-cal-status data-state="danger">平均gap</span>
-  </div>
+  <div class="interactive-viz__header"><div><div class="interactive-viz__title">Calibration前後の確率gap</div><p class="interactive-viz__subtitle">予測確率と実測正例率の距離が小さいほど、確率として解釈しやすくなります。</p></div><span class="interactive-status" data-cal-status data-state="danger">平均gap</span></div>
   <p class="interactive-note">模式例。binごとの予測率・実測率は人工データです。</p>
-  <div class="interactive-control-row" role="group" aria-label="Calibration状態">
-    <span class="interactive-control-label">表示</span>
-    <button type="button" class="interactive-button is-active" data-cal-mode="raw" aria-pressed="true">補正前</button>
-    <button type="button" class="interactive-button" data-cal-mode="calibrated" aria-pressed="false">補正後</button>
-  </div>
-  <div class="calibration-legend">
-    <span><i></i>予測確率</span>
-    <span><i class="is-observed"></i>実測正例率</span>
-  </div>
+  <div class="interactive-control-row" role="group" aria-label="Calibration状態"><span class="interactive-control-label">表示</span><button type="button" class="interactive-button is-active" data-cal-mode="raw" aria-pressed="true">補正前</button><button type="button" class="interactive-button" data-cal-mode="calibrated" aria-pressed="false">補正後</button></div>
+  <div class="calibration-legend"><span><i></i>予測確率</span><span><i class="is-observed"></i>実測正例率</span></div>
   <div class="calibration-list" data-cal-rows></div>
   <p class="interactive-explanation" data-cal-explanation aria-live="polite">高確率binほど予測が実測率より高く、過信している模式例です。</p>
   <noscript><p class="interactive-explanation">CalibrationはOOFまたは独立setで学習し、予測確率と実際の発生率のズレを補正します。</p></noscript>
@@ -66,11 +55,11 @@ AUCのようなranking指標では重要度が低い一方、LogLossやBrier Sco
 
 ## 手法 {#methods}
 
-| 方法 | 特徴 | 注意 |
-|---|---|---|
-| Sigmoid / Platt | 滑らかな単調変換 | 柔軟性は低め |
-| Isotonic | 非パラメトリックな単調変換 | 小データで過学習しやすい |
-| Temperature Scaling | logit scaleを調整 | 主にNNで使いやすい |
+<div class="comparison-board" aria-label="Probability Calibration手法の比較">
+  <section class="comparison-card"><h4>Sigmoid / Platt</h4><dl><dt>特徴</dt><dd>滑らかな単調変換</dd><dt>注意</dt><dd>柔軟性は低め</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Isotonic</h4><dl><dt>特徴</dt><dd>非パラメトリックな単調変換</dd><dt>注意</dt><dd>小データで過学習しやすい</dd></dl></section>
+  <section class="comparison-card"><h4>Temperature Scaling</h4><dl><dt>特徴</dt><dd>logit scaleを調整</dd><dt>注意</dt><dd>主にNNで使いやすい</dd></dl></section>
+</div>
 
 scikit-learnはIsotonicについて、十分なデータがあれば柔軟だが、小標本では過学習しやすいと説明しています。またIsotonicはtieを作るためAUCがわずかに変わる場合があります（[公式ドキュメント](https://scikit-learn.org/stable/modules/calibration.html)）。
 
