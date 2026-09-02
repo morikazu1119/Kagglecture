@@ -12,9 +12,39 @@ KagglectureはKaggleの辞書・リファレンスであり、カリキュラム
 - 読者の判断に不要な背景説明は削る。
 - 難しい補足は `<details>` に入れる。
 - 「学ぶ順番」「Step 1」「次に読む」などの順序付けをしない。
-- 関連リンクは概念的な関連性だけで付ける。
 - 内部処理、Skill、Jekyll、CDN、JavaScript、ディレクトリ構成を公開本文に書かない。
 - Kagglecture自身のGitHubリポジトリへのリンクを公開本文に置かない。
+- 長い記事はページ内リンクを置き、目的の節へ直接移動できるようにする。
+- 既存の関連Wikiページがある用語は、初出または関連項目から参照できるようにする。
+
+## Page navigation
+
+主要セクションが4つ以上ある記事では、タイトル直後の定義の後に短いページ内ナビゲーションを置いてよい。
+
+例:
+
+```html
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#使う場面">使う場面</a>
+  <a href="#仕組み">仕組み</a>
+  <a href="#使い分け">使い分け</a>
+  <a href="#kaggleでの実例">Kaggle実例</a>
+  <a href="#注意点">注意点</a>
+</nav>
+```
+
+リンク数を増やしすぎず、4〜7件程度にする。
+
+## Internal links
+
+- ルート `index.md` が唯一の索引。
+- `wiki/index.md` のような重複ランディングページは作らない。
+- 新規記事作成時は `index.md` の適切なカテゴリから直接リンクする。
+- 公開URLはGitHub Pagesのbase pathを考慮し、必要に応じてLiquidの `relative_url` を使う。
+- `.md` のsource pathをそのまま公開リンクとして決め打ちしない。
+- 関連項目は**実在するページだけ**リンクする。未作成ページをリンク風に見せない。
+- 同じ用語へのリンクを1ページ中で何度も繰り返さない。
+- 学習順序ではなく、概念上の関連性でcross-linkする。
 
 ## Standard structure
 
@@ -50,7 +80,10 @@ KagglectureはKaggleの辞書・リファレンスであり、カリキュラム
 
 - 関係・処理フロー → Mermaid
 - 数式が本質 → LaTeX
+- 状態や値を変えると理解が深まる → Interactive visualization
 - 単純な概念 → 短い文章
+
+可視化の詳細は `visualization.md` に従う。
 
 図と文章で同じ説明を重複させない。
 
@@ -113,10 +146,9 @@ Kagglectureの中核となる節。
 
 ### 8. `## 関連項目`
 
-概念的に近い実在ページを2〜6件程度置く。
+概念的に近い**実在ページ**を2〜6件程度置く。
 
-- 推奨順序を付けない。
-- 未作成ページへリンクしない。
+実在ページがない場合は節自体を省略する。
 
 ### 9. `## 参考文献`
 
@@ -126,15 +158,15 @@ Kagglectureの中核となる節。
 
 ### Validation / Split
 
-`定義 → 使う場面 → split図 → 他splitとの比較 → Kaggle実例 → leakage / mismatch → Quick Reference`
+`定義 → 使う場面 → split図 / Interactive → 他splitとの比較 → Kaggle実例 → leakage / mismatch → Quick Reference`
 
-特に「何を分離単位にするか」を明確にする。
+特に「何を分離単位にするか」を明確にする。foldやsplitを切り替えることで理解が深まる場合はInteractiveを優先する。
 
 ### Metric
 
 `定義 → 数式 → 値の意味 → 使う場面 → 他metricとの比較 → Kaggle実例 → 最適化上の注意`
 
-数式だけでなく、予測をどう変えるとmetricが動くかを書く。
+thresholdやrankingを操作するとmetric変化を理解しやすい場合はInteractiveを検討する。
 
 ### Modeling / Training
 
@@ -146,7 +178,7 @@ Kagglectureの中核となる節。
 
 `定義 → 入出力の仕組み → 使い分け → CV上の選択方法 → Kaggle実例 → overfit / leakage注意`
 
-Public LBだけで重みやthresholdを決める設計を推奨しない。
+weightやthresholdの変化を理解する価値が高ければInteractiveを使う。Public LBだけで重みやthresholdを決める設計を推奨しない。
 
 ### Competition article
 
@@ -181,9 +213,3 @@ tags:
   - kaggle
 ---
 ```
-
-## Index
-
-- ルート `index.md` が唯一の索引。
-- `wiki/index.md` のような重複ランディングページは作らない。
-- 新規記事作成時は `index.md` の適切なカテゴリからリンクする。
