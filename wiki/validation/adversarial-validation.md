@@ -44,14 +44,31 @@ TrainとTestを高精度で見分けられるなら、手元のCVがLeaderboard�
 3. OOF ROC-AUCなどで「見分けやすさ」を測る。
 4. feature importanceやSHAPで分布差の原因を見る。
 
-```mermaid
-flowchart LR
-  A[Train features] --> C[Train/Test classifier]
-  B[Test features] --> C
-  C --> D{識別できる?}
-  D -->|AUCが0.5付近| E[分布差は小さい]
-  D -->|AUCが高い| F[分布差の特徴を調査]
-```
+下の模式図では、Train/Testの分布差を大きくすると識別しやすくなる感覚を確認できます。数値は説明用で、実測AUCではありません。
+
+<div class="interactive-viz" data-interactive="adversarial-shift">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">Train/Testの分布差を動かす</div>
+      <p class="interactive-viz__subtitle">同じ特徴量でも分布が離れるほど、Train/Test識別器は手掛かりを得やすくなります。</p>
+    </div>
+    <span class="interactive-status" data-av-status data-state="safe">見分けにくい / shift 0</span>
+  </div>
+  <p class="interactive-note">模式例。実CompetitionのAUCや特徴分布ではありません。</p>
+  <div class="interactive-control-row">
+    <span class="interactive-control-label">分布差</span>
+    <label class="interactive-range">
+      <input type="range" min="0" max="60" step="5" value="10" data-av-shift aria-label="TrainとTestの分布差">
+      <span class="interactive-range-labels"><span>小さい</span><span>大きい</span></span>
+    </label>
+  </div>
+  <div class="distribution-board" aria-label="TrainとTestの模式分布">
+    <div class="distribution-row"><span>Train</span><div class="distribution-track" data-av-train></div></div>
+    <div class="distribution-row"><span>Test</span><div class="distribution-track" data-av-test></div></div>
+  </div>
+  <p class="interactive-explanation" data-av-explanation aria-live="polite">TrainとTestの模式分布が近く、識別器は特徴だけでは見分けにくい状態です。</p>
+  <noscript><p class="interactive-explanation">Train/Testを高精度で識別できるほど分布差を疑います。ただしAUC値だけでなく、差を作る特徴を確認します。</p></noscript>
+</div>
 
 ## 読み方 {#interpretation}
 
