@@ -14,7 +14,7 @@ Kaggleで使われる概念・手法・評価指標・コンペ戦略を、**必
   <div class="learning-card">
     <h3>Validation & Split</h3>
     <p>Hold-out、KFold、Stratified、Group、Time Series、Adversarial Validation、Leakage。</p>
-    <p><a href="{{ '/wiki/validation/group-kfold.html' | relative_url }}">GroupKFold →</a></p>
+    <p><a href="wiki/validation/group-kfold.html">GroupKFold →</a></p>
   </div>
   <div class="learning-card">
     <h3>Metrics</h3>
