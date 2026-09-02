@@ -31,14 +31,14 @@ Kaggleでは強いモデルより先に潰すべき問題です。Leakageがあ�
 
 ## 典型パターン {#patterns}
 
-| Leakage | 例 |
-|---|---|
-| Split leakage | 同一患者・ユーザー・重複画像がTrain/Validをまたぐ |
-| Target leakage | 全TrainのtargetでTarget EncodingしてからCVする |
-| Preprocessing leakage | 標準化・特徴選択・欠損補完を全データでfitする |
-| Temporal leakage | 未来の売上を含むrolling featureで過去を予測する |
-| Pseudo-label leakage | Validationを学習したteacherのpseudo labelをそのValidation評価に使う |
-| Duplicate leakage | near-duplicateがTrain/Valid/Test間に存在する |
+<div class="comparison-board" aria-label="Data Leakageの典型パターン">
+  <section class="comparison-card"><h4>Split leakage</h4><dl><dt>例</dt><dd>同一患者・ユーザー・重複画像がTrain/Validをまたぐ</dd></dl></section>
+  <section class="comparison-card"><h4>Target leakage</h4><dl><dt>例</dt><dd>全TrainのtargetでTarget EncodingしてからCVする</dd></dl></section>
+  <section class="comparison-card"><h4>Preprocessing leakage</h4><dl><dt>例</dt><dd>標準化・特徴選択・欠損補完を全データでfitする</dd></dl></section>
+  <section class="comparison-card"><h4>Temporal leakage</h4><dl><dt>例</dt><dd>未来の売上を含むrolling featureで過去を予測する</dd></dl></section>
+  <section class="comparison-card"><h4>Pseudo-label leakage</h4><dl><dt>例</dt><dd>Validationを学習したteacherのpseudo labelを同じValidation評価に使う</dd></dl></section>
+  <section class="comparison-card"><h4>Duplicate leakage</h4><dl><dt>例</dt><dd>near-duplicateがTrain/Valid/Test間に存在する</dd></dl></section>
+</div>
 
 ## 防ぎ方 {#prevention}
 
