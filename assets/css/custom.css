@@ -1,0 +1,105 @@
+.main-content {
+  max-width: 72rem;
+}
+
+.main-content table {
+  display: block;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.mermaid,
+.chart-container,
+.plotly-container,
+.vega-container,
+.d3-container,
+.map-container,
+.svg-container,
+.embed-container {
+  width: 100%;
+  margin: 1.5rem 0;
+  overflow-x: auto;
+}
+
+.chart-container canvas {
+  max-width: 100%;
+}
+
+.map-container,
+[data-viz="leaflet"] {
+  min-height: 420px;
+}
+
+.embed-container {
+  position: relative;
+  aspect-ratio: 16 / 9;
+}
+
+.embed-container iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.main-content img,
+.main-content svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.callout {
+  margin: 1.25rem 0;
+  padding: 1rem 1.25rem;
+  border-left: 4px solid #157878;
+  background: #f3f8f8;
+  border-radius: 0.25rem;
+}
+
+.callout.warning {
+  border-left-color: #b7791f;
+  background: #fffaf0;
+}
+
+.callout.danger {
+  border-left-color: #c53030;
+  background: #fff5f5;
+}
+
+.callout.tip {
+  border-left-color: #2f855a;
+  background: #f0fff4;
+}
+
+.callout-title {
+  margin-bottom: 0.35rem;
+  font-weight: 700;
+}
+
+details {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e1e4e8;
+  border-radius: 0.35rem;
+}
+
+details summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+mjx-container[display="true"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+}
+
+@media (max-width: 640px) {
+  .main-content {
+    font-size: 0.98rem;
+  }
+
+  .map-container,
+  [data-viz="leaflet"] {
+    min-height: 320px;
+  }
+}
