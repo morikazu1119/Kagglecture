@@ -16,12 +16,21 @@
       {% assign back_href = page.dir | relative_url %}
     {% endif %}
 
+    {% assign category_pages = site.pages | where: "type", "category-index" | sort: "title" %}
+    {% assign reference_pages = site.pages | where: "type", "reference" | sort: "title" %}
+
     <header class="site-header">
       <div class="header-inner">
-        <a class="site-brand" href="{{ '/' | relative_url }}" aria-label="Kagglecture 索引">
-          <span class="site-brand__mark" aria-hidden="true"></span>
-          <span>Kagglecture</span>
-        </a>
+        <div class="header-start">
+          <button class="menu-toggle" type="button" data-menu-toggle aria-controls="site-drawer" aria-expanded="false" aria-label="メニューを開く">
+            <span class="menu-toggle__icon" aria-hidden="true"></span>
+          </button>
+
+          <a class="site-brand" href="{{ '/' | relative_url }}" aria-label="Kagglecture 索引">
+            <span class="site-brand__mark" aria-hidden="true"></span>
+            <span>Kagglecture</span>
+          </a>
+        </div>
 
         {% unless page.url == '/' %}
         <nav class="header-nav" aria-label="メインナビゲーション">
@@ -31,6 +40,32 @@
         {% endunless %}
       </div>
     </header>
+
+    <div class="drawer-backdrop" data-drawer-backdrop aria-hidden="true"></div>
+
+    <aside id="site-drawer" class="site-drawer" data-site-drawer aria-hidden="true" aria-label="Kagglecture メニュー">
+      <div class="drawer-header">
+        <span class="drawer-title">メニュー</span>
+        <button class="drawer-close" type="button" data-drawer-close aria-label="メニューを閉じる">×</button>
+      </div>
+
+      <nav class="drawer-nav" aria-label="記事一覧">
+        <a class="drawer-home" href="{{ '/' | relative_url }}">ホーム</a>
+
+        {% for category in category_pages %}
+        <section class="drawer-section">
+          <a class="drawer-category" href="{{ category.url | relative_url }}">{{ category.title }}</a>
+          <div class="drawer-articles">
+            {% for item in reference_pages %}
+              {% if item.url contains category.url %}
+              <a class="drawer-article" href="{{ item.url | relative_url }}">{{ item.title }}</a>
+              {% endif %}
+            {% endfor %}
+          </div>
+        </section>
+        {% endfor %}
+      </nav>
+    </aside>
 
     <main id="content" class="site-main">
       <article class="content-shell">
@@ -44,6 +79,27 @@
       </nav>
       {% endunless %}
     </main>
+
+    <section class="site-search" data-site-search aria-labelledby="site-search-label">
+      <label id="site-search-label" class="site-search__label" for="site-search-input">記事を検索</label>
+      <div class="site-search__field">
+        <input id="site-search-input" class="site-search__input" type="search" inputmode="search" autocomplete="off" placeholder="例: GroupKFold、Validation、Leakage" data-search-input>
+        <svg class="site-search__icon" viewBox="0 0 24 24" aria-hidden="true">
+          <circle cx="11" cy="11" r="6.5" fill="none" stroke="currentColor" stroke-width="1.8"></circle>
+          <path d="M16 16l4 4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path>
+        </svg>
+      </div>
+
+      <div class="search-results" data-search-results aria-live="polite">
+        {% for item in reference_pages %}
+        <a class="search-result" href="{{ item.url | relative_url }}" data-search-item data-search-text="{{ item.title | escape }} {{ item.summary | escape }} {{ item.tags | join: ' ' | escape }}" hidden>
+          <span class="search-result__title">{{ item.title }}</span>
+          {% if item.summary %}<span class="search-result__summary">{{ item.summary }}</span>{% endif %}
+        </a>
+        {% endfor %}
+        <div class="search-empty" data-search-empty>該当する記事はありません。</div>
+      </div>
+    </section>
 
     <footer class="site-footer">
       <span>Kagglecture</span>
