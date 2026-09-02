@@ -24,7 +24,7 @@
       <nav class="site-nav" aria-label="ページナビゲーション">
         <a id="back-link" class="nav-link" href="{{ '/' | relative_url }}">← 前のページ</a>
         <a class="nav-link" href="{{ '/' | relative_url }}">ホーム</a>
-        <a class="nav-link" href="{{ '/wiki/' | relative_url }}">学習一覧</a>
+        <a class="nav-link" href="{{ '/wiki/' | relative_url }}">Wiki一覧</a>
       </nav>
       {% endunless %}
 
@@ -33,7 +33,7 @@
       {% unless page.url == '/' %}
       <nav class="page-bottom-nav" aria-label="ページ下部ナビゲーション">
         <a id="back-link-bottom" class="nav-link" href="{{ '/' | relative_url }}">← 前のページ</a>
-        <a class="nav-link" href="{{ '/wiki/' | relative_url }}">学習一覧</a>
+        <a class="nav-link" href="{{ '/wiki/' | relative_url }}">Wiki一覧</a>
       </nav>
       {% endunless %}
 
