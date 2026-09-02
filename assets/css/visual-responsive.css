@@ -25,6 +25,11 @@
   outline-offset: 3px;
 }
 
+/* 4列以上の表はスマホで潰さず、表自身だけ横スクロールさせる。 */
+.html-table:has(tr > :nth-child(4)) {
+  min-width: 560px;
+}
+
 .flow-node,
 .layer-block,
 .comparison-card,
