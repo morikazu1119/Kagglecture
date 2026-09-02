@@ -1,3 +1,6 @@
+<link rel="stylesheet" href="{{ '/assets/css/custom.css' | relative_url }}">
+<script src="{{ '/assets/js/visualizations.js' | relative_url }}"></script>
+
 <script>
   window.MathJax = {
     tex: {
@@ -37,17 +40,3 @@
     await mermaid.run({ querySelector: ".mermaid" });
   });
 </script>
-
-<style>
-  .mermaid {
-    overflow-x: auto;
-    margin: 1.5rem 0;
-    text-align: center;
-  }
-
-  mjx-container[display="true"] {
-    overflow-x: auto;
-    overflow-y: hidden;
-    padding: 0.5rem 0;
-  }
-</style>
