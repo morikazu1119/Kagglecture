@@ -22,13 +22,13 @@ Kaggleで使われる概念・手法・評価指標・コンペ戦略を、**必
 
 ## データ種別
 
-| データ | 主な項目 |
-|---|---|
-| **Tabular** | GBDT、Feature Engineering、Encoding、Aggregation、CV |
-| **Computer Vision** | Augmentation、Pretraining、Loss、TTA、Ensemble |
-| **NLP** | Transformer、Pooling、Length設計、Pseudo Label |
-| **Time Series** | Time-based Split、Lag、Rolling、Leakage |
-| **Audio** | Spectrogram、Augmentation、CV設計 |
-| **Multimodal** | Fusion、Pretraining、Cross-modal modeling、Ensemble |
-| **Ranking / Recommendation** | Ranking metric、negative sampling、candidate generation |
-| **Optimization** | Search、Simulation、Heuristics、RL、Evaluation design |
+<div class="comparison-board" aria-label="Kaggleのデータ種別と主要トピック">
+  <section class="comparison-card"><h4>Tabular</h4><dl><dt>主要項目</dt><dd>GBDT、Feature Engineering、Encoding、Aggregation、CV</dd></dl></section>
+  <section class="comparison-card"><h4>Computer Vision</h4><dl><dt>主要項目</dt><dd>Augmentation、Pretraining、Loss、TTA、Ensemble</dd></dl></section>
+  <section class="comparison-card"><h4>NLP</h4><dl><dt>主要項目</dt><dd>Transformer、Pooling、Length設計、Pseudo Label</dd></dl></section>
+  <section class="comparison-card"><h4>Time Series</h4><dl><dt>主要項目</dt><dd>Time-based Split、Lag、Rolling、Leakage</dd></dl></section>
+  <section class="comparison-card"><h4>Audio</h4><dl><dt>主要項目</dt><dd>Spectrogram、Augmentation、CV設計</dd></dl></section>
+  <section class="comparison-card"><h4>Multimodal</h4><dl><dt>主要項目</dt><dd>Fusion、Pretraining、Cross-modal modeling、Ensemble</dd></dl></section>
+  <section class="comparison-card"><h4>Ranking / Recommendation</h4><dl><dt>主要項目</dt><dd>Ranking metric、negative sampling、candidate generation</dd></dl></section>
+  <section class="comparison-card"><h4>Optimization</h4><dl><dt>主要項目</dt><dd>Search、Simulation、Heuristics、RL、Evaluation design</dd></dl></section>
+</div>
