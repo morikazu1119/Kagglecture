@@ -80,12 +80,12 @@ Kaggleでは、**OOF予測でthresholdを選び、そのthresholdをtestへ適�
 
 ## 平均方法 {#averaging}
 
-| average | 意味 | 特徴 |
-|---|---|---|
-| binary | 指定positive classのみ | 二値分類 |
-| macro | 各class F1を同じ重みで平均 | 少数classも重視 |
-| weighted | class件数で重み付け | 大きいclassの影響が強い |
-| micro | 全TP/FP/FNをまとめて計算 | 全体件数を重視 |
+<div class="comparison-board" aria-label="F1 Scoreのaveraging方式">
+  <section class="comparison-card"><h4>binary</h4><dl><dt>計算対象</dt><dd>指定positive class</dd><dt>向く問題</dt><dd>二値分類</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>macro</h4><dl><dt>計算対象</dt><dd>classごとのF1を等重み平均</dd><dt>特徴</dt><dd>少数classも同じ重さ</dd></dl></section>
+  <section class="comparison-card"><h4>weighted</h4><dl><dt>計算対象</dt><dd>class件数で重み付け</dd><dt>特徴</dt><dd>大きいclassの影響が強い</dd></dl></section>
+  <section class="comparison-card"><h4>micro</h4><dl><dt>計算対象</dt><dd>全TP/FP/FNを集約</dd><dt>特徴</dt><dd>全sampleをまとめて評価</dd></dl></section>
+</div>
 
 CompetitionのEvaluation定義と同じaverageを使います。
 
