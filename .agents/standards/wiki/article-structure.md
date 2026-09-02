@@ -14,6 +14,7 @@ KagglectureはKaggleの辞書・リファレンスであり、カリキュラム
 - 「学ぶ順番」「Step 1」「次に読む」などの順序付けをしない。
 - 長い記事はページ内リンクを置き、目的の節へ直接移動できるようにする。
 - 既存の関連Wikiページがある用語はcross-linkする。
+- 公開UIのカードや「戻る」などに、`→` / `←` のような装飾目的の矢印記号を付けない。リンクであることはカード全体のhover・focus・cursor等で示す。
 - 内部処理、Skill、Jekyll、CDN、JavaScript、ディレクトリ構成を公開本文に書かない。
 - Kagglecture自身のGitHubリポジトリへのリンクを公開本文に置かない。
 
@@ -23,9 +24,7 @@ KagglectureはKaggleの辞書・リファレンスであり、カリキュラム
 
 ```text
 Home
-  ↓
 Category
-  ↓
 Article
 ```
 
@@ -33,9 +32,7 @@ Article
 
 ```text
 Kagglecture
-  ↓
 Validation & Split
-  ↓
 GroupKFold
 ```
 
@@ -78,7 +75,7 @@ permalink: /wiki/validation/
 - Liquid内では `relative_url` を使い、project siteのbase pathを落とさない。
 - `.md` のsource pathを公開URLとして使わない。
 - Categoryは `/wiki/<category>/`、記事はJekyllが生成する公開URLへリンクする。
-- 新規ページ作成後は **Home → Category → Article** の全経路が404にならないことを確認する。
+- 新規ページ作成後は Home、Category、Article の全経路が404にならないことを確認する。
 
 ## Page navigation
 
@@ -110,10 +107,10 @@ permalink: /wiki/validation/
 
 なぜ機能するかを直感的に説明する。
 
-- 関係・処理フロー → Mermaid / SVG
-- 数式が本質 → LaTeX
-- 状態や値を変えると理解が深まる → Interactive visualization
-- 単純な概念 → 短い文章
+- 関係・処理フロー: Mermaid / SVG
+- 数式が本質: LaTeX
+- 状態や値を変えると理解が深まる: Interactive visualization
+- 単純な概念: 短い文章
 
 可視化の詳細は `visualization.md` に従う。
 
@@ -155,23 +152,23 @@ permalink: /wiki/validation/
 
 ### Validation / Split
 
-`定義 → 使う場面 → split図 / Interactive → 比較 → Kaggle実例 → leakage / mismatch → Quick Reference`
+定義、使う場面、split図 / Interactive、比較、Kaggle実例、leakage / mismatch、Quick Reference の順を基本とする。
 
 特に「何を分離単位にするか」を明確にする。
 
 ### Metric
 
-`定義 → 直感 → 数式 → 値の意味 → 使う場面 → 比較 → Kaggle実例 → 最適化上の注意`
+定義、直感、数式、値の意味、使う場面、比較、Kaggle実例、最適化上の注意の順を基本とする。
 
 thresholdやrankingを操作すると理解しやすい場合はInteractiveを検討する。
 
 ### Modeling / Training
 
-`定義 → なぜ効くか → 使う条件 → 比較 → Kaggle実例 / ablation → 失敗条件`
+定義、なぜ効くか、使う条件、比較、Kaggle実例 / ablation、失敗条件の順を基本とする。
 
 ### Ensemble / Post-processing / Inference
 
-`定義 → 入出力の仕組み → 使い分け → CV上の選択 → Kaggle実例 → overfit / leakage注意`
+定義、入出力の仕組み、使い分け、CV上の選択、Kaggle実例、overfit / leakage注意の順を基本とする。
 
 ### Competition article
 
