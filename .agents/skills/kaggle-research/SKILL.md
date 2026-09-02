@@ -1,214 +1,37 @@
 ---
 name: kaggle-research
-description: Kaggleの公開Writeup・Discussion・Notebook・技術記事・上位解法を日本語/英語で横断調査し、一般的な手法からユニークな手法まで、効果・適用条件・失敗条件・根拠をKaggleリファレンスWikiとして整理する。
+description: Kaggleの公開Writeup・Discussion・Notebook・GitHub・技術記事を日本語/英語で横断調査し、実際に有効だった手法・概念・評価方法をKagglectureの辞書記事として作成・更新する。
 ---
 
 # Kaggle Research Skill
 
-## Goal
+## Purpose
 
-Kaggleで公開されている情報を広く調査し、コンペで実際に有効だった手法・概念・評価方法を、**必要なときにすぐ引ける辞書・リファレンス**として整理する。
+Kaggleで公開されている情報を調査し、一般的な手法からCompetition固有の工夫まで、再利用可能な知識として `wiki/` に整理する。
 
-このWikiはカリキュラムではない。学習順序や「次に読むべき記事」をユーザーへ指示しない。
+このSkillは以下の依頼で使用する。
 
-トップページ `index.md` を唯一の索引とし、個別記事は `wiki/` 以下に置く。`wiki/index.md` のような重複ランディングページは作らない。
+- Kaggle手法・Validation・Metricの調査
+- 過去Competitionの上位解法調査
+- 特定手法がKaggleで実際に効いた事例の調査
+- 既存Wiki記事の新規作成・更新
+- 複数Competitionを横断した比較・整理
 
-Pythonコード集にはしない。意味、使い分け、効果、失敗条件を優先する。
+Pythonコード集を作るSkillではない。意味、使い分け、実例、効果、失敗条件を優先する。
 
-## Reference-first UX
+## Required standards
 
-公開ページは、Kaggleについて調べたいユーザーが目的の情報へ短時間で到達するためのリファレンスである。
+記事を作成・更新する前に、以下を参照する。
 
-- 各ページは単独で読んでも理解できるようにする。
-- 最初に定義または結論を示す。
-- 1段落を長くしすぎない。
-- 同じ内容を文章・表・図で重複させない。
-- 読者の判断に不要な背景説明は削る。
-- 「この記事では〜を説明する」のような前置きは原則書かない。
-- 内部処理、Skill、Jekyll、CDN、JavaScript、ファイル構成などを公開本文に書かない。
-- Kagglecture自身のGitHubリポジトリへのリンクを公開本文・ナビゲーションに置かない。
-- 参考文献として必要なKaggle解法者のGitHubリポジトリへのリンクは残す。
-- 「調査しました」など作成過程を本文の主役にしない。
-- 難しい補足は `<details>` に入れる。
-- 図表は理解や比較を速くする場合だけ使う。
-- 「学ぶ順番」「Step 1」「次に読む」など、カリキュラム型の誘導を作らない。
-- 記事末尾は必要に応じて **関連項目** を置く。順序ではなく概念的な関連性でリンクする。
-- 共通ナビゲーションは「戻る」「索引」とする。
+- `../../standards/wiki/article-structure.md`
+- `../../standards/wiki/citation-policy.md`
+- `../../standards/wiki/visualization.md`
 
-## Standard article structure
-
-手法・概念の記事は、原則として以下の順で作る。不要な節は削除してよいが、順序をむやみに入れ替えない。
-
-### 1. `# 用語・手法名`
-
-タイトル直下に2〜4行で定義を書く。
-
-ここだけ読めば、最低限以下が分かる状態にする。
-
-- 何か
-- 何のために使うか
-- 最も重要な前提条件
-
-長い導入や歴史説明は置かない。
-
-### 2. `## 使う場面`
-
-「いつ使うか」を最短で判断できるようにする。
-
-可能なら、文章より先に以下のような表を使う。
-
-| 状況 | 適するか | 理由 |
-|---|---|---|
-|  |  |  |
-
-対象データ、前提条件、避ける条件を明確にする。
-
-### 3. `## 仕組み`
-
-なぜ機能するのかを直感的に説明する。
-
-- 関係・処理フロー → Mermaid
-- 数式が本質 → LaTeX
-- 単純な概念 → 短い文章
-
-図を入れた場合、同じ内容を長文で再説明しない。
-
-### 4. `## 使い分け`
-
-類似手法・代替手法との違いを比較する。
-
-基本はMarkdown表を使う。
-
-| 手法 | 強み | 弱み | 適用条件 |
-|---|---|---|---|
-|  |  |  |  |
-
-単独手法の説明だけで終わらせず、「何と迷うか」を答える。
-
-### 5. `## Kaggleでの実例`
-
-Kagglectureで最も重要な節の1つ。
-
-理論上使えるだけではなく、実際のKaggleでどう使われたかを書く。
-
-可能な範囲で以下を入れる。
-
-| Competition | Rank / Medal | 使用方法 | Effect | Source |
-|---|---:|---|---|---|
-|  |  |  |  |  |
-
-実例では特に以下を抽出する。
-
-- 何をgroup / feature / target / threshold等として使ったか
-- 何foldか
-- どのモデル・パイプラインと組み合わせたか
-- CV / LB / ablation差
-- なぜそのコンペで有効だったか
-
-数値が確認できない場合は推測しない。
-
-### 6. `## 注意点`
-
-成功条件よりも、間違えやすい点を優先する。
-
-例:
-
-- Data leakage
-- Validation mismatch
-- Overfitting
-- Distribution shift
-- class imbalance
-- 計算コスト
-- 推論時間
-- group / split / threshold等の選択ミス
-
-一般論だけでなく、テーマ固有の失敗条件を書く。
-
-### 7. `## Quick Reference`
-
-記事を再訪したユーザーが数秒で判断するための節。
-
-短い表またはチェックリストにする。
-
-例:
-
-| 状況 | 選択 |
-|---|---|
-|  |  |
-
-本文の要約を長文で繰り返さない。
-
-### 8. `## 関連項目`
-
-概念的に近い項目を2〜6件程度置く。
-
-- 「次に読む」ではない。
-- 推奨順序を付けない。
-- 未作成ページへのリンクは、実ファイルが存在する場合だけ張る。
-
-### 9. `## 参考文献`
-
-必須。
-
-本文で使った全ソースを追跡可能な形で列挙する。
-
-URLだけを並べず、タイトル・投稿者・媒体・日付を確認できる範囲で入れる。
-
-## Article-type adaptations
-
-基本構成を保ちつつ、テーマごとに重点を変える。
-
-### Validation / Split
-
-重視する順:
-
-`定義 → 使う場面 → splitの図 → 他splitとの比較 → Kaggle実例 → leakage / mismatch → Quick Reference`
-
-特に「何を分離単位にするか」を具体的に書く。
-
-### Metric
-
-重視する順:
-
-`定義 → 数式 → 値の意味 → 使う場面 → 他metricとの比較 → Kaggle実例 → 最適化上の注意`
-
-数式だけでなく、予測をどう変えるとmetricが動くかを説明する。
-
-### Modeling / Training method
-
-重視する順:
-
-`定義 → なぜ効くか → 使う条件 → 類似手法との比較 → Kaggle実例 / ablation → 失敗条件`
-
-モデル名・ライブラリ名の羅列にしない。
-
-### Ensemble / Post-processing / Inference
-
-重視する順:
-
-`定義 → 入出力の仕組み → 使い分け → CV上の選択方法 → Kaggle実例 → overfit / leakage注意`
-
-Public LBだけで重みやthresholdを決める設計を推奨しない。
-
-### Competition article
-
-個別コンペ記事だけは以下を基本構成とする。
-
-1. コンペ概要
-2. Metric / Data / 制約
-3. Validation
-4. 上位解法比較
-5. 共通して効いた手法
-6. コンペ固有のユニークな手法
-7. 効果・ablation比較
-8. 他コンペへ一般化できる知見
-9. 参考文献
-
-順位順にWriteupを要約するだけの記事にはしない。
+記事構成・Citation・可視化ルールは上記StandardがSSOT。Skill内へ重複定義しない。
 
 ## Research scope
 
-毎回、日本語と英語の両方で調査する。
+毎回、日本語と英語の両方を確認する。
 
 優先する情報源:
 
@@ -220,30 +43,57 @@ Public LBだけで重みやthresholdを決める設計を推奨しない。
 6. Zenn / Qiita / はてな等の日本語記事
 7. 論文・公式ドキュメント・技術ブログ
 
-二次記事だけで一般化せず、可能な限り一次情報へ遡る。
+二次情報だけで一般化せず、可能な限り一次情報まで遡る。
+
+テーマが広い場合は必要に応じて以下を確認する。
+
+| 軸 | 観点 |
+|---|---|
+| Data | Tabular / CV / NLP / Time Series / Audio / Multimodal / Ranking / Optimization |
+| Validation | Hold-out / KFold / Stratified / Group / Time-based / Purged / Adversarial Validation |
+| Modeling | GBDT / CNN / Transformer / Foundation Model / simple model / specialized architecture |
+| Training | Feature / Augmentation / Sampling / Loss / Pretraining / Fine-tuning / Pseudo Label |
+| Inference | TTA / threshold / calibration / post-processing / test-time adaptation |
+| Ensemble | averaging / weighted blend / rank average / stacking / fold・seed ensemble |
+| Strategy | CV-LB correlation / leakage / shake-up / inference budget / reproducibility |
+
+テーマが限定されている場合、無関係な領域を水増ししない。同一領域で複数Competition・複数上位解法を比較する。
+
+## Research workflow
+
+1. 調査対象を1文で定義する。
+2. 日本語・英語で候補ソースを探す。
+3. 二次記事から可能な限りKaggle Discussion / Notebook / GitHub等の一次情報へ遡る。
+4. 上位解法ごとに手法、Validation、Metric、順位、効果を抽出する。
+5. 同じ手法を複数Competition・複数解法でクロスチェックする。
+6. General / Situational / Competition-specific に整理する。
+7. 効果主張のEvidenceを判定する。
+8. Wiki記事を新規作成または更新する。
+9. ルート `index.md` に記事リンクを追加する。
+10. Standardに沿ってCitation・図表・関連リンクを最終確認する。
 
 ## Evidence
 
-「効いた」と書く場合は根拠の強さを確認する。
+効果を判断するときは以下を使う。
 
 | Grade | 根拠 |
 |---|---|
 | A | ablation、CV差、LB差、順位差などの定量根拠がある |
-| B | 上位入賞者本人が有効性を明示し最終解法に採用 |
+| B | 上位入賞者本人が有効性を明示し、最終解法に採用 |
 | C | 複数の独立した上位解法で同傾向 |
 | D | 単一記事・経験談・推測のみ |
 
-Gradeは内部判断にも使う。公開ページでは必要な場合だけ簡潔に示す。数値がない場合は効果量を推測しない。
+数値がない場合は効果量を推測しない。
 
-## Method extraction
+## Extraction schema
 
-各手法について可能な範囲で確認する。
+各手法について可能な範囲で以下を抽出する。
 
 | Field | 内容 |
 |---|---|
 | Method | 手法名 |
-| Competition | 使用されたコンペ |
-| Rank / Medal | 順位またはメダル |
+| Competition | 使用されたCompetition |
+| Rank / Medal | 順位またはMedal |
 | Metric | 評価指標 |
 | Validation | ローカル評価設計 |
 | Effect | CV / LB / ablation差 |
@@ -251,51 +101,25 @@ Gradeは内部判断にも使う。公開ページでは必要な場合だけ簡
 | Use when | 適用条件 |
 | Compare with | 比較対象 |
 | Avoid when | 失敗条件・リスク |
+| Evidence | A / B / C / D |
 | Source | 一次情報を優先したURL |
 
-## General vs unique
+確認できないFieldは埋めない。
 
-必要に応じて以下で整理する。
+## Generalization
 
-- **General** — 複数コンペで再利用しやすい基本手法
-- **Situational** — 条件が合えば強い手法
-- **Competition-specific** — データ生成過程、評価指標、制約を突いた固有解法
+調査結果は必要に応じて以下に分ける。
 
-固有実装だけで終わらず、他のコンペでも使える原理を短く抽出する。
+- **General** — 複数Competitionで再利用しやすい基本手法
+- **Situational** — 条件が合えば強いが常に有効ではない手法
+- **Competition-specific** — データ生成過程、Metric、制約を突いた固有解法
 
-## Visualization
+Competition-specificな実装を紹介するときは、他Competitionでも再利用できる原理があるかを分離して考える。
 
-詳細は `references/visualization-guide.md` を参照する。
-
-優先順位:
-
-1. Markdown表 — 比較
-2. Mermaid — フロー・構造・判断
-3. LaTeX — 数式
-4. Chart.js / Plotly / Vega-Lite — 実測値の比較
-5. SVG / D3 — 特殊な模式図
-6. Leaflet — 地理データ
-7. 画像・動画 — 本文より理解が速い場合
-
-可視化は「使えるから使う」のではなく、文章より速く理解できる場合にだけ使う。
-
-## Citation rules
-
-参考文献は必須。URLはWiki Markdownへ直接埋め込む。
-
-- 具体的な数値・順位・採用手法には近い位置に出典リンクを置く。
-- 比較表には必要に応じて `Source` 列を置く。
-- ページ末尾に `## 参考文献` を置く。
-- Kaggle DiscussionはCompetition名とSolution / Writeup名を明示する。
-- GitHubはリポジトリ名と該当ファイルを明示する。
-- 二次情報から一次情報へ辿れる場合は一次情報を優先する。
-- 存在を確認していない参考文献を作らない。
-- 数値グラフは出典から確認できる実測値だけで作る。
-
-## Wiki structure
+## Repository layout
 
 ```text
-index.md
+index.md                  # 唯一の公開索引
 wiki/
   concepts/
   validation/
@@ -304,38 +128,39 @@ wiki/
   modalities/
   competitions/
   synthesis/
+
+.agents/
+  skills/
+    kaggle-research/
+      SKILL.md
+  standards/
+    wiki/
+      article-structure.md
+      citation-policy.md
+      visualization.md
 ```
 
-1ページ1テーマを原則とする。ルート `index.md` をカテゴリ・データ種別・用語名などから直接アクセスできる索引にする。
+`wiki/index.md` のような重複ランディングページは作らない。
 
-新しい記事を作成したら、ルート `index.md` の適切なカテゴリからリンクする。
+## Deliverables
 
-## Quality checklist
-
-- [ ] 冒頭2〜4行だけで定義と目的が分かる
-- [ ] 使う場面が具体的に分かる
-- [ ] 類似手法との使い分けが分かる
-- [ ] 日本語と英語の両方で調査した
-- [ ] Kaggle一次情報を優先した
-- [ ] Kaggle実例がある
-- [ ] metric / validation / leakageなどテーマに必要な条件を確認した
-- [ ] Public LBだけで有効性を判断していない
-- [ ] 定量値に出典がある
-- [ ] 適用条件と失敗条件が分かる
-- [ ] 不要な背景説明を削った
-- [ ] 内部実装・調査プロセスを公開本文に出していない
-- [ ] 学習順序をユーザーへ押し付けていない
-- [ ] 図表が理解・比較を改善している
-- [ ] Quick Referenceが本文の単なる重複になっていない
-- [ ] モバイルでも読める
-- [ ] 参考文献がある
-- [ ] ルート `index.md` から到達できる
-
-## Final deliverable
-
-調査タスクでは原則として次を更新する。
+調査タスクでは原則として以下を更新する。
 
 1. `wiki/...` — 辞書・リファレンス記事
-2. `index.md` — 唯一のカテゴリ・索引
+2. `index.md` — 記事への索引
 
-既存記事と矛盾する新しい根拠が見つかった場合は、条件・時期・根拠の違いを明示して更新する。
+既存記事と矛盾する新しい根拠が見つかった場合、古い記述を無言で消さず、条件・時期・Evidenceの違いを確認して更新する。
+
+## Final checks
+
+- 日本語と英語の両方を確認したか
+- 一次情報を優先したか
+- Public LBだけで効果を判断していないか
+- Metric / Validation / leakageを確認したか
+- 定量値に確認可能な出典があるか
+- 適用条件と失敗条件を抽出したか
+- GeneralとCompetition-specificを混同していないか
+- `article-structure.md` に沿っているか
+- `citation-policy.md` に沿っているか
+- `visualization.md` に沿っているか
+- 新規記事を `index.md` から参照できるか
