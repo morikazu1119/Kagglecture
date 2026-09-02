@@ -2,7 +2,7 @@
 layout: default
 title: Advanced Methods
 description: Kaggleの発展的な学習・推論手法を調べるためのカテゴリ索引。
-summary: Pseudo Label、External Data、TTA、Calibration、Post-processing、Test-time adaptation。
+summary: Pseudo Label、External Data、TTA、Calibration、Post-processing。
 type: category-index
 nav_order: 5
 permalink: /wiki/advanced-methods/
@@ -17,16 +17,9 @@ Advanced Methodsでは、**基本モデルにもう一段工夫を足して性�
 ## Articles
 
 <div class="dictionary-grid">
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/pseudo-labeling.html' | relative_url }}" aria-label="Pseudo Labeling を開く">
-    <h3>Pseudo Labeling</h3>
-    <p>高信頼な未ラベル予測を仮ラベルとして再学習へ利用する。</p>
-  </a>
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/test-time-augmentation.html' | relative_url }}" aria-label="Test-Time Augmentation を開く">
-    <h3>Test-Time Augmentation</h3>
-    <p>推論時に複数変換した入力の予測を平均し、変換依存の揺れを減らす。</p>
-  </a>
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}" aria-label="Probability Calibration を開く">
-    <h3>Probability Calibration</h3>
-    <p>OOFを使って予測確率のscaleを実際の発生率へ近づける。</p>
-  </a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/pseudo-labeling.html' | relative_url }}" aria-label="Pseudo Labeling を開く"><h3>Pseudo Labeling</h3><p>高信頼な未ラベル予測を仮ラベルとして再学習へ利用する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/external-data.html' | relative_url }}" aria-label="External Data を開く"><h3>External Data</h3><p>Rulesを守って外部のlabel・pretraining signal・metadataを利用する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/test-time-augmentation.html' | relative_url }}" aria-label="Test-Time Augmentation を開く"><h3>Test-Time Augmentation</h3><p>推論時に複数変換した入力の予測を平均し、変換依存の揺れを減らす。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}" aria-label="Probability Calibration を開く"><h3>Probability Calibration</h3><p>OOFを使って予測確率のscaleを実際の発生率へ近づける。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/post-processing.html' | relative_url }}" aria-label="Post-processing を開く"><h3>Post-processing</h3><p>threshold、constraint、smoothing、component除去などでraw predictionを最終提出へ整える。</p></a>
 </div>
