@@ -39,26 +39,33 @@ tags:
 
 ## 仕組み {#mechanism}
 
-典型的なexpanding windowでは、後のfoldほどTrain期間が長くなります。
+典型的なexpanding windowでは、後のfoldほどTrain期間が長くなります。時間方向を定量的に読みたいので、3Dではなく**左=過去、右=未来の2D HTML timeline**で示します。
 
-```text
-Fold 1: [ Train ] [Valid]
-Fold 2: [   Train    ] [Valid]
-Fold 3: [      Train       ] [Valid]
-時間:   past ---------------------- future
-```
+<div class="static-viz html-diagram" aria-label="Expanding windowのTimeSeriesSplit模式図">
+  <div class="viz-heading">
+    <div><div class="viz-title">過去で学習し、その直後の未来で評価する</div><p class="viz-subtitle">緑 = Validation。後のfoldほどTrain windowが右へ拡張します。</p></div>
+    <span class="viz-badge">past → future</span>
+  </div>
+  <div class="html-matrix" style="--matrix-cols: 6">
+    <div class="matrix-cell is-header"></div><div class="matrix-cell is-header">t1</div><div class="matrix-cell is-header">t2</div><div class="matrix-cell is-header">t3</div><div class="matrix-cell is-header">t4</div><div class="matrix-cell is-header">t5</div><div class="matrix-cell is-header">t6</div>
+    <div class="matrix-cell is-header">Fold 1</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell is-good">Valid</div><div class="matrix-cell"></div><div class="matrix-cell"></div>
+    <div class="matrix-cell is-header">Fold 2</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell is-good">Valid</div><div class="matrix-cell"></div>
+    <div class="matrix-cell is-header">Fold 3</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell">Train</div><div class="matrix-cell is-good">Valid</div>
+  </div>
+  <p class="viz-caption">模式例。実際のperiod長・fold数・gapはCompetitionのtest horizonやリーク構造に合わせます。</p>
+</div>
 
 scikit-learnの`TimeSeriesSplit`では、k番目のsplitで先頭側をTrain、その直後をValidationとし、必要なら`gap`でTrain末尾とValidation先頭の間を空けられます（[公式ドキュメント](https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.TimeSeriesSplit.html)）。
 
 ## 使い分け {#comparison}
 
-| 設計 | 向く状況 |
-|---|---|
-| Expanding window | 古いデータも継続利用したい |
-| Rolling window | 古すぎるデータを捨てたい |
-| Gap付きsplit | 直前情報がリークしやすい |
-| Leave-one-period-out | 年・season単位で評価したい |
-| Purged split | label期間が重なりやすい金融等 |
+<div class="comparison-board" aria-label="時系列Validation設計の使い分け">
+  <section class="comparison-card is-primary"><h4>Expanding window</h4><dl><dt>向く状況</dt><dd>古いデータも継続利用したい</dd><dt>Train</dt><dd>foldごとに増える</dd></dl></section>
+  <section class="comparison-card"><h4>Rolling window</h4><dl><dt>向く状況</dt><dd>古すぎるデータを捨てたい</dd><dt>Train</dt><dd>一定幅で移動</dd></dl></section>
+  <section class="comparison-card"><h4>Gap付きsplit</h4><dl><dt>向く状況</dt><dd>直前情報がリークしやすい</dd><dt>特徴</dt><dd>Train/Valid間を空ける</dd></dl></section>
+  <section class="comparison-card"><h4>Leave-one-period-out</h4><dl><dt>向く状況</dt><dd>年・season単位で評価したい</dd><dt>単位</dt><dd>明確な期間bucket</dd></dl></section>
+  <section class="comparison-card"><h4>Purged split</h4><dl><dt>向く状況</dt><dd>label期間が重なる金融等</dd><dt>目的</dt><dd>overlap情報を除去</dd></dl></section>
+</div>
 
 ## Kaggleでの実例 {#kaggle-examples}
 
