@@ -51,12 +51,3 @@ Validation、評価指標、モデル、学習手法、Ensemble、Leaderboard戦
     <p>Tabular、Computer Vision、NLP、Time Series、Audio、Multimodal。</p>
   </div>
 </div>
-
-## このWikiの方針
-
-| 観点 | 内容 |
-|---|---|
-| **実戦性** | Kaggleの公開Writeupや上位解法を具体例にする |
-| **使い分け** | いつ使うか、何と比較するか、失敗条件まで整理する |
-| **根拠** | 数値・順位・採用実績には参考文献を付ける |
-| **見やすさ** | 表・図・数式を必要な箇所だけ使い、短く検索しやすくまとめる |
