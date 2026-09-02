@@ -32,20 +32,28 @@ tags:
 
 各モデルについて予測を小さい順に並べ、0〜1程度へ正規化したrankへ変換します。そのrankを平均またはweighted averageします。
 
-```text
-Model A probability: 0.10, 0.90, 0.55 -> rank: 0.0, 1.0, 0.5
-Model B score:       -2.0, 3.0, 0.1  -> rank: 0.0, 1.0, 0.5
-```
+<div class="static-viz html-diagram" aria-label="異なる予測スケールをrankへ変換する模式図">
+  <div class="viz-heading"><div><div class="viz-title">値のscaleを捨て、順序だけ同じ空間へ揃える</div><p class="viz-subtitle">Model A/Bは値の単位が違っても、3 sampleの順序が同じならrankは同じになります。</p></div><span class="viz-badge">模式例</span></div>
+  <div class="html-table-wrap"><table class="html-table">
+    <thead><tr><th scope="col">Sample</th><th scope="col" class="numeric">Model A</th><th scope="col" class="numeric">Model B</th><th scope="col" class="numeric">Rank A</th><th scope="col" class="numeric">Rank B</th></tr></thead>
+    <tbody>
+      <tr><th scope="row">S1</th><td class="numeric">0.10</td><td class="numeric">-2.0</td><td class="numeric">0.0</td><td class="numeric">0.0</td></tr>
+      <tr><th scope="row">S2</th><td class="numeric">0.55</td><td class="numeric">0.1</td><td class="numeric">0.5</td><td class="numeric">0.5</td></tr>
+      <tr><th scope="row">S3</th><td class="numeric">0.90</td><td class="numeric">3.0</td><td class="numeric status-good">1.0</td><td class="numeric status-good">1.0</td></tr>
+    </tbody>
+  </table></div>
+  <p class="viz-caption">値は理解用の人工例です。絶対確率を捨てる代わりに、異なるmodel scaleのrankingを揃えます。</p>
+</div>
 
 絶対確率は捨てますが、**順序情報を揃えて混ぜる**ことができます。
 
 ## 使い分け {#comparison}
 
-| 手法 | 保持する情報 | 向くMetric |
-|---|---|---|
-| Probability Average | 確率の大きさ + 順序 | LogLoss/Brier等 |
-| **Rank Average** | 順序中心 | AUC、ranking系 |
-| Stacking | OOFから組合せを学習 | 幅広い |
+<div class="comparison-board" aria-label="Rank Averagingと他Ensembleの比較">
+  <section class="comparison-card"><h4>Probability Average</h4><dl><dt>保持</dt><dd>確率の大きさ + 順序</dd><dt>向くMetric</dt><dd>LogLoss / Brier等</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Rank Average</h4><dl><dt>保持</dt><dd>順序中心</dd><dt>向くMetric</dt><dd>AUC / ranking系</dd></dl></section>
+  <section class="comparison-card"><h4>Stacking</h4><dl><dt>保持</dt><dd>OOF予測から組合せを学習</dd><dt>向くMetric</dt><dd>幅広い</dd></dl></section>
+</div>
 
 LogLossやBrier Scoreでは予測確率の値そのものが重要なので、rank化すると情報を失います。
 
