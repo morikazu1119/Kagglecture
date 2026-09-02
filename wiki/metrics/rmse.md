@@ -51,6 +51,34 @@ $$
 
 大きな誤差自体が重要な失敗ならRMSEが自然です。外れ値がノイズで、全誤差を同じ重みで扱いたいならMAEが合いやすくなります。
 
+下の模式例では、5件中1件だけ大きな誤差にして、その値を動かせます。外れ誤差が大きくなるほどRMSEがMAEより速く増えることを確認できます。
+
+<div class="interactive-viz" data-interactive="metric-outlier">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">1件の大外しがRMSEへ与える影響</div>
+      <p class="interactive-viz__subtitle">誤差列は 1, 2, 1, 2, X。Xだけを変えてMAEとRMSEを比較します。</p>
+    </div>
+    <span class="interactive-status" data-outlier-status data-state="safe">最大誤差 6</span>
+  </div>
+  <p class="interactive-note">模式例。Competitionの実測誤差ではありません。</p>
+  <div class="interactive-control-row">
+    <span class="interactive-control-label">外れ誤差 X</span>
+    <label class="interactive-range">
+      <input type="range" min="0" max="20" step="1" value="6" data-outlier-error aria-label="外れ誤差の大きさ">
+      <span class="interactive-range-labels"><span>0</span><span>20</span></span>
+    </label>
+  </div>
+  <div class="metric-grid">
+    <div class="metric-card"><span>MAE</span><strong data-outlier-mae>0.00</strong></div>
+    <div class="metric-card"><span>RMSE</span><strong data-outlier-rmse>0.00</strong></div>
+    <div class="metric-card"><span>違い</span><strong>RMSEは二乗</strong></div>
+  </div>
+  <div class="bar-list" data-outlier-bars aria-label="各sampleの絶対誤差"></div>
+  <p class="interactive-explanation" data-outlier-explanation aria-live="polite">外れ誤差が大きいほどRMSEはMAEより強く増えます。</p>
+  <noscript><p class="interactive-explanation">RMSEは誤差を二乗してから平均するため、少数の大外しの影響をMAEより強く受けます。</p></noscript>
+</div>
+
 ## Kaggleでの実例 {#kaggle-examples}
 
 30 Days of MLはRMSEで評価されます（[Competition Evaluation](https://www.kaggle.com/competitions/30-days-of-ml)）。1位解法はCVとPublic LBの相関を確認し、最終OOF CV 0.715437、Public LB 0.71694、Private LB 0.71533を報告しています（[1st Place Solution](https://www.kaggle.com/competitions/30-days-of-ml/writeups/kaggle-swags-1st-place-solution)）。
