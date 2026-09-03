@@ -1,8 +1,8 @@
 ---
 layout: default
 title: Modeling
-description: Kaggleのモデル・アーキテクチャを調べるためのカテゴリ索引。
-summary: GBDT、CNN、Vision Transformerを、入力・主要演算・全体構造から比較する。
+description: Kaggleで使うモデルを、データ種類とモデル固有の原理から調べるカテゴリ索引。
+summary: Tree、Vision、Transformer、Sequence、Tabular DL、Multimodal、GNNをモデル単位で整理する。
 type: category-index
 nav_order: 3
 permalink: /wiki/modeling/
@@ -10,76 +10,98 @@ permalink: /wiki/modeling/
 
 # Modeling
 
-Modelingは、**入力データを受け取り、そこから予測に必要な特徴を作り、最終的な予測値へ変換する仕組み**です。
+Modelingは、**入力データをどんな単位で読み、どんな演算を繰り返して予測へ変えるか**を決める部分です。
 
-最初にモデル名を覚える必要はありません。まず **「何を1単位として見るモデルか」** を押さえると、GBDT・CNN・Vision Transformerの違いが見えます。
+Kagglectureでは、原則として**1つのmodel / architecture familyを1記事**にします。総論記事で共通原理を理解し、ResNet・BERT・Mambaのような固有設計は個別記事で確認できます。
 
-## まず全体像
+## まずモデルfamilyを選ぶ
 
-<div class="comparison-board" aria-label="GBDT CNN Vision Transformerの直感的な比較">
-  <section class="comparison-card is-primary">
-    <h4>GBDT</h4>
-    <dl>
-      <dt>主な入力</dt><dd>表形式の1行</dd>
-      <dt>見る単位</dt><dd>featureの条件</dd>
-      <dt>基本演算</dt><dd>「年齢 &lt; 30?」のような分岐</dd>
-      <dt>全体</dt><dd>複数treeの補正値を足す</dd>
-    </dl>
-  </section>
-  <section class="comparison-card">
-    <h4>CNN</h4>
-    <dl>
-      <dt>主な入力</dt><dd>画像</dd>
-      <dt>見る単位</dt><dd>小さな局所領域</dd>
-      <dt>基本演算</dt><dd>kernelとの積和</dd>
-      <dt>全体</dt><dd>feature mapを何層も変換</dd>
-    </dl>
-  </section>
-  <section class="comparison-card">
-    <h4>Vision Transformer</h4>
-    <dl>
-      <dt>主な入力</dt><dd>画像</dd>
-      <dt>見る単位</dt><dd>patch token</dd>
-      <dt>基本演算</dt><dd>Self-Attention + MLP</dd>
-      <dt>全体</dt><dd>token表現をblockごとに更新</dd>
-    </dl>
-  </section>
+<div class="comparison-board" aria-label="Kaggleで使われる主要モデルfamily">
+  <section class="comparison-card"><h4>Tree Ensemble</h4><dl><dt>主な入力</dt><dd>表形式</dd><dt>核</dt><dd>条件分岐 + tree加算</dd><dt>代表</dt><dd>LightGBM / XGBoost / CatBoost</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Vision</h4><dl><dt>主な入力</dt><dd>画像 / spectrogram</dd><dt>核</dt><dd>Convolution / Attention / SSL feature</dd><dt>代表</dt><dd>ResNet / ConvNeXt / Swin / DINOv3</dd></dl></section>
+  <section class="comparison-card"><h4>Text / Sequence</h4><dl><dt>主な入力</dt><dd>token / 時系列</dd><dt>核</dt><dd>Attention / recurrent state / SSM</dd><dt>代表</dt><dd>BERT / LLM / GRU / Mamba</dd></dl></section>
+  <section class="comparison-card"><h4>Tabular DL</h4><dl><dt>主な入力</dt><dd>表形式</dd><dt>核</dt><dd>feature embedding / MLP / Attention / ICL</dd><dt>代表</dt><dd>FT-Transformer / TabPFN / RealMLP / TabM</dd></dl></section>
+  <section class="comparison-card"><h4>Multimodal</h4><dl><dt>主な入力</dt><dd>画像 + text等</dd><dt>核</dt><dd>共通embedding空間</dd><dt>代表</dt><dd>CLIP</dd></dl></section>
+  <section class="comparison-card"><h4>Graph</h4><dl><dt>主な入力</dt><dd>node + edge</dd><dt>核</dt><dd>neighbor aggregation</dd><dt>代表</dt><dd>GNN / GraphSAGE</dd></dl></section>
 </div>
 
-<div class="model-architecture" aria-label="代表モデルが入力から予測を作る全体構造">
-  <div class="model-architecture__header">
-    <div>
-      <div class="model-architecture__title">どのモデルも「入力 → 表現を更新 → 予測」という大枠は同じ</div>
-      <p class="model-architecture__subtitle">違うのは、入力をどう分解し、どんな演算で情報を更新するかです。</p>
-    </div>
-    <span class="model-architecture__badge">model family map</span>
-  </div>
-  <div class="model-stage-row" style="--model-cols:5">
-    <div class="model-stage"><div class="model-tensor"><span>Input<br>表 / 画像</span></div><span class="model-stage__label">入力</span></div>
-    <div class="model-stage"><div class="model-op-box"><span><strong>単位へ分ける</strong><br>feature / patch / local region</span></div><span class="model-stage__label">表現化</span></div>
-    <div class="model-stage"><div class="model-tensor is-wide"><span>Tree split<br>Conv<br>Attention</span></div><span class="model-stage__label">主要演算</span></div>
-    <div class="model-stage"><div class="model-tensor is-thin"><span>特徴を<br>何段も更新</span></div><span class="model-stage__label">深い表現</span></div>
-    <div class="model-stage"><div class="model-tensor is-accent is-wide"><span>Score / Probability<br>Mask / Class</span></div><span class="model-stage__label">Task output</span></div>
-  </div>
-  <p class="model-architecture__caption">各記事では、この全体構造に加えて「1サンプルが内部でどう処理されるか」も図で追います。</p>
-</div>
-
-## モデル記事の見方
-
-モデル記事では、次の3点を順に確認すると理解しやすくなります。
-
-1. **入力がどんな形で入るか** — 1行、画像、patch、feature mapなど。
-2. **1回の主要演算で何が起きるか** — split、convolution、attentionなど。
-3. **その演算をどう積み重ねて最終予測にするか** — boosting、stage stack、encoder block stackなど。
-
-モデル名だけを比較するのではなく、**内部表現がどう変化するか**まで見るのがこのカテゴリの目的です。
-
-## Articles
+## Tree Ensemble
 
 <div class="dictionary-grid">
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/lightgbm.html' | relative_url }}" aria-label="LightGBM を開く"><h3>LightGBM</h3><p>1行がtreeを通る仕組み、Histogram、leaf-wise成長、boosting全体を順に見る。</p></a>
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/xgboost.html' | relative_url }}" aria-label="XGBoost を開く"><h3>XGBoost</h3><p>1本のtreeの分岐から、複数treeを足して誤差を補正する全体構造まで見る。</p></a>
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/catboost.html' | relative_url }}" aria-label="CatBoost を開く"><h3>CatBoost</h3><p>カテゴリを数値化するときのカンニングをどう防ぎ、tree ensembleへつなぐかを見る。</p></a>
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/cnn-backbones.html' | relative_url }}" aria-label="CNN Backbones を開く"><h3>CNN Backbones</h3><p>kernelの積和、feature map、stage、Residual connectionを目で追う。</p></a>
-  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/vision-transformer.html' | relative_url }}" aria-label="Vision Transformer を開く"><h3>Vision Transformer</h3><p>画像patch → token → Attention → Encoder stack → task headまで追う。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/lightgbm.html' | relative_url }}"><h3>LightGBM</h3><p>1行のtree path、Histogram、leaf-wise growth、boosting全体。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/xgboost.html' | relative_url }}"><h3>XGBoost</h3><p>treeのleaf scoreを加算し、gradient / hessianで補正treeを学ぶ。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/catboost.html' | relative_url }}"><h3>CatBoost</h3><p>ordered statisticsとOrdered Boostingでcategory leakageを抑える。</p></a>
 </div>
+
+## Vision — CNN / Transformer Backbone
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/cnn-backbones.html' | relative_url }}"><h3>CNN</h3><p>kernel、receptive field、feature map、channel、downsamplingというCNN共通原理。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/resnet.html' | relative_url }}"><h3>ResNet</h3><p>Residual Blockで入力をshortcutし、深いCNNを学習しやすくする。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/efficientnet.html' | relative_url }}"><h3>EfficientNet</h3><p>MBConvとcompound scalingでdepth・width・resolutionをまとめて設計する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/convnext.html' | relative_url }}"><h3>ConvNeXt</h3><p>large kernel、depthwise convolution、LayerNorm等でCNNをmodernizeする。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/vision-transformer.html' | relative_url }}"><h3>Vision Transformer</h3><p>画像をpatch tokenへ変換し、global Self-Attentionで表現を更新する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/swin-transformer.html' | relative_url }}"><h3>Swin Transformer</h3><p>window attentionとshifted windowで局所性と階層構造を持たせる。</p></a>
+</div>
+
+## Vision — Foundation / Self-Supervised Pretraining
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/dinov3.html' | relative_url }}"><h3>DINOv3</h3><p>大量unlabeled imageからglobal / dense visual featureを学ぶself-supervised vision foundation model。</p></a>
+</div>
+
+## Vision — Segmentation / Detection
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/unet.html' | relative_url }}"><h3>U-Net</h3><p>encoderで縮め、decoderで戻し、skip connectionで位置情報を復元する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/yolo.html' | relative_url }}"><h3>YOLO</h3><p>画像からbox・classをsingle-stageでまとめて予測するobject detector。</p></a>
+</div>
+
+## Transformer — 共通原理 / Encoder-only
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/transformer.html' | relative_url }}"><h3>Transformer</h3><p>Self-Attention + FFN + residualをstackするsequence modelの共通原理。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/bert.html' | relative_url }}"><h3>BERT</h3><p>Transformer Encoderを双方向contextで事前学習するencoder-only model。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/roberta.html' | relative_url }}"><h3>RoBERTa</h3><p>BERTのpretraining recipeを再設計し、より強いencoderを作る。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/deberta.html' | relative_url }}"><h3>DeBERTa</h3><p>contentとpositionを分離したAttentionでtoken関係を表現する。</p></a>
+</div>
+
+## Transformer — 生成 / Encoder-Decoder
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/decoder-only-transformer.html' | relative_url }}"><h3>Decoder-only Transformer / LLM</h3><p>Causal Self-Attentionで次tokenを予測する、Qwen・Gemma・Llama・Mistral等の共通family。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/t5.html' | relative_url }}"><h3>T5</h3><p>Encoderが入力を読み、DecoderがCross-Attentionでtext outputを生成するtext-to-text model。</p></a>
+</div>
+
+## Transformer — Embedding / Retrieval
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/sentence-transformer.html' | relative_url }}"><h3>Sentence Transformer</h3><p>文章をdense vectorへ変換し、semantic search・retrieval・類似度計算に使うbi-encoder。</p></a>
+</div>
+
+## Sequence — RNN / State Space Model
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/gru.html' | relative_url }}"><h3>GRU</h3><p>hidden stateを時刻ごとに更新し、必要な過去情報をgateで保持・更新する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/mamba.html' | relative_url }}"><h3>Mamba</h3><p>Selective State Spaceで入力内容に応じてstateを更新し、長sequenceを処理する。</p></a>
+</div>
+
+## Tabular Deep Learning
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/ft-transformer.html' | relative_url }}"><h3>FT-Transformer</h3><p>各featureをtoken化し、feature同士をSelf-Attentionで相互作用させる。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/tabpfn.html' | relative_url }}"><h3>TabPFN</h3><p>synthetic taskで事前学習し、train tableをcontextとして推論するtabular foundation model。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/realmlp.html' | relative_url }}"><h3>RealMLP</h3><p>tabular向け前処理・numeric representation・training defaultsを詰めた強いMLP。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/tabm.html' | relative_url }}"><h3>TabM</h3><p>1つのMLP内部で複数memberを効率よく持つparameter-efficient ensemble。</p></a>
+</div>
+
+## Multimodal / Graph
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/clip.html' | relative_url }}"><h3>CLIP</h3><p>image encoderとtext encoderをcontrastive learningで同じembedding空間へ揃える。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/modeling/graph-neural-network.html' | relative_url }}"><h3>Graph Neural Network</h3><p>各nodeがneighborの情報を集約し、graph構造を予測へ利用する。</p></a>
+</div>
+
+## モデル記事の読み方
+
+各記事は、**1サンプルで何が起きるか → モデル全体でどう積み上がるか**の2段階で説明します。model名だけではなく、input shape、主要演算、intermediate representation、connection、最終outputを図で追うのがこのカテゴリの基準です。

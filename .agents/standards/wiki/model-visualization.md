@@ -8,9 +8,34 @@ Kagglectureのモデル記事では、architecture図を単なる処理順の箱
 
 1. 入力はどの形でモデルへ入るか
 2. 主要演算はどこで行われるか
-3. 演算後に表現の形・意味がどう変わるか
+3. 演算後に表現の形・意味がどう変化するか
 4. skip / residual / concat / attention / ensemble等の接続はどう働くか
 5. 最終出力へどのようにつながるか
+
+## Article granularity
+
+モデル記事は原則として、**1つのmodel / architecture familyを1記事**として扱う。
+
+総論記事はfamily共通の原理だけに限定し、個別model固有のblock・training design・scaling ruleまで詰め込まない。
+
+例:
+
+- `CNN` は convolution / receptive field / feature map / channel / downsamplingを扱う。
+- `ResNet` は residual connection / Basic Block / Bottleneckを別記事で扱う。
+- `EfficientNet` は MBConv / compound scalingを別記事で扱う。
+- `ConvNeXt` は large-kernel depthwise convolution / modern CNN blockを別記事で扱う。
+- `Transformer` は Self-Attention / FFN / Encoder-Decoderという共通原理を扱う。
+- `BERT` / `RoBERTa` / `DeBERTa` はpretraining objectiveやattention設計が独立した判断単位なので別記事にする。
+- `Mamba` のようにTransformerと異なるsequence modeling原理を持つfamilyも独立記事にする。
+
+個別記事へ分離する判断基準:
+
+1. Kaggleで独立したmodel選択候補として使われる
+2. 固有の主要演算・block・inductive biasがある
+3. 「なぜこのmodelを選ぶか」を独立して説明できる
+4. Operation view / Full architecture viewが総論記事と実質的に異なる
+
+逆にminor version違いだけで内容がほぼ重複する場合は、親model記事内の比較節に留める。version差がKaggle上のmodel選択を明確に変えるほど大きくなった場合だけ分離を再検討する。
 
 ## Required two-level explanation
 
@@ -22,7 +47,9 @@ Kagglectureのモデル記事では、architecture図を単なる処理順の箱
 
 - GBDT: 1 rowがsplit条件を通り、1つのleaf scoreを受け取る
 - CNN: 1つのkernel位置でreceptive fieldと積和を見せ、output 1 cellができる
-- Transformer: 1 patchがtokenになり、1 query tokenが他tokenをattentionで参照する
+- Transformer: 1 patch/tokenが他tokenをattentionで参照する
+- SSM / Mamba: 1 tokenでstateがどう選択的に更新されるか
+- GNN: 1 nodeがneighbor messageをどうaggregateするか
 - Ensemble: 1 rowに対する複数model predictionがどう結合されるか
 
 ここではまず「何をしているか」を理解させる。gradient / hessian / matrix式 / optimization objective等の厳密説明は、その動作を理解した後へ置く。
@@ -63,6 +90,7 @@ Kagglectureのモデル記事では、architecture図を単なる処理順の箱
 - 「現在行のtargetを自分の特徴量作成に使わない」→ ordered categorical statistics
 - 「画像の小領域へ同じ重みを重ねて積和する」→ convolution
 - 「1 patchが他patchから情報を重み付きで集める」→ self-attention
+- 「現在tokenに応じてstateへ残す情報量を変える」→ selective state space
 
 ## Simple flow is not enough
 
@@ -78,6 +106,8 @@ Kagglectureのモデル記事では、architecture図を単なる処理順の箱
 - residual / skip connection
 - attentionで参照するtoken間関係
 - MLP / projection / normalizationの位置
+- recurrent / SSM state update
+- graph node / edge / neighborhood relation
 - tree splitとleaf
 - boostingでtree predictionが加算される関係
 - encoder / decoder / headの接続
@@ -110,16 +140,36 @@ Kagglectureのモデル記事では、architecture図を単なる処理順の箱
 - 複数filterならchannel stackになることを補足する
 - そのfeature mapが次stageへどう渡るかをfull architectureで示す
 
-### Vision Transformer
+### Vision Transformer / Transformer
 
 最低限、次が理解できる図を優先する。
 
-- imageをpatchへ分割
-- patchをembedding tokenへ変換
+- inputをtokenへ変換
 - positional informationを加える
 - selected query tokenが他tokenをattentionで参照する
-- Multi-Head Self-Attention → residual → MLP → residualのencoder block構造
+- Multi-Head Self-Attention → residual → MLP → residualのblock構造
 - blockをstackした後にhead / decoderへ渡る
+
+### SSM / Mamba
+
+最低限、次が理解できる図を優先する。
+
+- sequenceをstateへ順番に取り込む
+- previous state + current inputからnew stateができる
+- selective modelではcurrent inputに応じてstate update parameterが変わる
+- block stackとtask headまでの全体経路を示す
+- TransformerのN×N Attentionとの違いを比較する
+
+### GNN
+
+最低限、次が理解できる図を優先する。
+
+- target nodeとneighbor node / edge
+- message生成
+- aggregation
+- node update
+- layerを重ねると何hop先まで情報が届くか
+- node / edge / graph readoutへどうつながるか
 
 ### GBDT
 
@@ -164,6 +214,8 @@ Kagglectureのモデル記事では、architecture図を単なる処理順の箱
 
 ## Model article review checklist
 
+- 1記事に複数model固有設計を詰め込んでいないか
+- 総論記事がfamily共通原理に留まっているか
 - 冒頭2〜4行で「入力・主要演算・出力」が分かるか
 - Operation / single-sample viewがあるか
 - Full architecture viewがあるか
@@ -172,8 +224,10 @@ Kagglectureのモデル記事では、architecture図を単なる処理順の箱
 - 厳密用語・数式より先に具体例と直感があるか
 - CNNならconvolutionを目で追えるか
 - Transformerならattentionとencoder block内部が追えるか
+- SSMならstate updateとselectivityが追えるか
+- GNNならmessage passingとneighbor relationが追えるか
 - GBDTなら1 sampleのtree pathとtree ensemble / boosting processの両方が追えるか
-- tensor / token / treeの形の変化が分かるか
+- tensor / token / tree / state / graphの形の変化が分かるか
 - skip / residual / concat等がある場合、connectionが図に出ているか
 - 装飾的な3Dを使っても意味を誤読しないか
 - mobileでflat化しても情報が失われないか

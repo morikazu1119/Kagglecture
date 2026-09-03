@@ -61,6 +61,22 @@ permalink: /wiki/validation/
 
 カテゴリページでは、そのカテゴリに属する**実在記事だけ**を一覧化する。未作成記事をリンク風に表示しない。
 
+記事数が増えたカテゴリは、1つの巨大な`Articles` gridへ全件を並べず、**読者が何を選ぶか判断できる意味のあるsubgroup**へ分ける。
+
+subgroupは追加順・アルファベット順ではなく、そのカテゴリ固有の判断軸で作る。
+
+例:
+
+- Modeling: `Tree Ensemble` / `Vision Backbone` / `Segmentation・Detection` / `Transformer・Sequence` / `Tabular DL` / `Multimodal・Graph`
+- Validation: `基本CV` / `Groupを分離` / `時間・分布差` / `Leakage`
+- Metrics: `Hard Label` / `Ranking` / `Probability` / `Regression` / `Segmentation`
+- Training: `学習制御` / `Augmentation` / `Loss` / `Encoding` / `Pretraining`
+- Ensemble: `直接Blend` / `Meta Model` / `Fold・Seed` / `Candidate Selection`
+
+目安として、カテゴリ内の記事が6〜8件を超えた、または異なる用途のmodel/articleが3種類以上混在した時点でgroupingを検討する。groupが1記事しかない場合でも概念上独立しており、今後増えることが明確なら許容する。
+
+カテゴリページ自身も辞書として機能させる。必要なら冒頭に短いcomparison cardsを置き、「どのgroupを見るべきか」を数秒で判断できるようにする。
+
 ### Article
 
 記事は `wiki/<category>/<slug>.md` に置く。
@@ -169,6 +185,8 @@ threshold、ranking、overlap、outlierなどを操作すると理解しやす�
 ### Modeling / Training
 
 定義、なぜ効くか、使う条件、比較、Kaggle実例 / ablation、失敗条件の順を基本とする。
+
+Modelingは `model-visualization.md` のarticle granularityとOperation / Full Architectureの基準にも従う。総論記事へ複数model固有設計を詰め込まない。
 
 CNN feature mapやvolumeなど奥行きが概念理解に寄与する場合のみ2.5D/3Dを使う。parameter比較や性能比較を3D barにしない。
 
