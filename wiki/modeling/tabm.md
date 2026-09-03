@@ -40,11 +40,7 @@ tags: [kaggle, modeling, tabular, mlp, tabm, ensemble]
 
 <div class="comparison-board"><section class="comparison-card"><h4>Single MLP</h4><dl><dt>Prediction</dt><dd>1本</dd><dt>Variance</dt><dd>seedやoptimizationの影響を直接受ける</dd></dl></section><section class="comparison-card"><h4>K independent MLPs</h4><dl><dt>Prediction</dt><dd>K本平均</dd><dt>Cost</dt><dd>parameter/computeがほぼK倍</dd></dl></section><section class="comparison-card is-primary"><h4>TabM</h4><dl><dt>Prediction</dt><dd>K member平均</dd><dt>Cost</dt><dd>共有parameterでK独立modelより軽くする</dd></dl></section></div>
 
-TabM論文ではmember個別predictionは弱くても、集合として強いというensemble-like behaviorを分析しています。
-
 ## RealMLPとの違い {#comparison}
-
-RealMLPも強いMLPですが、主眼が違います。
 
 - **RealMLP**: 強いpreprocessing・training defaultsを持つ単体MLP baseline。
 - **TabM**: MLP内部にparameter-efficientな複数memberを持たせるensemble architecture。
@@ -57,9 +53,9 @@ Predict Customer Churn 2026の17位解法では`tabm_61`がfinal Hill Climbing w
 
 同Competitionの9位解法でもTabM、RealMLP、FT-Transformer等を同じstrict Stratified K-Fold上で大量比較しています（[9th place solution](https://www.kaggle.com/competitions/playground-series-s6e3/writeups/9th-place-solution)）。
 
-Prediction Interval Competition II 2025の3位解法は**TabM + RealMLP + ensembling**を非常に短いpipelineで組み合わせています（[3rd place solution](https://www.kaggle.com/competitions/prediction-interval-competition-ii-house-price/discussion/591534)）。
+Prediction Interval Competition II 2025の3位解法は**TabM + RealMLP + ensembling**を組み合わせています（[3rd place solution](https://www.kaggle.com/competitions/prediction-interval-competition-ii-house-price/discussion/591534)）。
 
-## 注意点 {#pitfalls]
+## 注意点 {#pitfalls}
 
 ### member数を増やせば無限に良くなるわけではない
 
