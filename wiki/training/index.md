@@ -2,7 +2,7 @@
 layout: default
 title: Training
 description: Kaggleの学習手法を、学習制御・data・loss・representationごとに調べるカテゴリ索引。
-summary: Early Stopping、Augmentation、Loss、Target Encoding、Pretrainingを目的別に整理する。
+summary: Early Stopping、Augmentation、Loss、Target Encoding、Aggregation、Pretrainingを目的別に整理する。
 type: category-index
 nav_order: 4
 permalink: /wiki/training/
@@ -36,6 +36,7 @@ Trainingは、**「モデルをどう学習させるか」**に関する手法�
 ## Feature Representation / Encoding
 
 <div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/aggregation-features.html' | relative_url }}"><h3>Aggregation Features</h3><p>entity・category・履歴をcount / mean / std等で集約し、1行だけでは見えないgroup contextを特徴量化する。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/target-encoding.html' | relative_url }}"><h3>Target Encoding</h3><p>categoryごとのtarget統計をfeature化する。fold内計算によるLeakage対策が必須。</p></a>
 </div>
 
@@ -51,5 +52,6 @@ Trainingは、**「モデルをどう学習させるか」**に関する手法�
   <section class="comparison-card"><h4>過学習し始める</h4><dl><dt>見る記事</dt><dd>Early Stopping</dd></dl></section>
   <section class="comparison-card is-primary"><h4>Dataが少ない</h4><dl><dt>画像等</dt><dd>Augmentation / Mixup / CutMix</dd><dt>既存weight</dt><dd>Transfer Learning</dd></dl></section>
   <section class="comparison-card"><h4>不均衡・easy negative過多</h4><dl><dt>候補</dt><dd>Focal Loss</dd><dt>注意</dt><dd>Metricとは別にOOF確認</dd></dl></section>
-  <section class="comparison-card"><h4>Categoryを数値へ</h4><dl><dt>候補</dt><dd>Target Encoding</dd><dt>注意</dt><dd>fold内fit</dd></dl></section>
+  <section class="comparison-card"><h4>履歴・group文脈を数値化</h4><dl><dt>候補</dt><dd>Aggregation Features</dd><dt>注意</dt><dd>fold / time境界内で集約</dd></dl></section>
+  <section class="comparison-card"><h4>Categoryをtarget統計へ</h4><dl><dt>候補</dt><dd>Target Encoding</dd><dt>注意</dt><dd>fold内fit</dd></dl></section>
 </div>
