@@ -20,6 +20,12 @@ Recommendation & Rankingでは、**大量のitemから候補を絞り、その�
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/recommendation/candidate-generation.html' | relative_url }}"><h3>Candidate Generation</h3><p>全itemから「正解を落とさず、rankerが処理できるサイズ」へ候補集合を絞る。</p></a>
 </div>
 
+## 学習データを作る
+
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/recommendation/negative-sampling.html' | relative_url }}"><h3>Negative Sampling</h3><p>大量の負例を間引き、学習量と「どんな負例を見せるか」を制御する。</p></a>
+</div>
+
 ## 迷ったときの判断軸
 
 <div class="comparison-board">
