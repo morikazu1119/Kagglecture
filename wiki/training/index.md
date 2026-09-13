@@ -2,7 +2,7 @@
 layout: default
 title: Training
 description: Kaggleの学習手法を、学習制御・data・loss・representationごとに調べるカテゴリ索引。
-summary: Early Stopping、Augmentation、Loss、Encoding、Aggregation、Lag / Rolling、Pretrainingを目的別に整理する。
+summary: Early Stopping、Augmentation、Loss、Frequency / Target Encoding、Aggregation、Lag / Rolling、Pretrainingを目的別に整理する。
 type: category-index
 nav_order: 4
 permalink: /wiki/training/
@@ -37,6 +37,7 @@ Trainingは、**「モデルをどう学習させるか」**に関する手法�
 
 <div class="dictionary-grid">
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/aggregation-features.html' | relative_url }}"><h3>Aggregation Features</h3><p>entity・category・履歴をcount / mean / std等で集約し、1行だけでは見えないgroup contextを特徴量化する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/frequency-encoding.html' | relative_url }}"><h3>Frequency / Count Encoding</h3><p>categoryや離散値を出現回数・割合へ変換し、rare / commonという1列のsignalを追加する。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/lag-rolling-features.html' | relative_url }}"><h3>Lag / Rolling Features</h3><p>過去の値と過去windowの統計を列へ変換し、自己相関・周期・局所trendをtabular modelへ渡す。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/target-encoding.html' | relative_url }}"><h3>Target Encoding</h3><p>categoryごとのtarget統計をfeature化する。fold内計算によるLeakage対策が必須。</p></a>
 </div>
@@ -54,6 +55,7 @@ Trainingは、**「モデルをどう学習させるか」**に関する手法�
   <section class="comparison-card is-primary"><h4>Dataが少ない</h4><dl><dt>画像等</dt><dd>Augmentation / Mixup / CutMix</dd><dt>既存weight</dt><dd>Transfer Learning</dd></dl></section>
   <section class="comparison-card"><h4>不均衡・easy negative過多</h4><dl><dt>候補</dt><dd>Focal Loss</dd><dt>注意</dt><dd>Metricとは別にOOF確認</dd></dl></section>
   <section class="comparison-card"><h4>履歴・group文脈を数値化</h4><dl><dt>候補</dt><dd>Aggregation Features</dd><dt>注意</dt><dd>fold / time境界内で集約</dd></dl></section>
+  <section class="comparison-card"><h4>Categoryのrare / commonを使う</h4><dl><dt>候補</dt><dd>Frequency / Count Encoding</dd><dt>注意</dt><dd>元categoryを消すとidentity情報を失う</dd></dl></section>
   <section class="comparison-card"><h4>時系列の過去を特徴量へ</h4><dl><dt>候補</dt><dd>Lag / Rolling Features</dd><dt>注意</dt><dd>shift後にrollingし、inference時のfeature availabilityを再現</dd></dl></section>
   <section class="comparison-card"><h4>Categoryをtarget統計へ</h4><dl><dt>候補</dt><dd>Target Encoding</dd><dt>注意</dt><dd>fold内fit</dd></dl></section>
 </div>
