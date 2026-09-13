@@ -38,6 +38,7 @@ Splitは名前で選ぶのではなく、**何をTrainとValidationの間で分�
 
 <div class="dictionary-grid">
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/validation/time-series-split.html' | relative_url }}"><h3>TimeSeriesSplit</h3><p>過去で学習し未来で評価する、時間順序を壊さない分割。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/validation/purged-embargo-cv.html' | relative_url }}"><h3>Purged / Embargo Cross-Validation</h3><p>label期間の重なりと近接時点の依存をpurgingとembargoで遮断する。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/validation/adversarial-validation.html' | relative_url }}"><h3>Adversarial Validation</h3><p>Train/Testを見分ける分類器で分布差とCV mismatchを診断する。</p></a>
 </div>
 
@@ -47,5 +48,6 @@ Splitは名前で選ぶのではなく、**何をTrainとValidationの間で分�
   <section class="comparison-card"><h4>独立sample</h4><dl><dt>第一候補</dt><dd>KFold</dd><dt>不均衡分類</dt><dd>StratifiedKFold</dd></dl></section>
   <section class="comparison-card is-primary"><h4>同一entityが複数row</h4><dl><dt>第一候補</dt><dd>GroupKFold</dd><dt>class比も重要</dt><dd>StratifiedGroupKFold</dd></dl></section>
   <section class="comparison-card"><h4>未来予測</h4><dl><dt>第一候補</dt><dd>TimeSeriesSplit</dd><dt>重要</dt><dd>feature生成も未来参照禁止</dd></dl></section>
+  <section class="comparison-card"><h4>label期間が重なる</h4><dl><dt>第一候補</dt><dd>Purged / Embargo CV</dd><dt>重要</dt><dd>rowではなく情報区間を見る</dd></dl></section>
   <section class="comparison-card"><h4>Train/Testが違いそう</h4><dl><dt>診断</dt><dd>Adversarial Validation</dd><dt>目的</dt><dd>CVと本番の分布差確認</dd></dl></section>
 </div>
