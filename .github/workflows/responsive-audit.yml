@@ -1,0 +1,58 @@
+name: Responsive audit
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  responsive-audit:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.3'
+
+      - name: Install Jekyll
+        run: gem install jekyll -v 4.4.1 --no-document
+
+      - name: Build site
+        run: jekyll build --baseurl '' --destination _site
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright@1.55.0
+          npx playwright install --with-deps chromium
+
+      - name: Serve site
+        run: |
+          python3 -m http.server 4173 --directory _site > /tmp/kagglecture-http.log 2>&1 &
+          echo $! > /tmp/kagglecture-http.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/kagglecture-http.log
+          exit 1
+
+      - name: Audit all pages at mobile and desktop widths
+        run: node scripts/responsive-audit.mjs
+
+      - name: Upload failure report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-audit-failures
+          path: responsive-audit-failures.json
+          if-no-files-found: ignore

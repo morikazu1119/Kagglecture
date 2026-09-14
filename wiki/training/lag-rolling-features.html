@@ -1,0 +1,192 @@
+---
+layout: default
+title: Lag / Rolling Features
+summary: 過去の値と過去区間の統計を特徴量へ変換し、時系列の自己相関・季節性・局所trendをGBDT等へ渡す。
+type: reference
+domain: kaggle
+topic: lag-rolling-features
+created: 2026-09-07
+updated: 2026-09-07
+source_count: 8
+tags:
+  - kaggle
+  - feature-engineering
+  - time-series
+  - forecasting
+---
+
+<h1>Lag / Rolling Features</h1>
+<p><strong>Lag Featuresは「少し前の値」、Rolling Featuresは「少し前までの区間の統計」を現在行の特徴量にする手法です。</strong></p>
+<p>時系列の予測では、未来のtargetそのものは見えませんが、過去の値には自己相関・曜日周期・trend・volatilityが残っています。Lag / Rollingは、その履歴をLightGBMやXGBoostなど通常のtabular modelが扱える列へ変換します。</p>
+<p>最重要の前提は、<strong>予測時点より後の情報を絶対に混ぜないこと</strong>です。rolling meanを作るだけでも、shiftの位置を間違えるとtarget leakageになります。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>直近値が効く</h4><dl><dt>候補</dt><dd>lag 1 / 2 / 3</dd><dt>例</dt><dd>前日の売上、直前lap、直近sensor値</dd></dl></section>
+  <section class="comparison-card"><h4>周期がある</h4><dl><dt>候補</dt><dd>lag 7 / 14 / 28など</dd><dt>例</dt><dd>曜日周期、月次周期、seasonality</dd></dl></section>
+  <section class="comparison-card"><h4>局所trendを見たい</h4><dl><dt>候補</dt><dd>rolling mean / median</dd><dt>意味</dt><dd>単日のnoiseをならして最近の水準を渡す</dd></dl></section>
+  <section class="comparison-card"><h4>変動の大きさを見たい</h4><dl><dt>候補</dt><dd>rolling std / min / max</dd><dt>意味</dt><dd>最近のvolatilityや局所的なextremeを渡す</dd></dl></section>
+</div>
+
+<p>Lagを何本も追加すること自体が目的ではありません。<strong>「予測時点で本当に観測できる過去情報のうち、どの時間幅がtarget生成過程を表すか」</strong>を決めるのが本質です。</p>
+<h2 id="mechanism">仕組み</h2>
+
+<h3>Lagは「時間をずらして過去を横に置く」</h3>
+<p>時点 <code>t</code> のtargetを予測するとき、lag 1は <code>t-1</code>、lag 7は <code>t-7</code> の値です。</p>
+<div class="static-viz html-diagram" role="img" aria-label="時点tを予測するために過去のt-1とt-7をLag特徴量として参照する模式図">
+  <div class="html-flow">
+    <div class="html-flow-node"><strong>t-7</strong><br>1週間前<br><small>lag_7</small></div>
+    <div class="html-flow-node"><strong>t-2</strong><br>2日前</div>
+    <div class="html-flow-node"><strong>t-1</strong><br>直前<br><small>lag_1</small></div>
+    <div class="html-flow-node"><strong>t</strong><br>予測対象</div>
+  </div>
+  <p class="viz-note">模式例。右へ時間が進む。予測対象tより左側だけをfeatureとして使う。</p>
+</div>
+
+<p>式では、元の系列を $y_t$ とするとlag $k$ は次です。</p>
+<p>$$
+\mathrm{lag}<em t-k>k(t)=y</em>
+$$</p>
+<p>lag 1が強ければ「直前の状態が続きやすい」、lag 7が強ければ「7日前と似た周期がある」といった構造をmodelが利用できます。</p>
+<p>Kaggle LearnのTime Series教材でも、lagを「未来を過去から予測するための特徴表現」として基本要素に置いています（<a href="https://www.kaggle.com/learn/time-series">Kaggle Learn: Time Series</a>）。</p>
+<h3>Rollingは「過去の一定区間を1値に圧縮する」</h3>
+<p>rolling mean 7は、予測時点より前の7観測の平均です。</p>
+<p>$$
+\mathrm{rollmean}<em i="1">7(t)=\frac{1}{7}\sum</em>
+$$}^{7}y_{t-i</p>
+<p>重要なのは総和が <strong>$t-1$ から始まる</strong>点です。予測対象 <code>t</code> のtargetを含めてはいけません。</p>
+<div class="static-viz html-diagram" role="img" aria-label="予測時点tのrolling mean 4がt-4からt-1だけを集約する模式図">
+  <div class="comparison-board">
+    <section class="comparison-card"><h4>t-4</h4><dl><dt>値</dt><dd>window内</dd></dl></section>
+    <section class="comparison-card"><h4>t-3</h4><dl><dt>値</dt><dd>window内</dd></dl></section>
+    <section class="comparison-card"><h4>t-2</h4><dl><dt>値</dt><dd>window内</dd></dl></section>
+    <section class="comparison-card"><h4>t-1</h4><dl><dt>値</dt><dd>window内</dd></dl></section>
+    <section class="comparison-card is-primary"><h4>t</h4><dl><dt>役割</dt><dd>予測対象。集約に入れない</dd></dl></section>
+  </div>
+  <p class="viz-note">模式例。rolling windowを4とした場合。実測値ではない。</p>
+</div>
+
+<p>rollingでよく使う統計はmeanだけではありません。</p>
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th>特徴</th><th>拾いやすい情報</th><th>向く状況</th></tr></thead>
+  <tbody>
+    <tr><td>rolling mean / median</td><td>最近の水準・trend</td><td>単日のnoiseをならしたい</td></tr>
+    <tr><td>rolling std</td><td>最近の変動幅</td><td>volatility自体がsignal</td></tr>
+    <tr><td>rolling min / max</td><td>局所extreme</td><td>直近の上限・下限が重要</td></tr>
+    <tr><td>rolling sum</td><td>期間内の累積量</td><td>需要量・回数・負荷</td></tr>
+    <tr><td>rolling quantile</td><td>分布の位置</td><td>外れ値にmeanが引っ張られる</td></tr>
+  </tbody>
+</table></div>
+
+<h3>LagとRollingは役割が違う</h3>
+<p>lag 7は「ちょうど7日前」という一点を保持します。rolling mean 7は「直近7点の平均」に圧縮します。</p>
+<p>そのため、<strong>周期の位相を保持したいならLag、最近の水準を安定して渡したいならRolling</strong>が基本です。実際には両方を併用し、modelへ違う時間解像度を渡すことが多くなります。</p>
+<h2 id="comparison">使い分け</h2>
+
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th>手法</th><th>保持するもの</th><th>強み</th><th>主な弱点</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Lag</strong></td><td>特定時点の値</td><td>周期・遅延効果を直接保持</td><td>本数を増やすと冗長になりやすい</td></tr>
+    <tr><td><strong>Rolling</strong></td><td>過去区間の統計</td><td>noiseを圧縮し局所trendを表現</td><td>window内の細かな順序を失う</td></tr>
+    <tr><td>Expanding</td><td>開始点から現在までの統計</td><td>長期baselineを表現</td><td>最近のregime changeへ鈍い</td></tr>
+    <tr><td>EWMA</td><td>過去を指数減衰で重み付け</td><td>直近を強く見ながらsmooth</td><td>decay設定が必要</td></tr>
+    <tr><td>Datetime Features</td><td>曜日・月・時刻等</td><td>calendar由来のseasonality</td><td>target履歴そのものは使わない</td></tr>
+  </tbody>
+</table></div>
+
+<h3>window / lag幅は周期から決める</h3>
+<p><code>1, 2, 3, 4, ...</code>と無差別に増やすより、dataの周期を仮説にします。</p>
+<ul>
+<li>日次売上で週周期があるならlag 7 / 14 / 28</li>
+<li>直近のmomentumならlag 1 / 2 / 3</li>
+<li>1週間の局所水準ならrolling 7</li>
+<li>月近辺のbaselineならrolling 28 / 30</li>
+</ul>
+<p>2026年1月の日本語記事でも、Kaggle Store Salesを例にACF / PACFや周期性を確認したうえでlag 1 / 7 / 14とrolling mean 7を設計しています（<a href="https://qiita.com/soranjiro/items/f18bf11db47f972f4c6d">Qiita: 時系列分析・予測のための基礎知識とKaggle実装例</a>）。二次情報なのでCompetition固有の効果主張には使わず、設計手順の補助として扱います。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+
+<h3>MITSUI&amp;CO. Commodity Prediction Challenge — 2026</h3>
+<p>2026年1月のMITSUI&amp;CO. Commodity Prediction Challengeでは、複数の上位解法が時間方向の履歴を明示的に使っています。</p>
+<p>25位Silver解法はgroup-wise ensembleに加え、<strong>提供されたlabel lag 1–4をinference時に強く利用し、それを最も重要なperformance gainと説明</strong>しています（<a href="https://www.kaggle.com/competitions/mitsui-commodity-prediction-challenge/writeups/25th-place-silver-mitsui-commodity-prediction">25th Place Silver Solution</a>）。単独ablation値は公開されていないため、Evidence Bとして扱います。</p>
+<p>3位解法ではvolatileなmarket signalへ保守的なtime-series feature engineeringを適用し、lag、rolling mean、rolling max、differenceを使用しています。rolling windowはregime overfitを避けるためmoderateな幅に抑えたと説明しています（<a href="https://www.kaggle.com/competitions/mitsui-commodity-prediction-challenge/writeups/3-rd-place-solution-directional-trends-over-vola">3rd Place Solution</a>）。これも単独の定量差はないためEvidence Bです。</p>
+<p>この2解法から一般化できるのは、<strong>volatile seriesでは履歴を大量に足すことより、lagで方向性・rollingで安定した局所contextを与える設計が使われている</strong>点です。</p>
+<h3>M5 Forecasting — 3位 / 7位</h3>
+<p>M5 Forecasting - Accuracyは大量の商品×店舗の日次需要を予測する代表的なKaggle forecasting competitionです。</p>
+<p>3位NN解法はsale valueとして<strong>lag 1と7日・28日のmoving average</strong>を入力し、28日先までrolling predictionする学習構造を採用しています（<a href="https://www.kaggle.com/competitions/m5-forecasting-accuracy/writeups/mf-3rd-place-solution-nn-approach">3rd place solution - NN approach</a>）。</p>
+<p>7位LightGBM解法はsales featureとして<strong>recursive 7日・14日のlagged rolling meansと28日のlagged rolling means</strong>を使いました。Validationは過去から未来を予測する複数の時間区間で構成しています（<a href="https://www.kaggle.com/competitions/m5-forecasting-accuracy/writeups/randomlearner-7th-place-solution">7th place solution</a>）。</p>
+<p>一方、別のM5上位解法では「同じ性質のlagを増やしすぎると悪化した」と報告されています（<a href="https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163664">M5 Forecasting discussion</a>）。<strong>Lag / Rollingは本数が多いほど良いわけではない</strong>という失敗Evidenceとして重要です。</p>
+<h3>ASHRAE Energy Prediction — 1位</h3>
+<p>ASHRAE Energy Prediction 1位解法では、raw weatherだけでなく<strong>lag temperature features、smoothed temperature、1次・2次差分</strong>をfeature engineeringへ採用しています（<a href="https://www.kaggle.com/competitions/ashrae-energy-prediction/writeups/isamu-matt-1st-place-solution-team-isamu-matt">1st Place Solution Team Isamu &amp; Matt</a>）。</p>
+<p>これはtarget自身のlagだけでなく、<strong>時間変化する説明変数のlag / smooth / differenceも有効候補になる</strong>ことを示す事例です。target履歴がtest期間に利用できないCompetitionでも、観測可能なcovariate履歴なら使える場合があります。</p>
+<h3>Evidence整理</h3>
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th>Competition</th><th>Rank</th><th>利用例</th><th>Evidence</th></tr></thead>
+  <tbody>
+    <tr><td>MITSUI Commodity Prediction</td><td>3rd</td><td>lag / rolling mean / max / difference</td><td>B</td></tr>
+    <tr><td>MITSUI Commodity Prediction</td><td>25th Silver</td><td>label lag 1–4をinferenceで活用</td><td>B</td></tr>
+    <tr><td>M5 Forecasting</td><td>3rd</td><td>lag 1 + moving average 7 / 28</td><td>B</td></tr>
+    <tr><td>M5 Forecasting</td><td>7th</td><td>lagged rolling mean 7 / 14 / 28</td><td>B</td></tr>
+    <tr><td>ASHRAE Energy Prediction</td><td>1st</td><td>lag / smooth / difference of temperature</td><td>B</td></tr>
+  </tbody>
+</table></div>
+
+<p>複数の独立した上位解法で同傾向が確認できるため、「履歴が利用可能な時系列taskでLag / Rollingが再利用可能なfeature familyである」という一般化はEvidence C相当と判断できます。ただし、どのlag/windowが効くかはCompetitionごとに異なります。</p>
+<h2 id="pitfalls">注意点</h2>
+
+<h3>1. Rolling前にshiftしないと現在targetが混ざる</h3>
+<p>時点<code>t</code>のtargetを予測するのに、<code>rolling(7).mean()</code>をそのまま計算すると実装によっては<code>t</code>自身をwindowへ含めます。</p>
+<p>conceptualには次の順序です。</p>
+<pre><code class="language-python">past = target.shift(1)
+feature = past.rolling(7).mean()
+</code></pre>
+<p><strong>shiftして未来との境界を作ってからrollingする</strong>と覚える方が安全です。</p>
+<h3>2. Groupごとに履歴を作る</h3>
+<p>店舗Aの前日の売上を店舗Bのlagとして使ってはいけません。複数entityのpanel dataでは、store / user / machine / itemなど<strong>履歴が連続する単位でgroup化してからshift / rolling</strong>します。</p>
+<h3>3. Validation horizonとfeature availabilityを一致させる</h3>
+<p>1日先予測ではlag 1が自然でも、28日を一括予測すると途中の日の真値は未知です。M5のようなmulti-step forecastingでは、recursive prediction、direct prediction、利用可能lagをどこまで固定するかでfeature availabilityが変わります。</p>
+<p>関連するsplit設計は<a href="{{ '/wiki/validation/time-series-split.html' | relative_url }}">Time Series Split</a>を参照します。</p>
+<h3>4. Test期間で更新できるfeatureか確認する</h3>
+<p>「昨日のtarget」をlagにしたくても、test期間の昨日targetが非公開なら使えません。逆にweatherやpriceなどtest期間にも提供されるcovariateなら、その履歴を作れる場合があります。</p>
+<p><strong>Trainで作れたかではなく、実際のinference時点で同じ方法で作れるか</strong>を確認します。</p>
+<h3>5. 同じようなLagを増やしすぎない</h3>
+<p>lag 1〜100、rolling 3〜100を全投入すると、強い相関を持つ列が大量に増えます。tree modelでもmemory・training time・selection noiseが増え、Validationへ過適合しやすくなります。M5でも類似lagの過剰追加が悪化要因として報告されています。</p>
+<h3>6. Windowがregimeをまたぐ</h3>
+<p>長すぎるrolling windowは、現在とは異なる古いregimeを平均へ混ぜます。MITSUI 3位解法がmoderate windowを選んだ理由も、volatile marketでのregime overfitを抑えるためでした。</p>
+<h2 id="quick-reference">Quick Reference</h2>
+
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>直近依存</h4><dl><dt>候補</dt><dd>lag 1 / 2 / 3</dd><dt>確認</dt><dd>inference時に同じ値を取得可能か</dd></dl></section>
+  <section class="comparison-card"><h4>周期依存</h4><dl><dt>候補</dt><dd>lag 7 / 14 / 28など</dd><dt>決め方</dt><dd>業務周期・ACF・seasonalityから仮説化</dd></dl></section>
+  <section class="comparison-card"><h4>局所水準</h4><dl><dt>候補</dt><dd>shift → rolling mean / median</dd><dt>注意</dt><dd>現在targetをwindowへ入れない</dd></dl></section>
+  <section class="comparison-card"><h4>変動幅</h4><dl><dt>候補</dt><dd>rolling std / min / max</dd><dt>注意</dt><dd>windowを増やしすぎない</dd></dl></section>
+  <section class="comparison-card"><h4>Panel data</h4><dl><dt>必須</dt><dd>entityごとにshift / rolling</dd><dt>確認</dt><dd>entity境界をまたいでいないか</dd></dl></section>
+  <section class="comparison-card"><h4>Multi-step</h4><dl><dt>必須</dt><dd>forecast horizon全体のfeature availability確認</dd><dt>Validation</dt><dd>本番と同じhorizonで検証</dd></dl></section>
+</div>
+
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/validation/time-series-split.html' | relative_url }}">Time Series Split</a></li>
+<li><a href="{{ '/wiki/training/aggregation-features.html' | relative_url }}">Aggregation Features</a></li>
+<li><a href="{{ '/wiki/validation/adversarial-validation.html' | relative_url }}">Adversarial Validation</a></li>
+<li><a href="{{ '/wiki/training/early-stopping.html' | relative_url }}">Early Stopping</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li>Kaggle, <strong>Learn Time Series</strong>, Kaggle Learn. https://www.kaggle.com/learn/time-series</li>
+<li><strong>3 rd place solution - Directional Trends Over Volatile Noise</strong>, MITSUI&amp;CO. Commodity Prediction Challenge, Kaggle Solution Writeup, 2026. https://www.kaggle.com/competitions/mitsui-commodity-prediction-challenge/writeups/3-rd-place-solution-directional-trends-over-vola</li>
+<li><strong>25th Place Silver – MITSUI&amp;CO. Commodity Prediction Challenge Writeup</strong>, Kaggle Solution Writeup, 2026-01-20. https://www.kaggle.com/competitions/mitsui-commodity-prediction-challenge/writeups/25th-place-silver-mitsui-commodity-prediction</li>
+<li><strong>3rd place solution - NN approach</strong>, M5 Forecasting - Accuracy, Kaggle Solution Writeup, 2020. https://www.kaggle.com/competitions/m5-forecasting-accuracy/writeups/mf-3rd-place-solution-nn-approach</li>
+<li><strong>7th place solution</strong>, M5 Forecasting - Accuracy, Kaggle Solution Writeup, 2020. https://www.kaggle.com/competitions/m5-forecasting-accuracy/writeups/randomlearner-7th-place-solution</li>
+<li><strong>1st Place Solution Team Isamu &amp; Matt</strong>, ASHRAE - Great Energy Predictor III, Kaggle Solution Writeup, 2019. https://www.kaggle.com/competitions/ashrae-energy-prediction/writeups/isamu-matt-1st-place-solution-team-isamu-matt</li>
+<li><strong>M5 Forecasting - Accuracy discussion / solution notes</strong>, Kaggle, 2020. https://www.kaggle.com/c/m5-forecasting-accuracy/discussion/163664</li>
+<li>soranjiro, <strong>時系列分析・予測のための基礎知識とKaggle実装例</strong>, Qiita, 2026-01-14 / updated 2026-01-15. https://qiita.com/soranjiro/items/f18bf11db47f972f4c6d</li>
+</ol>

@@ -1,0 +1,78 @@
+---
+layout: default
+title: BERT
+summary: Transformer Encoderを使い、左右両方向のcontextからmasked tokenを予測する事前学習を行うencoder-only language model。
+type: reference
+domain: kaggle
+topic: bert
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 5
+tags: [kaggle, modeling, transformer, bert, nlp]
+---
+
+<h1>BERT</h1>
+<p><strong>BERT（Bidirectional Encoder Representations from Transformers）は、Transformer Encoderを何層も重ね、文章の左側と右側の両方を見ながらtoken表現を作るencoder-only language modelです。</strong></p>
+<p>事前学習では一部tokenを隠し、周囲のcontextから元tokenを当てる<strong>Masked Language Modeling（MLM）</strong>を使います。Fine-tuning時は上に小さなtask headを足すだけで分類・token classification・QAなどへ転用できます（<a href="https://arxiv.org/abs/1810.04805">BERT paper</a>）。</p>
+<nav class="article-jump-nav"><a href="#mlm">Masked LM</a><a href="#input">入力表現</a><a href="#architecture">全体構造</a><a href="#finetune">Fine-tuning</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
+
+<h2 id="mlm">Masked tokenを左右contextから当てる</h2>
+<p>例として「患者は昨日[MASK]を受診した」を考えます。BERTは[MASK]の左側だけでなく「を受診した」という右側も同時に使って、隠れたtokenを推定します。</p>
+<div class="model-architecture" aria-label="BERT masked language modeling">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">一部tokenを隠し、左右の文脈から元tokenを復元する</div><p class="model-architecture__subtitle">decoder-only LMのような「次token予測」ではなく、Encoderでbidirectional contextを作ります。</p></div><span class="model-architecture__badge">MLM</span></div>
+  <div class="model-stage-row" style="--model-cols:6"><div class="model-stage"><div class="model-tensor"><span>患者は</span></div></div><div class="model-stage"><div class="model-tensor"><span>昨日</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>[MASK]</span></div></div><div class="model-stage"><div class="model-tensor"><span>を</span></div></div><div class="model-stage"><div class="model-tensor"><span>受診した</span></div></div><div class="model-stage"><div class="model-op-box"><span>Predict<br>病院?</span></div></div></div>
+  <p class="model-architecture__caption">文は理解用の人工例です。実際はsubword tokenizerで分割されます。</p>
+</div>
+
+<h2 id="input">BERTへ入る3つのembedding</h2>
+<p>元BERTでは各位置のinput embeddingは主に3要素の和です。</p>
+<ul>
+<li><strong>Token embedding</strong>: tokenそのもの。</li>
+<li><strong>Position embedding</strong>: 何番目のtokenか。</li>
+<li><strong>Segment embedding</strong>: sentence A / Bなど、どちらのsegmentか。</li>
+</ul>
+<div class="model-architecture"><div class="model-architecture__header"><div><div class="model-architecture__title">token情報 + 順序 + segmentを足してEncoderへ</div><p class="model-architecture__subtitle">[CLS]はsequence全体のclassification representationとして使われることがあります。</p></div><span class="model-architecture__badge">input representation</span></div><div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>[CLS] text [SEP]</span></div></div><div class="model-stage"><div class="model-op-box"><span>Token Emb.</span></div></div><div class="model-stage"><div class="model-op-box"><span>Position Emb.</span></div></div><div class="model-stage"><div class="model-op-box"><span>Segment Emb.</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Sum<br>N×D</span></div></div></div></div>
+
+<h2 id="architecture">BERT全体</h2>
+<div class="model-architecture" aria-label="BERT full architecture">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">Embedding → Transformer Encoder × L → task head</div><p class="model-architecture__subtitle">BERT-baseは12層、BERT-largeは24層のEncoderを持つ代表構成です。</p></div><span class="model-architecture__badge">encoder-only</span></div>
+  <div class="model-stage-row" style="--model-cols:6"><div class="model-stage"><div class="model-tensor"><span>Tokenized<br>text</span></div></div><div class="model-stage"><div class="model-op-box"><span>Embedding<br>sum</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Encoder<br>Block 1</span></div></div><div class="model-stage"><div class="model-tensor"><span>Encoder<br>× L</span></div></div><div class="model-stage"><div class="model-tensor is-thin"><span>Contextual<br>tokens</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>CLS / Token<br>Task Head</span></div></div></div>
+</div>
+
+<p>元論文ではMLMに加えてNext Sentence Prediction（NSP）も事前学習objectiveに使いました。後発のRoBERTaはNSPを外すなどtraining recipeを変更しています。</p>
+<h2 id="finetune">Fine-tuningでは何を変えるか</h2>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>Text Classification</h4><dl><dt>使う表現</dt><dd>[CLS]やpooling</dd><dt>Head</dt><dd>Linear classifier</dd></dl></section><section class="comparison-card"><h4>Token Classification</h4><dl><dt>使う表現</dt><dd>各token hidden state</dd><dt>Head</dt><dd>tokenごとのclass</dd></dl></section><section class="comparison-card"><h4>Span QA</h4><dl><dt>使う表現</dt><dd>各token</dd><dt>Head</dt><dd>start/end位置</dd></dl></section></div>
+
+<p>Kaggleでは長文に対するpooling、max_length、layer freezing、differential learning rateなどがmodel名と同じくらい効く場合があります。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>SPR 2026 Mammography Report Classificationの1位解法では<code>neuralmind/bert-base-portuguese-cased</code>を7-class classificationへfine-tuneし、Stratified 5-fold + Focal Loss + fold ensembleを使用しています（<a href="https://www.kaggle.com/competitions/spr-2026-mammography-report-classification/writeups/1st-place-solution">1st place solution</a>）。</p>
+<p>Feedback Prize - English Language Learning 2022の1位解法ではDeBERTaやRoBERTaに加えて<strong>DistilBERT</strong>もensemble候補として使われています（<a href="https://www.kaggle.com/competitions/feedback-prize-english-language-learning/writeups/autox-rohit-yevhenii-1st-place-solution">1st place solution</a>）。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>max_lengthで文章を切り捨てる</h3>
+<p>BERT系の代表checkpointは512 token制約が多く、長文では末尾情報を失います。truncation位置・chunking・poolingをValidationします。</p>
+<h3>[CLS]だけが常に最適ではない</h3>
+<p>回帰やessay評価ではmean pooling、weighted layer pooling、LSTM pooling等が上回ることがあります。</p>
+<h3>BERTとRoBERTa/DeBERTaを同一視しない</h3>
+<p>同じEncoder-only familyでもpretraining recipe、position表現、attention構造が異なります。個別記事で差を確認します。</p>
+<h2>Quick Reference</h2>
+<ul>
+<li>Encoder-only Transformer。</li>
+<li>MLMで左右contextを同時に学ぶ。</li>
+<li>[CLS] / token hidden stateをtask headへ渡す。</li>
+<li>元BERTはMLM + NSP。</li>
+<li>Kaggleではmax_length/pooling/fold設計も重要。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/modeling/transformer.html' | relative_url }}">Transformer</a></li>
+<li><a href="{{ '/wiki/modeling/roberta.html' | relative_url }}">RoBERTa</a></li>
+<li><a href="{{ '/wiki/modeling/deberta.html' | relative_url }}">DeBERTa</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li>Devlin et al., “BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding”, 2018. https://arxiv.org/abs/1810.04805</li>
+<li>Vaswani et al., “Attention Is All You Need”, 2017. https://arxiv.org/abs/1706.03762</li>
+<li>Kaggle, “SPR 2026 Mammography Report Classification: 1st place solution”, 2026. https://www.kaggle.com/competitions/spr-2026-mammography-report-classification/writeups/1st-place-solution</li>
+<li>Kaggle, “Feedback Prize ELL: 1st Place Solution”, 2022. https://www.kaggle.com/competitions/feedback-prize-english-language-learning/writeups/autox-rohit-yevhenii-1st-place-solution</li>
+<li>Hugging Face Transformers, BERT documentation. https://huggingface.co/docs/transformers/model_doc/bert</li>
+</ol>

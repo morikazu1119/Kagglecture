@@ -1,0 +1,158 @@
+---
+layout: default
+title: Ensemble Diversity
+summary: 単体scoreだけでなくOOF predictionの違い・誤差の違いを見て、blendで補完し合うmodelを選ぶ考え方。
+type: reference
+domain: kaggle
+topic: ensemble-diversity
+created: 2026-09-11
+updated: 2026-09-11
+source_count: 9
+tags:
+  - kaggle
+  - ensemble
+  - oof
+  - diversity
+---
+
+<h1>Ensemble Diversity</h1>
+<p><strong>Ensemble Diversityは、単体scoreが高いmodelだけを集めるのではなく、「既存modelと違う外し方をするmodel」を混ぜて、ensemble全体の誤差を減らす考え方です。</strong></p>
+<p>単体で少し弱くても、強いmodelとpredictionや誤差の相関が低ければblendで価値を持つことがあります。逆に、単体scoreが高いmodelを何本増やしてもpredictionがほぼ同じなら、追加改善は小さくなりやすいです。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#intuition">直感</a>
+  <a href="#measure">測り方</a>
+  <a href="#selection">候補選択</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+<h2 id="intuition">直感: 「強さ」と「違い」の両方を見る</h2>
+<p>3つのOOF modelがあるとします。AとBは単体scoreが高くても、ほぼ同じsampleを同じ順序で予測するなら、A+Bの追加情報は少ない可能性があります。一方Cが少し弱くてもAが外すsampleを当てるなら、A+Cの方がensembleで伸びることがあります。</p>
+<div class="model-architecture" aria-label="Ensemble Diversityの模式図">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">単体scoreだけではなく「誤差の重なり」を見る</div><p class="model-architecture__subtitle">模式例。数値は実測値ではありません。</p></div>
+    <span class="model-architecture__badge">strength × diversity</span>
+  </div>
+  <div class="model-stage-row" style="--model-cols:3">
+    <div class="model-stage"><div class="model-tensor is-accent"><span><strong>Model A</strong><br>OOF 0.920<br>基準model</span></div><span class="model-stage__label">強い</span></div>
+    <div class="model-stage"><div class="model-tensor"><span><strong>Model B</strong><br>OOF 0.919<br>corr(A,B)=0.99</span></div><span class="model-stage__label">強いが似ている</span></div>
+    <div class="model-stage"><div class="model-tensor"><span><strong>Model C</strong><br>OOF 0.916<br>corr(A,C)=0.88</span></div><span class="model-stage__label">少し弱いが違う</span></div>
+  </div>
+  <p class="model-architecture__caption">低相関なら必ず効くわけではありません。必要なのは「十分な単体性能」と「既存blendを補完する違い」の両立です。</p>
+</div>
+
+<div class="comparison-board" aria-label="Ensemble候補の判断軸">
+  <section class="comparison-card"><h4>強い + 似ている</h4><dl><dt>単体score</dt><dd>高い</dd><dt>既存blendとの相関</dt><dd>非常に高い</dd><dt>典型</dt><dd>同一modelの近いparameter</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>強い + 違う</h4><dl><dt>単体score</dt><dd>十分高い</dd><dt>既存blendとの相関</dt><dd>低め</dd><dt>典型</dt><dd>GBDT + NN、別feature family</dd></dl></section>
+  <section class="comparison-card"><h4>弱い + 違う</h4><dl><dt>単体score</dt><dd>低い</dd><dt>相関</dt><dd>低い</dd><dt>注意</dt><dd>diverseなだけでは不足</dd></dl></section>
+</div>
+
+<h2 id="measure">何を測るか</h2>
+<h3>1. OOF predictionの相関</h3>
+<p>同じrow順に揃えたOut-of-Fold prediction同士の相関を見ます。二値分類でAUC中心なら、raw probabilityのscale差を受けにくいSpearman rank correlationも使いやすいです。確率値そのものを混ぜるLogLoss系ではPearson correlationも確認します。</p>
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th>見るもの</th><th>何が分かるか</th><th>向く場面</th><th>注意</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Pearson correlation</th><td>prediction値が線形にどれだけ似るか</td><td>probability average、regression</td><td>scaleやcalibration差の影響を受ける</td></tr>
+    <tr><th scope="row">Spearman correlation</th><td>predictionの順位がどれだけ似るか</td><td>AUC、rank blend</td><td>確率の距離情報は捨てる</td></tr>
+    <tr><th scope="row">Residual / error correlation</th><td>同じsampleを同時に外しているか</td><td>regression、label付きOOF</td><td>metricに合うerror定義が必要</td></tr>
+    <tr><th scope="row">Blend delta</th><td>実際に混ぜたときMetricが改善するか</td><td>最終判断</td><td>OOFへのselection overfitに注意</td></tr>
+  </tbody>
+</table></div>
+
+<p>相関は<strong>候補を絞る診断</strong>であり、最終的な採用基準はCompetition Metric上のOOF blend deltaです。</p>
+<h3>2. 誤差の重なり</h3>
+<p>classificationなら、各modelが誤るsample集合や高loss sampleを比較します。regressionならresidualの符号・大きさを比べます。</p>
+<p>同じ平均scoreでも、同じ10%を外す2本より、異なる10%を外す2本の方がaverageで補完できる余地があります。</p>
+<h3>3. Model family / feature / data viewの違い</h3>
+<p>prediction correlationの結果だけでなく、<strong>なぜ違うpredictionになるのか</strong>も記録します。</p>
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th>Diversity source</th><th>例</th><th>期待する違い</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Algorithm</th><td>LightGBM / CatBoost / NN / linear</td><td>decision boundary、smoothness</td></tr>
+    <tr><th scope="row">Feature view</th><td>raw / aggregation / graph / embedding</td><td>拾うsignalの種類</td></tr>
+    <tr><th scope="row">Architecture</th><td>CNN / SED / Transformer / foundation embedding</td><td>表現とreceptive field</td></tr>
+    <tr><th scope="row">Training recipe</th><td>loss、augmentation、pseudo label、sampling</td><td>error bias</td></tr>
+    <tr><th scope="row">Seed / fold</th><td>同一recipeのrandomness違い</td><td>variance低減。通常は差は小さめ</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="selection">候補をどう選ぶか</h2>
+<p>実務では「最強modelを10本」より、次の順で選ぶと管理しやすくなります。</p>
+<ol>
+<li>すべての候補を<strong>同じCV split</strong>でOOF化する。</li>
+<li>Competition Metricで単体scoreを計算する。</li>
+<li>明らかに弱い候補を除く。</li>
+<li>残った候補のOOF correlation / residual overlapを見る。</li>
+<li>似すぎた候補をdeduplicateする。</li>
+<li>Weighted AverageまたはHill Climbingで<strong>追加時のOOF delta</strong>を測る。</li>
+<li>fold別delta、別seed、outer holdoutでも同じ候補が残るか確認する。</li>
+</ol>
+<div class="comparison-board" aria-label="Ensemble Diversityと既存Ensemble手法の関係">
+  <section class="comparison-card"><h4>Ensemble Diversity</h4><dl><dt>答える質問</dt><dd>何を混ぜるか</dd><dt>入力</dt><dd>OOF predictions / errors</dd></dl></section>
+  <section class="comparison-card"><h4>Weighted Average</h4><dl><dt>答える質問</dt><dd>何%ずつ混ぜるか</dd><dt>入力</dt><dd>選んだprediction</dd></dl></section>
+  <section class="comparison-card"><h4>Hill Climbing</h4><dl><dt>答える質問</dt><dd>追加価値が高い順はどれか</dd><dt>入力</dt><dd>多数のOOF候補</dd></dl></section>
+  <section class="comparison-card"><h4>Fold / Seed Ensemble</h4><dl><dt>答える質問</dt><dd>同じrecipeのvarianceをどう減らすか</dd><dt>入力</dt><dd>fold / seed違いmodel</dd></dl></section>
+</div>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<h3>BirdCLEF+ 2026: 上位解法で「違う枝」を意図的に残す</h3>
+<p>2位解法はPublic Perch、distilled SED、自作CNN、Insecta specialistを組み合わせた<strong>diverse ensemble</strong>を最終構成にしています（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/2nd-place-diverse-ensemble-with-pseudo-labeling-a">2nd Place Solution</a>）。</p>
+<p>5位解法もタイトル自体を<code>Diversity and Bug - Both Are All You Need</code>とし、単一architectureへ収束させず複数系統を残しています（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/5th-place-solution-both-are-all-you-need">5th Place Solution</a>）。</p>
+<p>14位解法では、主力SEDに加え、別neck・hop設定のSED smallを<strong>mostly a diversity branch</strong>として明示的に残し、さらにProtoSSM / Perch branchを組み合わせています。最終Privateは0.95531、14位でした（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/14th-place-solo-gold-solution">14th Place Solution</a>）。</p>
+<p>別チームのSilver解法では、Perch系ProtoSSMとSEDのpredictionが低相関であることを理由に併用し、候補約20本から<strong>low OOF correlation</strong>のmemberを優先したと明記しています。PublicではSED single 0.913〜0.928、ProtoSSM 0.931に対してensemble 0.955、Private ensemble 0.944でした（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/137th-solution-protossm-3-sed-models-ensemblep">BirdCLEF+ 2026 solution</a>）。この例は相関をselectionへ直接使ったEvidenceですが、Public中心の選択だったため値の一般化には注意が必要です。</p>
+<h3>Predict Customer Churn 2026: architecture / feature diversityを大量poolへ入れる</h3>
+<p>9位解法ではGBDT、RealMLP、TabM、TabTransformer、FT-Transformer、ResNet、GNN、linear系まで含むmodel libraryを作り、<strong>maximum architectural diversity</strong>を狙ったうえでOOFをrank化しGPU Hill Climbingしています。最終CV AUCは0.919911でした（<a href="https://www.kaggle.com/competitions/playground-series-s6e3/writeups/9th-place-solution">9th Place Solution</a>）。</p>
+<p>17位解法では138 modelのpoolに対し、CATNUM aggregation、distribution features、clustering、frequency combinations、periodic embeddings、residual boostingなど<strong>異なるfeature family</strong>を持つmodelが最終Hill Climbingで高weightを取っています。最終OOF AUCは0.91974でした（<a href="https://www.kaggle.com/competitions/playground-series-s6e3/writeups/17th-place-solution">17th Place Solution</a>）。</p>
+<h3>Mercor Cheating Detection 2025/2026: 単体が弱くても残す</h3>
+<p>5位解法では13-model ensembleに7 GBDT、5 NN、Logistic Regressionを採用しています。NNは単体AUCが約0.85でGBDTの約0.86より低く、Logistic Regressionは0.816でしたが、作者は<strong>valuable diversity</strong>を理由に最終ensembleへ残しています（<a href="https://www.kaggle.com/competitions/mercor-cheating-detection/writeups/5th-place-solution-writeup">5th Place Solution Writeup</a>）。</p>
+<p>これは「単体score順に上位だけ残す」と取りこぼすcandidateがあることを示すEvidence Bです。個々のmemberの単独blend ablationは公開されていないため、効果量は推測しません。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>低相関なら何でもよいわけではない</h3>
+<p>ランダムmodelは強いmodelと低相関ですが役に立ちません。まず最低限の単体性能を満たし、その上でdiversityを見る必要があります。</p>
+<h3>相関だけでselectionを完結しない</h3>
+<p>Pearson 0.85のmodelがPearson 0.95のmodelより必ずensembleへ効くとは限りません。metric、calibration、class imbalance、error magnitudeを反映するため、最後はOOF blend deltaを測ります。</p>
+<h3>CVが違うOOFを比較しない</h3>
+<p>fold splitやrow subsetが違うOOF同士の相関は、そのまま候補選択へ使えません。同じsample・同じrow順・同じvalidation設計で揃えます。</p>
+<h3>AUCとLogLossでは見る相関が違う</h3>
+<p>AUCは順位が中心なのでSpearmanやrank-spaceでの比較が自然です。一方LogLossではprediction scaleとcalibrationが重要なので、rank correlationだけでは情報が足りません。</p>
+<h3>Model poolを増やしすぎるとOOFへ過適合する</h3>
+<p>100〜1000本から最良組合せを探索すると、selection自体がOOF noiseを拾います。familyごとの重複除去、outer holdout、fold別delta、複数seedで再現性を確認します。</p>
+<h3>Inference costを無視しない</h3>
+<p>Diversityを増やすためにarchitectureを増やすとruntime・memoryが増えます。BirdCLEF+ 2026のようにCPU inference制限が強いCompetitionでは、1本追加のscore gainと推論costをセットで判断します。</p>
+<h2 id="quick-reference">Quick Reference</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>残したいcandidate</h4><dl><dt>単体</dt><dd>十分強い</dd><dt>OOF</dt><dd>既存blendと違う</dd><dt>最終確認</dt><dd>blend deltaが再現</dd></dl></section>
+  <section class="comparison-card"><h4>削りたいcandidate</h4><dl><dt>単体</dt><dd>既存modelと同等以下</dd><dt>OOF</dt><dd>ほぼduplicate</dd><dt>結果</dt><dd>costだけ増えやすい</dd></dl></section>
+  <section class="comparison-card"><h4>要注意candidate</h4><dl><dt>単体</dt><dd>かなり弱い</dd><dt>OOF</dt><dd>低相関</dd><dt>判断</dt><dd>低相関だけで採らない</dd></dl></section>
+</div>
+
+<ul>
+<li>OOFは同じfold・同じrow順で揃える。</li>
+<li>単体Metricとprediction / residual correlationを両方見る。</li>
+<li>AUC系ではSpearman、probability系ではPearsonも確認する。</li>
+<li>最終判断はCompetition Metric上のOOF blend delta。</li>
+<li>model family、feature family、data viewの違いをmetadataとして残す。</li>
+<li>候補が多いときは<a href="{{ '/wiki/ensemble/hill-climbing.html' | relative_url }}">Hill Climbing Ensemble</a>と組み合わせる。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/ensemble/hill-climbing.html' | relative_url }}">Hill Climbing Ensemble</a></li>
+<li><a href="{{ '/wiki/ensemble/weighted-average.html' | relative_url }}">Weighted Average</a></li>
+<li><a href="{{ '/wiki/ensemble/fold-seed-ensemble.html' | relative_url }}">Fold / Seed Ensemble</a></li>
+<li><a href="{{ '/wiki/ensemble/stacking.html' | relative_url }}">Stacking</a></li>
+<li><a href="{{ '/wiki/competition-strategy/out-of-fold.html' | relative_url }}">Out-of-Fold Prediction</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/2nd-place-diverse-ensemble-with-pseudo-labeling-a">tennogh, “2nd Place: Diverse Ensemble with Pseudo-Labeling and a Taxon Specialist”, BirdCLEF+ 2026, Kaggle, 2026</a></li>
+<li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/5th-place-solution-both-are-all-you-need">Kaggle, “5th Place Solution: Diversity and Bug - Both Are All You Need”, BirdCLEF+ 2026, 2026</a></li>
+<li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/14th-place-solo-gold-solution">Kaggle, “14th place solo gold solution”, BirdCLEF+ 2026, 2026</a></li>
+<li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/137th-solution-protossm-3-sed-models-ensemblep">payanotty et al., “137th place solution, ProtoSSM + 3 SED models ensemble”, BirdCLEF+ 2026, Kaggle, 2026</a></li>
+<li><a href="https://www.kaggle.com/competitions/playground-series-s6e3/writeups/9th-place-solution">Mert Bayraktar, “9th place solution”, Predict Customer Churn, Kaggle, 2026</a></li>
+<li><a href="https://www.kaggle.com/competitions/playground-series-s6e3/writeups/17th-place-solution">Kaggle, “17th Place Solution”, Predict Customer Churn, 2026</a></li>
+<li><a href="https://www.kaggle.com/competitions/mercor-cheating-detection/writeups/5th-place-solution-writeup">Yew Jin Lim, “Somehow 5th place Solution Writeup”, Mercor Cheating Detection, Kaggle, 2026</a></li>
+<li><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.pearsonr.html">SciPy, <code>scipy.stats.pearsonr</code></a></li>
+<li><a href="https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.spearmanr.html">SciPy, <code>scipy.stats.spearmanr</code></a></li>
+</ol>

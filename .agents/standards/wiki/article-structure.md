@@ -1,5 +1,18 @@
 # Wiki Article Structure
 
+## HTML-first publishing requirement
+
+Kagglectureの公開ページは **HTML-first** とする。公開本文にMarkdown記法を使用しない。
+
+- 公開ページは `index.html` または `wiki/**/*.html` とする。
+- JekyllのYAML Front Matter (`---` で囲まれた先頭metadata) は保持してよい。Front Matterより後ろはHTMLのみとする。
+- 見出しは `<h1>`〜`<h6>`、段落は `<p>`、リストは `<ul>` / `<ol>`、リンクは `<a>`、codeは `<code>` / `<pre><code>` を使う。
+- Markdown見出し (`#`)、Markdown link (`[text](url)`)、強調 (`**text**`)、fenced code、pipe table、Markdown listを公開本文へ追加しない。
+- 表・比較・図は既存のHTML component classを優先して再利用する。
+- Liquid (`{{ ... }}`, `{% ... %}`) はHTML内で使用してよい。
+- 公開URLは従来どおり `.html` / category directory URLを維持する。
+- `.agents/**/*.md` はAgent / Skill loader用の内部instructionなのでMarkdownのまま維持する。これは公開記事の例外であり、公開コンテンツではない。
+
 KagglectureはKaggleの辞書・リファレンスであり、カリキュラムではない。各ページは単独で開いても目的の情報へすぐ到達できる構成にする。
 
 ## UX principles
@@ -42,11 +55,11 @@ GroupKFold
 - ルート `index.md` が唯一のホーム・カテゴリ索引。
 - ホームのカテゴリカードから個別記事へ直接飛ばさない。
 - 実在するカテゴリページへリンクする。
-- `wiki/index.md` のような全体索引の重複ページは作らない。
+- `wiki/index.html` のような全体索引の重複ページは作らない。
 
 ### Category index
 
-各主要カテゴリは必要に応じて `wiki/<category>/index.md` を持つ。
+各主要カテゴリは必要に応じて `wiki/<category>/index.html` を持つ。
 
 Frontmatter例:
 
@@ -79,7 +92,7 @@ subgroupは追加順・アルファベット順ではなく、そのカテゴリ
 
 ### Article
 
-記事は `wiki/<category>/<slug>.md` に置く。
+記事は `wiki/<category>/<slug>.html` に置く。
 
 - カテゴリページから記事へ到達できること。
 - 記事の「戻る」は所属カテゴリへ戻ること。

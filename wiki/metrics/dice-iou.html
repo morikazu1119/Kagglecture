@@ -1,0 +1,117 @@
+---
+layout: default
+title: Dice / IoU
+description: Segmentationで予測maskと正解maskの重なりを測る代表的な評価指標。
+summary: Diceは重なりを2倍して総面積で割り、IoUはIntersectionをUnionで割るSegmentation指標。
+type: reference
+domain: kaggle
+topic: dice-iou
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 4
+tags:
+  - kaggle
+  - metrics
+  - segmentation
+  - dice
+  - iou
+---
+
+<h1>Dice / IoU</h1>
+<p><strong>DiceとIoU（Jaccard Index）は、Segmentationで予測maskと正解maskがどれだけ重なっているかを測る代表指標です。</strong></p>
+<p>背景pixelが圧倒的に多い画像ではAccuracyが高くなりすぎるため、foregroundの重なりを直接測るDice/IoUが使われます。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#formula">数式</a>
+  <a href="#relation">DiceとIoUの関係</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+<h2 id="formula">数式</h2>
+<p>正解maskを$A$、予測maskを$B$とすると、</p>
+<p>$$
+Dice = \frac{2|A \cap B|}{|A|+|B|}
+$$</p>
+<p>$$
+IoU = \frac{|A \cap B|}{|A \cup B|}
+$$</p>
+<p>IoUはJaccard similarity coefficientとも呼ばれ、scikit-learnも「intersection / union」と定義しています（<a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.jaccard_score.html">jaccard_score</a>）。</p>
+<p>予測maskを左右へ動かし、重なりが減るとDice/IoUがどう下がるかを模式図で確認できます。</p>
+<div class="interactive-viz" data-interactive="dice-iou-overlap">
+  <div class="interactive-viz__header">
+    <div>
+      <div class="interactive-viz__title">予測maskをずらしてOverlapを比較</div>
+      <p class="interactive-viz__subtitle">正解のみ、予測のみ、重なりを5×5 gridで表示します。</p>
+    </div>
+    <span class="interactive-status" data-mask-status data-state="safe">shift 0</span>
+  </div>
+  <p class="interactive-note">模式例。実画像・Competition maskではありません。</p>
+  <div class="interactive-control-row">
+    <span class="interactive-control-label">横方向shift</span>
+    <label class="interactive-range">
+      <input type="range" min="-2" max="2" step="1" value="0" data-mask-shift aria-label="予測maskの横方向shift">
+      <span class="interactive-range-labels"><span>-2</span><span>0</span><span>+2</span></span>
+    </label>
+  </div>
+  <div class="mask-layout">
+    <div class="mask-grid" data-mask-grid aria-label="正解maskと予測maskの重なり"></div>
+    <div>
+      <div class="metric-grid">
+        <div class="metric-card"><span>Dice</span><strong data-mask-dice>1.00</strong></div>
+        <div class="metric-card"><span>IoU</span><strong data-mask-iou>1.00</strong></div>
+        <div class="metric-card"><span>最良</span><strong>1.00</strong></div>
+      </div>
+      <div class="mask-legend">
+        <span><i class="is-ground-truth"></i>正解maskのみ</span>
+        <span><i class="is-prediction"></i>予測maskのみ</span>
+        <span><i class="is-both"></i>重なり</span>
+      </div>
+    </div>
+  </div>
+  <p class="interactive-explanation" data-mask-explanation aria-live="polite">予測maskをずらすとIntersectionが減り、DiceとIoUの両方が下がります。</p>
+  <noscript><p class="interactive-explanation">DiceとIoUは予測maskと正解maskの重なりを測り、完全一致なら1です。</p></noscript>
+</div>
+
+<h2 id="relation">DiceとIoUの関係</h2>
+<p>同じbinary maskなら単調な変換関係があります。</p>
+<p>$$
+Dice = \frac{2IoU}{1+IoU}
+$$</p>
+<p>$$
+IoU = \frac{Dice}{2-Dice}
+$$</p>
+<p>したがって単一sampleの順位関係は似ますが、<strong>sampleごとに計算して平均する場合は平均Diceと平均IoUを単純変換できません</strong>。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>Severstal Steel Defect Detectionの1位解法ではU-Net/FPNのsegmentation modelをBCEや<code>0.75 BCE + 0.25 Dice</code>で学習し、pixel thresholdとcomponent removalまで最終Pipelineに含めています（<a href="https://www.kaggle.com/competitions/severstal-steel-defect-detection/writeups/1st-place-solution">1st Place Solution</a>）。</p>
+<p>26-shinnen-3Dpathologyの1位解法ではDice + BCEをlossとして使い、GroupKFoldで3D crop単位のLeakageを防ぎながらsegmentationを評価しています（<a href="https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614">1st place solution</a>）。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>Empty mask</h3>
+<p>正解も予測も空の場合を1とするか、0とするか、評価対象から除くかでscoreが変わります。Competition実装を確認します。</p>
+<h3>Threshold依存</h3>
+<p>Probability maskをbinary maskへ変えるthresholdでDice/IoUは大きく変わります。OOFでthresholdを選びます。</p>
+<h3>Macro / Micro</h3>
+<p>画像ごと・classごと・全pixelまとめて計算するかで値が変わります。公式Evaluation codeをローカルに再実装します。</p>
+<h3>LossとMetricは同じとは限らない</h3>
+<p>Soft Dice Lossは連続確率で微分可能にした学習用近似です。Competitionのhard-mask Diceと完全同一ではありません。</p>
+<h2 id="quick-reference">Quick Reference</h2>
+<ul>
+<li>Dice/IoUはforeground overlapを見る。</li>
+<li>IoU = intersection / union。</li>
+<li>DiceはIoUより数値が高く見えやすい。</li>
+<li>Empty maskとaveraging定義を確認する。</li>
+<li>threshold/post-processingもOOFで最適化する。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/metrics/f1-score.html' | relative_url }}">F1 Score</a></li>
+<li><a href="{{ '/wiki/training/data-augmentation.html' | relative_url }}">Data Augmentation</a></li>
+<li><a href="{{ '/wiki/advanced-methods/post-processing.html' | relative_url }}">Post-processing</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.jaccard_score.html">scikit-learn, “jaccard_score”</a></li>
+<li><a href="https://scikit-learn.org/stable/modules/model_evaluation.html#jaccard-similarity-coefficient-score">scikit-learn, “Jaccard similarity coefficient score”</a></li>
+<li><a href="https://www.kaggle.com/competitions/severstal-steel-defect-detection/writeups/1st-place-solution">Kaggle, “Severstal: Steel Defect Detection: 1st Place Solution”, 2019</a></li>
+<li><a href="https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614">Kaggle, “26-shinnen-3Dpathology: 1st place solution”, 2026</a></li>
+</ol>

@@ -1,0 +1,87 @@
+---
+layout: default
+title: Probability Calibration
+summary: 予測確率0.8が実際にも約80%当たるよう、モデルの確率スケールをOOFで補正する手法。
+type: reference
+domain: kaggle
+topic: probability-calibration
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 4
+tags:
+  - kaggle
+  - advanced-methods
+  - calibration
+  - probability
+---
+
+<h1>Probability Calibration</h1>
+<p><strong>Probability Calibrationは、モデルが出す確率を「0.8と予測した集団が実際にも約80%正例」のような確率へ補正する手法です。</strong></p>
+<p>AUCのようなranking指標では重要度が低い一方、LogLossやBrier Scoreのように<strong>確率の値そのもの</strong>を採点するCompetitionでは大きく効くことがあります（<a href="https://scikit-learn.org/stable/modules/calibration.html">scikit-learn: Probability calibration</a>）。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#intuition">直感</a>
+  <a href="#methods">手法</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+<h2 id="intuition">直感</h2>
+<p>モデルのrankingは正しくても、確率が過信気味なことがあります。</p>
+<div class="comparison-board" aria-label="Calibrationが必要な確率予測の模式例">
+  <section class="comparison-card"><h4>モデルの予測</h4><dl><dt>予測確率</dt><dd>0.90</dd><dt>意味</dt><dd>モデルは90%程度の自信を表現</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>実際の正例率</h4><dl><dt>観測率</dt><dd>0.70</dd><dt>診断</dt><dd>20ポイント過信している</dd></dl></section>
+</div>
+<p class="viz-note">模式例。0.90 / 0.70は説明用の人工値です。</p>
+
+<p>この場合「誰が上か」は合っていても、0.9という確率は高すぎます。Calibrationはこのscaleを補正します。</p>
+<p>下の模式Reliability表示で、補正前と補正後を切り替えられます。灰色が予測確率、緑がそのbinでの実際の正例率です。</p>
+<div class="interactive-viz" data-interactive="calibration-toggle">
+  <div class="interactive-viz__header"><div><div class="interactive-viz__title">Calibration前後の確率gap</div><p class="interactive-viz__subtitle">予測確率と実測正例率の距離が小さいほど、確率として解釈しやすくなります。</p></div><span class="interactive-status" data-cal-status data-state="danger">平均gap</span></div>
+  <p class="interactive-note">模式例。binごとの予測率・実測率は人工データです。</p>
+  <div class="interactive-control-row" role="group" aria-label="Calibration状態"><span class="interactive-control-label">表示</span><button type="button" class="interactive-button is-active" data-cal-mode="raw" aria-pressed="true">補正前</button><button type="button" class="interactive-button" data-cal-mode="calibrated" aria-pressed="false">補正後</button></div>
+  <div class="calibration-legend"><span><i></i>予測確率</span><span><i class="is-observed"></i>実測正例率</span></div>
+  <div class="calibration-list" data-cal-rows></div>
+  <p class="interactive-explanation" data-cal-explanation aria-live="polite">高確率binほど予測が実測率より高く、過信している模式例です。</p>
+  <noscript><p class="interactive-explanation">CalibrationはOOFまたは独立setで学習し、予測確率と実際の発生率のズレを補正します。</p></noscript>
+</div>
+
+<h2 id="methods">手法</h2>
+<div class="comparison-board" aria-label="Probability Calibration手法の比較">
+  <section class="comparison-card"><h4>Sigmoid / Platt</h4><dl><dt>特徴</dt><dd>滑らかな単調変換</dd><dt>注意</dt><dd>柔軟性は低め</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Isotonic</h4><dl><dt>特徴</dt><dd>非パラメトリックな単調変換</dd><dt>注意</dt><dd>小データで過学習しやすい</dd></dl></section>
+  <section class="comparison-card"><h4>Temperature Scaling</h4><dl><dt>特徴</dt><dd>logit scaleを調整</dd><dt>注意</dt><dd>主にNNで使いやすい</dd></dl></section>
+</div>
+
+<p>scikit-learnはIsotonicについて、十分なデータがあれば柔軟だが、小標本では過学習しやすいと説明しています。またIsotonicはtieを作るためAUCがわずかに変わる場合があります（<a href="https://scikit-learn.org/stable/modules/calibration.html">公式ドキュメント</a>）。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>March Machine Learning Mania 2026の1位解法では、Leave-One-Season-OutのOOF予測へIsotonic Regressionをfitしています。Brier ScoreはMen 0.1850→0.1822、Women 0.1390→0.1357、全体 0.1620→0.1590へ改善したと報告しています（<a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026/writeups/march-machine-learning-mania-2026-1st-place-solut">1st Place Solution</a>）。</p>
+<p>この例の重要点は、<strong>学習データへのin-sample予測ではなくOOF予測にcalibratorをfitしていること</strong>です。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>in-sampleでfitする</h3>
+<p>モデル自身のTrain予測は過度に自信が高くなりやすく、その上でcalibrationすると本番へ一般化しません。OOFか独立Calibration setを使います。</p>
+<h3>Ranking Metricで不要な調整をする</h3>
+<p>AUCしか見ないCompetitionでは、monotonic calibrationで本質的なrankingはほぼ変わりません。Metricに合わせて使います。</p>
+<h3>Isotonicの過学習</h3>
+<p>自由度が高いため、データが少ないfoldで細かい階段状mappingを学ぶと不安定になります。SigmoidとOOFで比較します。</p>
+<h2 id="quick-reference">Quick Reference</h2>
+<ul>
+<li>LogLoss/BrierなどProbability Metricで検討する。</li>
+<li>calibratorはOOFまたは独立setで学習する。</li>
+<li>SigmoidとIsotonicを比較する。</li>
+<li>Reliability diagramで過信/過小信頼を見る。</li>
+<li>AUC改善目的の手法ではない。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/metrics/log-loss.html' | relative_url }}">LogLoss</a></li>
+<li><a href="{{ '/wiki/metrics/roc-auc.html' | relative_url }}">ROC-AUC</a></li>
+<li><a href="{{ '/wiki/competition-strategy/out-of-fold.html' | relative_url }}">Out-of-Fold Prediction</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://scikit-learn.org/stable/modules/calibration.html">scikit-learn, “Probability calibration”</a></li>
+<li><a href="https://scikit-learn.org/stable/api/sklearn.calibration.html">scikit-learn, “sklearn.calibration”</a></li>
+<li><a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026/writeups/march-machine-learning-mania-2026-1st-place-solut">Kaggle, “March Machine Learning Mania 2026: 1st Place Solution”, Harrison Horan, 2026</a></li>
+<li><a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026/writeups/march-machine-learning-mania-2026-under-50-solut">Kaggle, “March Mania 2026: Under 50 Solution”, 2026</a></li>
+</ol>

@@ -1,0 +1,152 @@
+---
+layout: default
+title: Learning to Rank / LambdaMART
+summary: user・queryごとの候補集合の中で順位を学習し、NDCGやMAPなど順位指標に合わせて上位候補を並べる。
+type: reference
+domain: kaggle
+topic: learning-to-rank
+created: 2026-09-10
+updated: 2026-09-10
+source_count: 11
+tags:
+  - kaggle
+  - recommendation
+  - ranking
+  - lightgbm
+  - xgboost
+---
+
+<h1>Learning to Rank / LambdaMART</h1>
+<p>Learning to Rank（LTR）は、<strong>候補1件ずつを独立に当てるのではなく、同じuser / queryに属する候補同士の順序を学習する方法</strong>です。</p>
+<p>推薦ではCandidate Generationで作った候補を「このuserに対してどれを上に置くか」で並べ直すときに使います。KaggleではLightGBMの<code>LGBMRanker</code>やXGBoostの<code>XGBRanker</code>が定番で、特にLambdaMART系objectiveがよく使われます。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#objectives">Objectiveの違い</a>
+  <a href="#validation">Validation</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>候補の中で順番を決めたい</h4><dl><dt>典型</dt><dd>推薦、検索、広告</dd><dt>単位</dt><dd>user / session / query</dd><dt>出力</dt><dd>候補ごとのranking score</dd></dl></section>
+  <section class="comparison-card"><h4>Top-Kが重要</h4><dl><dt>Metric</dt><dd>NDCG@K、MAP@K、Recall@K</dd><dt>狙い</dt><dd>上位の並びを直接改善する</dd></dl></section>
+  <section class="comparison-card"><h4>候補集合が既にある</h4><dl><dt>例</dt><dd>Candidate Generation後、observed impressions</dd><dt>不要</dt><dd>全itemへの総当たりranking</dd></dl></section>
+</div>
+
+<p>2026年の<code>recsys_contest</code>はobserved-impression rankingで、test row自体が実際に観測されたlistenです。人工的なCandidate Generationを作らず、与えられた候補行へscoreを付けるranking problemとして定義されています（<a href="https://www.kaggle.com/competitions/recsys-contest">Competition overview</a>）。</p>
+<h2 id="mechanism">仕組み</h2>
+<p>最初に押さえるべき点は、<strong>classificationとrankingでは「比較する範囲」が違う</strong>ことです。</p>
+<div class="static-viz html-diagram" role="img" aria-label="ClassificationとLearning to Rankの違い">
+  <div class="comparison-board">
+    <section class="comparison-card"><h4>Classification</h4><p>各rowを独立に見て、購入確率やclick確率を当てる。</p><dl><dt>比較</dt><dd>dataset全体</dd><dt>典型loss</dt><dd>Logloss</dd></dl></section>
+    <section class="comparison-card is-primary"><h4>Learning to Rank</h4><p>同じuser / query内の候補を比べ、正解候補を上へ押し上げる。</p><dl><dt>比較</dt><dd>query内</dd><dt>典型loss</dt><dd>LambdaRank / LambdaMART</dd></dl></section>
+  </div>
+  <p class="viz-note">模式図。ranking scoreそのものを確率として解釈する必要はありません。</p>
+</div>
+
+<p>たとえばUser Aに候補<code>[item1, item2, item3]</code>、User Bに<code>[item4, item5]</code>があるとします。LTRではUser A内、User B内で順位関係を学びます。<strong>User Aのitem1とUser Bのitem4のscore大小は、通常は直接の意味を持ちません。</strong></p>
+<p>そのためrankerへは、どのrowが同じqueryに属するかを必ず渡します。LightGBMでは<code>group</code>、XGBoostでは<code>qid</code>がこの役割です。LightGBM公式ドキュメントでもranking taskではgroupが必須で、同じ候補集合に属する連続row数として指定します（<a href="https://lightgbm.readthedocs.io/en/latest/R/reference/get_field.html">LightGBM Dataset group</a>）。XGBoostでもquery groupを<code>qid</code>で指定します（<a href="https://xgboost.readthedocs.io/en/latest/tutorials/learning_to_rank.html">XGBoost Learning to Rank</a>）。</p>
+<h3>LambdaRankとLambdaMART</h3>
+<p>NDCGやMAPのようなranking metricは、scoreの絶対値より<strong>並び順</strong>で決まるため、そのまま微分して学習しにくい性質があります。</p>
+<p>LambdaRankは、候補pairの順序を入れ替えたときにranking metricがどれだけ変わるかを考え、その影響が大きいpairほど強く学習する考え方です（<a href="https://www.microsoft.com/en-us/research/publication/learning-to-rank-with-non-smooth-cost-functions/">Burges et al., 2007</a>）。</p>
+<p>LambdaMARTはそのLambdaRankの考え方をGradient Boosted Decision Treesへ組み合わせた手法です（<a href="https://www.microsoft.com/en-us/research/publication/from-ranknet-to-lambdarank-to-lambdamart-an-overview/">Burges, 2010</a>）。Tabular featureが強いKaggle推薦では、この組み合わせが扱いやすいため頻出します。</p>
+<h2 id="objectives">Objectiveの違い</h2>
+<div class="html-table-wrap">
+<table class="html-table">
+  <thead><tr><th>Objective</th><th>何を重視するか</th><th>使う場面</th></tr></thead>
+  <tbody>
+    <tr><td><strong>LightGBM lambdarank</strong></td><td>NDCGを意識したLambdaRank</td><td>定番のGBDT ranker</td></tr>
+    <tr><td>LightGBM rank_xendcg</td><td>XE_NDCG_MART</td><td>高速化も試したいとき</td></tr>
+    <tr><td>XGBoost rank:ndcg</td><td>NDCGを重視するLambdaMART</td><td>graded / binary relevance</td></tr>
+    <tr><td>XGBoost rank:map</td><td>MAPを重視</td><td>binary relevance中心</td></tr>
+    <tr><td>XGBoost rank:pairwise</td><td>pairwise ordering</td><td>metricとの直接対応を弱めた比較用</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>LightGBMの現行ドキュメントではranking objectiveとして<code>lambdarank</code>と<code>rank_xendcg</code>があり、<code>rank_xendcg</code>は<code>lambdarank</code>より高速で同等程度の性能を狙うobjectiveとして案内されています（<a href="https://lightgbm.readthedocs.io/_/downloads/en/latest/pdf/">LightGBM latest parameters</a>）。</p>
+<p>日本語では2025年12月の検証記事で、MovieLensを使って<code>lambdarank</code>と<code>rank_xendcg</code>の差を比較しています。これはCompetition evidenceではありませんが、objectiveを固定せず実測で比較する補助材料になります（<a href="https://zenn.dev/dev_commune/articles/15ff2c1ff94fea">Zenn: LightGBM ランク学習</a>）。</p>
+<h3>Competition metricとobjectiveは完全一致とは限らない</h3>
+<p>H&amp;Mの評価はMAP@12でした（<a href="https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/">Competition overview</a>）。2位解法では、通常の<code>lambdarank</code>よりMAPを意識したcustom <code>lambdarankmap</code> objectiveがわずかに良かったと報告しています（<a href="https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/writeups/hello-world-2nd-place-solution">2nd place solution</a>）。</p>
+<p>これは<strong>Competition metricに近いobjectiveを試す価値がある</strong>Evidence Bです。ただし改善量は公開されていないため、効果量は推測しません。</p>
+<h2 id="validation">Validation</h2>
+<p>RankerのValidationでは、rowをランダム分割するだけでは不十分です。<strong>同じuser / session / queryがTrainとValidationへ跨がないか、時間未来を見ていないか</strong>を確認します。</p>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>query leakageを避ける</h4><dl><dt>分離単位</dt><dd>user / session / query</dd><dt>例</dt><dd>GroupKFold</dd></dl></section>
+  <section class="comparison-card"><h4>未来情報を避ける</h4><dl><dt>分離単位</dt><dd>observation date</dd><dt>例</dt><dd>過去で学習、未来週で検証</dd></dl></section>
+  <section class="comparison-card"><h4>Metricを合わせる</h4><dl><dt>見るもの</dt><dd>NDCG@K / MAP@K / Recall@K</dd><dt>注意</dt><dd>row-level AUCだけで選ばない</dd></dl></section>
+</div>
+
+<p>OTTOの公開ranker tutorialでは、候補tableを<code>GroupKFold</code>でsession / user group単位に分けてXGBoost rankerを学習する例が示されています（<a href="https://www.kaggle.com/competitions/otto-recommender-system/discussion/370210">Kaggle discussion</a>）。</p>
+<p>H&amp;M 8位解法は、Validationをweek 98〜104の7 foldsとし、各foldで直前3週間をTrainに使う時間ベースの設計でした（<a href="https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/writeups/kazuki-8th-place-solution">8th place solution</a>）。推薦履歴は時間依存が強いため、random splitより実際の予測時点を再現することが重要です。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<h3>H&amp;M 2位 — ranking modelは最終pipelineの中心</h3>
+<p>H&amp;M 2位解法は、約600の人気itemなどから候補を作り、LGB modelで130候補へ絞った後、より複雑なfeatureを持つ別のLGB modelで最終rankingしています。single modelはLeaderboard <strong>0.0355</strong>、team mateの候補追加で<strong>0.0362</strong>、ensembleで<strong>0.0368</strong>と報告しています（<a href="https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/writeups/hello-world-2nd-place-solution">2nd place solution</a>）。</p>
+<p>これはcandidate改善やensembleも含むためranker単独ablationではありません。ただし最終解法の2-stage ranking構成と定量scoreが確認できるため、採用Evidenceとして強い例です。</p>
+<h3>H&amp;M 8位 — LGBMRanker + 7-fold時間Validation</h3>
+<p>H&amp;M 8位解法は、複数のCandidate Generation strategyから各top 100を作り、customer / article / customer×article featureを作成して<code>LGBMRanker</code>でrankingしています。Validationは7 folds、各foldのTrainはValidation直前3週間です（<a href="https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/writeups/kazuki-8th-place-solution">8th place solution</a>）。</p>
+<p>複数の候補源を1つのscoreへ統合する用途としてLTRが使われた代表例です。<strong>Evidence B</strong>。</p>
+<h3>OTTO 15位 — retrieval 0.585からrerank 0.600へ</h3>
+<p>OTTO 15位解法は100 candidates / sessionを作り、182 featuresのLightGBM rankerでrerankしています。公開値ではretrieval Recall@20が<strong>0.585</strong>、single rankerがPrivate <strong>0.600</strong>、5-model ensembleがPrivate <strong>0.601</strong>でした（<a href="https://www.kaggle.com/competitions/otto-recommender-system/writeups/hjam-15th-place-solution">15th place solution</a>）。</p>
+<p>retrievalと最終metricは同一pipeline上で比較されていますが、feature追加なども含むため純粋なranker-only ablationではありません。それでも<strong>候補集合を作るだけではなく、後段rankingで順位を精密化する価値</strong>を示す定量例です。</p>
+<h3>OTTO 20位 — 複数rankerを比較</h3>
+<p>OTTO 20位解法は約200 featuresを使い、LightGBM Ranker（<code>lambdarank</code>）、CatBoost Classifier（Logloss）、CatBoost Ranker（YetiRank）を組み合わせました（<a href="https://www.kaggle.com/competitions/otto-recommender-system/writeups/kicchotto-20th-place-solution">20th place solution</a>）。</p>
+<p>同じcandidate / feature pipelineでも、<strong>ranking objectiveとclassification objectiveの両方がensemble候補になる</strong>実例です。単独ablationは公開されていないためEvidence Bとして扱います。</p>
+<h2>使い分け</h2>
+<div class="html-table-wrap">
+<table class="html-table">
+  <thead><tr><th>手法</th><th>向いている条件</th><th>注意点</th></tr></thead>
+  <tbody>
+    <tr><td><strong>LTR / LambdaMART</strong></td><td>queryごとのTop-K順序が重要</td><td>group情報が必須</td></tr>
+    <tr><td>Binary classifier</td><td>購入 / 非購入確率自体も使いたい</td><td>ranking metricとlossがずれることがある</td></tr>
+    <tr><td>Heuristic score</td><td>候補数が少ない、強いrecency ruleがある</td><td>複数signalの統合が難しい</td></tr>
+    <tr><td>Neural ranker</td><td>sequence / embedding interactionを強く使いたい</td><td>学習・推論コストが高い</td></tr>
+  </tbody>
+</table>
+</div>
+
+<p>LTRが常にclassifierより勝つわけではありません。OTTO 20位のようにclassifierも最終ensembleへ残る例があり、<strong>同じCV・同じcandidate集合で比較する</strong>のが安全です。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>1. groupを壊す</h3>
+<p>最重要の失敗です。queryを指定せずrow単位で混ぜると、rankerが「どの候補同士を比較すべきか」を失います。LightGBMの<code>group</code>、XGBoostの<code>qid</code>を正しく作り、同じqueryのrowを連続させます。</p>
+<h3>2. Candidate Generationの上限をrankerで超えようとする</h3>
+<p>正解itemが候補集合に入っていなければrankerでは復活できません。ranker改善前にCandidate Recallが十分かを確認します。詳しくは<a href="{{ '/wiki/recommendation/candidate-generation.html' | relative_url }}">Candidate Generation</a>を参照してください。</p>
+<h3>3. row-level metricだけを見る</h3>
+<p>AUCやLoglossが改善しても、Top-Kの並びが改善するとは限りません。Competition metricがMAP@12ならMAP@12、NDCG@10ならNDCG@10のように、<strong>query単位・cutoff込み</strong>で評価します。</p>
+<h3>4. label gainとmetricの意味がずれる</h3>
+<p>graded relevanceで<code>0,1,2,3</code>のようなlabelを使う場合、上位labelをどれだけ重く扱うかでrankingが変わります。LightGBMでは<code>label_gain</code>を設定できます（<a href="https://lightgbm.readthedocs.io/_/downloads/en/latest/pdf/">LightGBM parameters</a>）。Competitionのrelevance定義をそのまま整数labelへ置くだけでよいか確認します。</p>
+<h3>5. click dataのposition bias</h3>
+<p>上に表示されたitemほどclickされやすい場合、labelには表示位置biasが混ざります。XGBoostの現行LTR実装には<code>lambdarank_unbiased</code>によるposition debiasingがあり、公式exampleでもclick data向け設定が示されています（<a href="https://xgboost.readthedocs.io/en/latest/python/examples/learning_to_rank.html">XGBoost example</a>）。</p>
+<h2>Quick Reference</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>まず確認</h4><dl><dt>query</dt><dd>user / session / search queryは何か</dd><dt>候補</dt><dd>正解Recallは十分か</dd><dt>Metric</dt><dd>Top-K metricは何か</dd></dl></section>
+  <section class="comparison-card"><h4>GBDTなら</h4><dl><dt>LightGBM</dt><dd>lambdarank / rank_xendcg</dd><dt>XGBoost</dt><dd>rank:ndcg / rank:map</dd></dl></section>
+  <section class="comparison-card"><h4>Validation</h4><dl><dt>分離</dt><dd>query + time</dd><dt>評価</dt><dd>query単位のKaggle metric</dd></dl></section>
+</div>
+
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/recommendation/candidate-generation.html' | relative_url }}">Candidate Generation</a> — rankerへ渡す候補集合を作る</li>
+<li><a href="{{ '/wiki/advanced-methods/post-processing.html' | relative_url }}">Post-processing</a> — ranking scoreから最終submissionを調整する</li>
+</ul>
+<div class="article-footer-nav">
+  <a href="{{ '/wiki/recommendation/' | relative_url }}">Recommendation & Ranking</a>
+  <a href="{{ '/' | relative_url }}">索引</a>
+</div>
+
+<h2>参考文献</h2>
+<ol>
+<li>Burges, C. J. C. et al. “Learning to Rank with Non-Smooth Cost Functions.” NeurIPS 2006 / Microsoft Research, 2007. https://www.microsoft.com/en-us/research/publication/learning-to-rank-with-non-smooth-cost-functions/</li>
+<li>Burges, C. J. C. “From RankNet to LambdaRank to LambdaMART: An Overview.” Microsoft Research, 2010. https://www.microsoft.com/en-us/research/publication/from-ranknet-to-lambdarank-to-lambdamart-an-overview/</li>
+<li>LightGBM Documentation. Ranking objectives / Dataset group. https://lightgbm.readthedocs.io/_/downloads/en/latest/pdf/</li>
+<li>XGBoost Documentation. “Learning to Rank.” 2026 current documentation. https://xgboost.readthedocs.io/en/latest/tutorials/learning_to_rank.html</li>
+<li>Kaggle. “recsys_contest.” Pafos AI Camp July 2026. https://www.kaggle.com/competitions/recsys-contest</li>
+<li>Kaggle. “H&amp;M Personalized Fashion Recommendations.” Evaluation: MAP@12. 2022. https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/</li>
+<li>wht1996, Paweł Jankiewicz. “2nd place solution.” H&amp;M Personalized Fashion Recommendations, Kaggle, 2022. https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/writeups/hello-world-2nd-place-solution</li>
+<li>kazuki. “8th place solution.” H&amp;M Personalized Fashion Recommendations, Kaggle, 2022. https://www.kaggle.com/competitions/h-and-m-personalized-fashion-recommendations/writeups/kazuki-8th-place-solution</li>
+<li>hjam. “15th Place Solution.” OTTO – Multi-Objective Recommender System, Kaggle, 2023. https://www.kaggle.com/competitions/otto-recommender-system/writeups/hjam-15th-place-solution</li>
+<li>kicchotto. “20th Place Solution.” OTTO – Multi-Objective Recommender System, Kaggle, 2023. https://www.kaggle.com/competitions/otto-recommender-system/writeups/kicchotto-20th-place-solution</li>
+<li>suk1yak1. “LightGBM ランク学習: lambdarank vs rank_xendcg.” Zenn, 2025-12-24. https://zenn.dev/dev_commune/articles/15ff2c1ff94fea</li>
+</ol>

@@ -1,0 +1,74 @@
+---
+layout: default
+title: FT-Transformer
+summary: 各tabular featureをtokenへ変換し、feature同士の相互作用をTransformer Encoderで学習するtabular deep learning model。
+type: reference
+domain: kaggle
+topic: ft-transformer
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 4
+tags: [kaggle, modeling, tabular, transformer, ft-transformer]
+---
+
+<h1>FT-Transformer</h1>
+<p><strong>FT-Transformer（Feature Tokenizer + Transformer）は、表形式データの各列を1つのtokenへ変換し、列同士の関係をSelf-Attentionで学習するモデルです。</strong></p>
+<p>文章のtokenが単語なら、FT-Transformerでは<strong>Age、Income、Cityのようなfeatureがtoken</strong>になります。数値列とカテゴリ列をembedding空間へ揃えた後、Transformer Encoderでfeature interactionを学びます（<a href="https://arxiv.org/abs/2106.11959">paper</a>）。</p>
+<nav class="article-jump-nav"><a href="#tokenizer">Feature Tokenizer</a><a href="#attention">Feature Attention</a><a href="#architecture">全体構造</a><a href="#comparison">GBDTとの違い</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
+
+<h2 id="tokenizer">各列をtokenへする</h2>
+<p>1行が<code>Age=42, Income=6.2M, City=Tokyo</code>なら、3列をそのまま1本のvectorへ連結するのではなく、<strong>featureごとにD次元token</strong>へ変換します。</p>
+<div class="model-architecture" aria-label="FT-Transformer feature tokenizer">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">1 rowの各featureを同じD次元のtokenへ揃える</div><p class="model-architecture__subtitle">numerical featureは値をlearnable vectorへ掛け、categorical featureはembedding lookupでtoken化します。</p></div><span class="model-architecture__badge">feature tokenizer</span></div>
+  <div class="model-stage-row" style="--model-cols:7"><div class="model-stage"><div class="model-tensor"><span>Age<br>42</span></div></div><div class="model-stage"><div class="model-op-box"><span>Numeric<br>Embedding</span></div></div><div class="model-stage"><div class="model-tensor"><span>Income<br>6.2</span></div></div><div class="model-stage"><div class="model-op-box"><span>Numeric<br>Embedding</span></div></div><div class="model-stage"><div class="model-tensor"><span>City<br>Tokyo</span></div></div><div class="model-stage"><div class="model-op-box"><span>Category<br>Embedding</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Feature Tokens<br>F×D</span></div></div></div>
+  <p class="model-architecture__caption">値は理解用の人工例です。</p>
+</div>
+
+<p>FT-Transformerの<code>FT</code>はこの<strong>Feature Tokenizer</strong>を指します。</p>
+<h2 id="attention">feature同士をAttentionで見る</h2>
+<p>token化した後は、Age tokenがIncome/City tokenをどれだけ参照するかをSelf-Attentionで計算できます。これにより手作業で<code>Age × Income</code>のようなinteraction featureを全部列挙せず、interactionをrepresentation内で学習します。</p>
+<div class="model-architecture"><div class="model-architecture__header"><div><div class="model-architecture__title">row内のfeature token同士で情報交換する</div><p class="model-architecture__subtitle">sample間attentionではなく、基本的には同じ1 rowのfeature間attentionです。</p></div><span class="model-architecture__badge">feature attention</span></div><div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>Age token</span></div></div><div class="model-stage"><div class="model-tensor"><span>Income token</span></div></div><div class="model-stage"><div class="model-tensor"><span>City token</span></div></div><div class="model-stage"><div class="model-op-box"><span>Multi-Head<br>Self-Attention</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Interaction-aware<br>tokens</span></div></div></div></div>
+
+<h2 id="architecture">FT-Transformer全体</h2>
+<div class="model-architecture" aria-label="FT-Transformer full architecture">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">Row → Feature Tokens → Transformer Encoder → CLS → Prediction</div><p class="model-architecture__subtitle">feature tokenizerの後はencoder-only Transformerに近い構造です。</p></div><span class="model-architecture__badge">tabular transformer</span></div>
+  <div class="model-stage-row" style="--model-cols:6"><div class="model-stage"><div class="model-tensor"><span>1 Row<br>F features</span></div></div><div class="model-stage"><div class="model-op-box"><span>Feature<br>Tokenizer</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>[CLS] +<br>F tokens</span></div></div><div class="model-stage"><div class="model-op-box"><span>Transformer<br>Encoder × L</span></div></div><div class="model-stage"><div class="model-tensor is-thin"><span>CLS<br>representation</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>MLP Head<br>ŷ</span></div></div></div>
+</div>
+
+<h2 id="comparison">GBDTとの違い</h2>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>GBDT</h4><dl><dt>基本操作</dt><dd>feature threshold split</dd><dt>カテゴリ</dt><dd>encoding/native処理</dd><dt>強み</dt><dd>小〜中規模tabularで非常に強い</dd><dt>interaction</dt><dd>tree pathで表現</dd></dl></section><section class="comparison-card"><h4>FT-Transformer</h4><dl><dt>基本操作</dt><dd>feature token attention</dd><dt>カテゴリ</dt><dd>learned embedding</dd><dt>強み</dt><dd>DL特有のrepresentation / ensemble diversity</dd><dt>interaction</dt><dd>attentionで直接学習</dd></dl></section></div>
+
+<p>元論文自身もGBDTに普遍的に勝つとは結論づけていません。Kaggleでは<strong>単体winnerというより、GBDTと異なる誤差を持つensemble member</strong>として価値が出ることも多いです。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>Predict Customer Churn 2026の9位解法ではRealMLP、TabM、TabTransformer、<strong>FT-Transformer</strong>、ResNet系tabular NNなどを大規模model poolへ入れ、rank-based Hill Climbingでensembleしています（<a href="https://www.kaggle.com/competitions/playground-series-s6e3/writeups/9th-place-solution">9th place solution</a>）。</p>
+<p>Mercor Cheating Detection 2026の5位解法では13 model ensembleのneural componentとして<strong>FT-Transformer / TabPFN / TabM / RealMLP</strong>を採用し、GBDTより単体AUCは少し低くてもdiversityが有用だったと述べています（<a href="https://www.kaggle.com/competitions/mercor-cheating-detection/writeups/5th-place-solution-writeup">5th place solution</a>）。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>row数よりfeature数がcostに効く</h3>
+<p>FT-TransformerのAttention対象はfeature tokenなので、非常にwideなtableではF×F attention costが増えます。</p>
+<h3>target encodingとのLeakage</h3>
+<p>外部でTarget Encodingした列を入れる場合、FT-TransformerだからLeakageが消えるわけではありません。fold内計算が必要です。</p>
+<h3>preprocessing差を揃えて比較する</h3>
+<p>GBDTはscale不要なことが多い一方、NNはnumerical scaling/embedding設計に影響されます。architecture差とpreprocessing差を混同しないようablationします。</p>
+<h2>Quick Reference</h2>
+<ul>
+<li>1 feature = 1 token。</li>
+<li>numerical/categoricalをD次元embeddingへ揃える。</li>
+<li>feature間Self-Attentionでinteractionを学ぶ。</li>
+<li>[CLS] representationから予測。</li>
+<li>KaggleではGBDTとのensemble diversity候補。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/modeling/transformer.html' | relative_url }}">Transformer</a></li>
+<li><a href="{{ '/wiki/modeling/tabpfn.html' | relative_url }}">TabPFN</a></li>
+<li><a href="{{ '/wiki/modeling/realmlp.html' | relative_url }}">RealMLP</a></li>
+<li><a href="{{ '/wiki/modeling/tabm.html' | relative_url }}">TabM</a></li>
+<li><a href="{{ '/wiki/modeling/lightgbm.html' | relative_url }}">LightGBM</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li>Gorishniy et al., “Revisiting Deep Learning Models for Tabular Data”, 2021. https://arxiv.org/abs/2106.11959</li>
+<li>rtdl-revisiting-models repository. https://github.com/yandex-research/rtdl-revisiting-models</li>
+<li>Kaggle, “Predict Customer Churn: 9th place solution”, 2026. https://www.kaggle.com/competitions/playground-series-s6e3/writeups/9th-place-solution</li>
+<li>Kaggle, “Mercor Cheating Detection: 5th place solution”, 2026. https://www.kaggle.com/competitions/mercor-cheating-detection/writeups/5th-place-solution-writeup</li>
+</ol>

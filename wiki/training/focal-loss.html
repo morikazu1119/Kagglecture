@@ -1,0 +1,100 @@
+---
+layout: default
+title: Focal Loss
+description: Cross Entropyのeasy sampleへの寄与を下げ、hard exampleへ学習を集中させるLoss。
+summary: 正しく分類できているsampleのlossを抑え、class imbalanceや大量のeasy negative下でhard sampleを重視する。
+type: reference
+domain: kaggle
+topic: focal-loss
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 4
+tags:
+  - kaggle
+  - training
+  - loss
+  - imbalance
+---
+
+<h1>Focal Loss</h1>
+<p><strong>Focal Lossは、Cross Entropyへ「簡単に正解できているsampleほど重みを小さくする係数」を掛け、hard exampleへ学習を集中させるLossです。</strong></p>
+<p>大量のeasy negativeがlossを支配するdense object detection向けに提案されました（<a href="https://arxiv.org/abs/1708.02002">Focal Loss paper</a>）。classificationやsegmentationでも不均衡対策候補として使われます。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#intuition">直感</a>
+  <a href="#formula">数式</a>
+  <a href="#effect">何が変わるか</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+<h2 id="intuition">まず直感</h2>
+<p>通常のCross Entropyでは、easy sampleもhard sampleもlossへ寄与します。Focal Lossでは、正解classへの予測確率$p_t$が高いeasy sampleほど$(1-p_t)^\gamma$が小さくなり、lossの重みが急速に下がります。</p>
+<div class="model-architecture" aria-label="Focal Lossでeasy sampleの重みが下がる模式図">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">γ=2なら、confidenceが高いeasy sampleほどほぼ無視される</div><p class="model-architecture__subtitle">下はfocal factor $(1-p_t)^2$だけを比較しています。lossそのものの実測値ではありません。</p></div>
+    <span class="model-architecture__badge">focal factor</span>
+  </div>
+  <div class="html-bar-chart" aria-label="p_tごとのfocal factor">
+    <div class="html-bar-row"><span class="html-bar-label">Easy · pₜ=0.95</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:0.25"></span></span><span class="html-bar-value">0.0025</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Mostly correct · pₜ=0.70</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:9"></span></span><span class="html-bar-value">0.09</span></div>
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">Hard · pₜ=0.20</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:64"></span></span><span class="html-bar-value">0.64</span></div>
+  </div>
+  <p class="model-architecture__caption">同じγ=2でも、pₜ=0.95のsampleは係数0.0025、pₜ=0.20のhard sampleは0.64です。つまりhard sampleの相対的重要度が大きくなります。</p>
+</div>
+
+<p>この仕組みは「少数classだから直接重くする」のとは少し違います。<strong>現在のmodelが簡単に正解しているかどうか</strong>で重みを変えるのがFocal Lossの特徴です。</p>
+<h2 id="formula">数式</h2>
+<p>正解classに割り当てた確率を$p_t$とすると、基本形は次です。</p>
+<p>$$
+FL(p_t)=-(1-p_t)^\gamma\log(p_t)
+$$</p>
+<p>ここで$-\log(p_t)$が通常のCross Entropy部分、$(1-p_t)^\gamma$がeasy sampleを抑えるfocal factorです。</p>
+<ul>
+<li>$\gamma=0$: focal factorは1になり、通常のCross Entropyに近い。</li>
+<li>$\gamma$を大きくする: 高confidenceで正解しているsampleの寄与をさらに強く落とす。</li>
+<li>$\alpha$を併用する形: class imbalance自体へのclass weightingも追加できる。</li>
+</ul>
+<h2 id="effect">学習時に何が変わるか</h2>
+<div class="model-architecture" aria-label="Focal Lossの学習プロセス">
+  <div class="model-stage-row" style="--model-cols:4">
+    <div class="model-stage"><div class="model-tensor is-wide"><span>Model prediction<br>pₜ</span></div><span class="model-stage__label">confidence</span></div>
+    <div class="model-stage"><div class="model-op-box"><span><strong>Focal factor</strong><br>(1−pₜ)^γ</span></div><span class="model-stage__label">easyを抑制</span></div>
+    <div class="model-stage"><div class="model-op-box"><span><strong>Cross Entropy</strong><br>−log(pₜ)</span></div><span class="model-stage__label">base loss</span></div>
+    <div class="model-stage"><div class="model-tensor is-accent is-wide"><span>Weighted loss<br>hard sample中心</span></div><span class="model-stage__label">backprop</span></div>
+  </div>
+</div>
+
+<p>結果として、easy negativeを大量に学習し続ける影響を減らし、misclassified / low-confidence sampleの相対的なgradient寄与を上げます。</p>
+<p>ただしhard sampleには<strong>本当に難しいsampleだけでなくlabel noiseも含まれる</strong>点が重要です。誤annotationを強調すると逆効果になります。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>HuBMAP - Hacking the Kidney 2023の1位解法では<code>1.0 focal + 1.0 dice + 0.01 boundary + custom loss</code>を組み合わせています（<a href="https://www.kaggle.com/competitions/blood-vessel-segmentation/writeups/clevert-1st-place-solution-code-updated">1st Place Solution</a>）。</p>
+<p>iMaterialist Fashion 2020の1位解法ではMask R-CNNに追加したattribute classification headへFocal Lossを使っています（<a href="https://www.kaggle.com/competitions/imaterialist-fashion-2020-fgvc7/writeups/oleg-polosin-1st-place-solution">1st place solution</a>）。</p>
+<p>一方BirdCLEF 2024の1位チームはCrossEntropyを採用し、task-specificな単純構成を重視しています（<a href="https://www.kaggle.com/competitions/birdclef-2024/writeups/team-kefir-1st-place-solution">1st place solution</a>）。<strong>不均衡だからFocal Lossを自動採用するのではなく、CE/BCE + class weight等と比較します。</strong></p>
+<h2 id="pitfalls">注意点</h2>
+<h3>Noisy labelを強調する</h3>
+<p>いつまでも間違えるsampleがannotation errorなら、そこへ強く学習して過学習します。</p>
+<h3><code>gamma</code>を上げすぎる</h3>
+<p>easy sampleのgradientがほぼ消え、学習が不安定になる場合があります。2前後を固定神話にせずCVします。</p>
+<h3>MetricとLossは別</h3>
+<p>F1/Dice/AUCなどCompetition Metricに直接一致するわけではありません。Loss変更はOOF Metricで判断します。</p>
+<h2 id="quick-reference">Quick Reference</h2>
+<ul>
+<li>focal factorは$(1-p_t)^\gamma$。</li>
+<li>confidenceが高いeasy sampleほど重みが小さくなる。</li>
+<li><code>gamma=0</code>はCEに近い。</li>
+<li>hard sampleを重視するためlabel noiseに弱くなることがある。</li>
+<li>BCE/CE + weightやsamplingと同じOOFで比較する。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/metrics/f1-score.html' | relative_url }}">F1 Score</a></li>
+<li><a href="{{ '/wiki/metrics/dice-iou.html' | relative_url }}">Dice / IoU</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://arxiv.org/abs/1708.02002">Lin et al., “Focal Loss for Dense Object Detection”, 2017</a></li>
+<li><a href="https://www.kaggle.com/competitions/blood-vessel-segmentation/writeups/clevert-1st-place-solution-code-updated">Kaggle, “HuBMAP - Hacking the Kidney 2023: 1st Place Solution”, 2023</a></li>
+<li><a href="https://www.kaggle.com/competitions/imaterialist-fashion-2020-fgvc7/writeups/oleg-polosin-1st-place-solution">Kaggle, “iMaterialist Fashion 2020: 1st place solution”, 2021</a></li>
+<li><a href="https://www.kaggle.com/competitions/birdclef-2024/writeups/team-kefir-1st-place-solution">Kaggle, “BirdCLEF 2024: 1st place solution”, 2024</a></li>
+</ol>

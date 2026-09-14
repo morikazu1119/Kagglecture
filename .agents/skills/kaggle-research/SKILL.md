@@ -5,6 +5,19 @@ description: Kaggleの公開Writeup・Discussion・Notebook・GitHub・技術記
 
 # Kaggle Research Skill
 
+## HTML-first publishing requirement
+
+Kagglectureの公開ページは **HTML-first** とする。公開本文にMarkdown記法を使用しない。
+
+- 公開ページは `index.html` または `wiki/**/*.html` とする。
+- JekyllのYAML Front Matter (`---` で囲まれた先頭metadata) は保持してよい。Front Matterより後ろはHTMLのみとする。
+- 見出しは `<h1>`〜`<h6>`、段落は `<p>`、リストは `<ul>` / `<ol>`、リンクは `<a>`、codeは `<code>` / `<pre><code>` を使う。
+- Markdown見出し (`#`)、Markdown link (`[text](url)`)、強調 (`**text**`)、fenced code、pipe table、Markdown listを公開本文へ追加しない。
+- 表・比較・図は既存のHTML component classを優先して再利用する。
+- Liquid (`{{ ... }}`, `{% ... %}`) はHTML内で使用してよい。
+- 公開URLは従来どおり `.html` / category directory URLを維持する。
+- `.agents/**/*.md` はAgent / Skill loader用の内部instructionなのでMarkdownのまま維持する。これは公開記事の例外であり、公開コンテンツではない。
+
 ## Purpose
 
 Kaggleで公開されている情報を調査し、一般手法からCompetition固有の工夫まで、再利用可能な知識として `wiki/` に整理する。
@@ -112,7 +125,7 @@ Interactiveでも、JavaScriptなしで本文と初期HTMLから最低限の結�
 公開導線は原則 **Home → Category → Article**。
 
 - ホームのカテゴリカードから個別記事へ直接リンクしない。
-- 主要カテゴリは `wiki/<category>/index.md` をカテゴリ索引として持てる。
+- 主要カテゴリは `wiki/<category>/index.html` をカテゴリ索引として持てる。
 - カテゴリページには実在記事だけを掲載する。
 - 記事の「戻る」は所属カテゴリへ戻す。
 - 「索引」はホームへ戻す。
@@ -179,15 +192,15 @@ wiki/
       visualization.md
 ```
 
-`wiki/index.md` のような全体索引の重複ページは作らない。
+`wiki/index.html` のような全体索引の重複ページは作らない。
 
 ## Deliverables
 
 原則として更新するもの:
 
-1. `wiki/.../<article>.md` — 辞書記事
-2. `wiki/<category>/index.md` — カテゴリ内の記事索引
-3. 新カテゴリの場合のみ `index.md` — ホームからカテゴリへの導線
+1. `wiki/.../<article>.html` — 辞書記事
+2. `wiki/<category>/index.html` — カテゴリ内の記事索引
+3. 新カテゴリの場合のみ `index.html` — ホームからカテゴリへの導線
 4. 必要な場合のみ `assets/` — HTML/SVG static visual、Interactive visualization、共通UI資産
 
 ## Final checks
