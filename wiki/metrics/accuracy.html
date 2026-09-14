@@ -1,0 +1,93 @@
+---
+layout: default
+title: Accuracy
+summary: 全sampleのうち正しく分類できた割合。直感的だがクラス不均衡では多数派予測を過大評価しやすい。
+type: reference
+domain: kaggle
+topic: accuracy
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 3
+tags:
+  - kaggle
+  - metrics
+  - classification
+  - accuracy
+---
+
+<h1>Accuracy</h1>
+<p><strong>Accuracyは、全sampleのうち予測labelが正解した割合です。</strong></p>
+<p>式は非常に単純ですが、class imbalanceでは「多数派classだけ当てるmodel」が高得点に見えるため、<strong>scoreの高さだけではmodelが本当に役立っているか判断できません</strong>（<a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html">scikit-learn: accuracy_score</a>）。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#formula">数式</a>
+  <a href="#imbalance">不均衡の罠</a>
+  <a href="#use-cases">使う場面</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#pitfalls">注意点</a>
+</nav>
+
+<h2 id="formula">数式</h2>
+<p>$$
+Accuracy = \frac{TP + TN}{TP + TN + FP + FN}
+$$</p>
+<p>multiclassでも「正解labelと一致したsample数 / 全sample数」と考えれば同じです。</p>
+<h2 id="imbalance">不均衡だと何が起きるか</h2>
+<p>たとえば100件中95件がNegative、5件がPositiveのdatasetを考えます。何も学習せず<strong>全件Negativeと予測</strong>しても95件は正解なのでAccuracyは95%です。</p>
+<div class="model-architecture" aria-label="クラス不均衡でAccuracyが高く見える模式図">
+  <div class="model-architecture__header">
+    <div><div class="model-architecture__title">Positiveを1件も拾えていなくてもAccuracy 95%</div><p class="model-architecture__subtitle">多数派classが95%を占めると、majority baselineだけで高いAccuracyが出ます。</p></div>
+    <span class="model-architecture__badge">imbalance example</span>
+  </div>
+  <div class="html-bar-chart">
+    <div class="html-bar-row is-highlight"><span class="html-bar-label">Negative 95件</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:95"></span></span><span class="html-bar-value">全件正解</span></div>
+    <div class="html-bar-row"><span class="html-bar-label">Positive 5件</span><span class="html-bar-track"><span class="html-bar-fill" style="--value:5"></span></span><span class="html-bar-value">全件見逃し</span></div>
+  </div>
+  <div class="comparison-board" style="margin-bottom:0">
+    <section class="comparison-card is-primary"><h4>Accuracy</h4><dl><dt>正解</dt><dd>95 / 100</dd><dt>Score</dt><dd>0.95</dd></dl></section>
+    <section class="comparison-card"><h4>Positive Recall</h4><dl><dt>正解</dt><dd>0 / 5</dd><dt>Score</dt><dd>0.00</dd></dl></section>
+  </div>
+  <p class="model-architecture__caption">模式例です。このためAccuracyを見る前にclass shareとmajority baselineを確認する必要があります。</p>
+</div>
+
+<p>「Accuracy 95%」だけを見ると強そうですが、少数classを検出する目的なら完全に失敗しています。<strong>Accuracyは全sampleを同じ1票として数える</strong>ので、件数の多いclassがscoreを支配します。</p>
+<h2 id="use-cases">使う場面</h2>
+<ul>
+<li>class比が大きく偏っていない。</li>
+<li>各classの誤分類コストがほぼ同じ。</li>
+<li>hard labelの最終正解率が目的。</li>
+</ul>
+<h2 id="comparison">使い分け</h2>
+<div class="comparison-board" aria-label="Accuracyと他の分類指標の比較">
+  <section class="comparison-card"><h4>Accuracy</h4><dl><dt>不均衡</dt><dd>弱い</dd><dt>見るもの</dt><dd>全体正解率</dd><dt>出力</dt><dd>hard label</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Balanced Accuracy</h4><dl><dt>不均衡</dt><dd>強い</dd><dt>見るもの</dt><dd>classごとのRecall平均</dd><dt>向く状況</dt><dd>多数派classが支配的</dd></dl></section>
+  <section class="comparison-card"><h4>F1</h4><dl><dt>不均衡</dt><dd>強い</dd><dt>見るもの</dt><dd>Precision / Recall balance</dd><dt>特徴</dt><dd>threshold依存</dd></dl></section>
+  <section class="comparison-card"><h4>ROC-AUC</h4><dl><dt>不均衡</dt><dd>比較的強い</dd><dt>見るもの</dt><dd>ranking</dd><dt>特徴</dt><dd>threshold非依存</dd></dl></section>
+</div>
+
+<h2 id="pitfalls">注意点</h2>
+<h3>Majority baselineを見ない</h3>
+<p>最大classが90%ならAccuracy 90%は、全件をmajority classへ出すだけで達成できます。model scoreだけでなくbaselineとの差を見ます。</p>
+<h3>threshold依存</h3>
+<p>Probabilityをlabelへ変換するdecision ruleでAccuracyは変わります。Competition MetricがAccuracyならOOFでthreshold/class correctionも評価します。</p>
+<h3>multilabelの定義</h3>
+<p>scikit-learnのmultilabel Accuracyはsample内のlabel setが完全一致するsubset accuracyです。Competition定義と一致するか確認します。</p>
+<h2>Quick Reference</h2>
+<ul>
+<li>Accuracy = 正解数 / 全sample数。</li>
+<li>class比を必ず確認する。</li>
+<li>majority baselineと比較する。</li>
+<li>不均衡ならBalanced Accuracy/F1/PR系を検討する。</li>
+<li>probabilityの質を直接測るMetricではない。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/metrics/balanced-accuracy.html' | relative_url }}">Balanced Accuracy</a></li>
+<li><a href="{{ '/wiki/metrics/precision-recall.html' | relative_url }}">Precision / Recall</a></li>
+<li><a href="{{ '/wiki/metrics/f1-score.html' | relative_url }}">F1 Score</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li><a href="https://scikit-learn.org/stable/modules/generated/sklearn.metrics.accuracy_score.html">scikit-learn, “accuracy_score”</a></li>
+<li><a href="https://scikit-learn.org/stable/modules/model_evaluation.html">scikit-learn, “Metrics and scoring”</a></li>
+<li><a href="https://qiita.com/charles_gs/items/96dc8eeea22f3acd01ad">Qiita, “Kaggleコンペで出されるタスクと評価指標まとめてみた”, 2022</a></li>
+</ol>

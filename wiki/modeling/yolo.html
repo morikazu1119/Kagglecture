@@ -1,0 +1,76 @@
+---
+layout: default
+title: YOLO
+summary: 画像全体からbounding box・objectness・classをsingle-stageでまとめて予測するObject Detection model family。
+type: reference
+domain: kaggle
+topic: yolo
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 5
+tags: [kaggle, modeling, detection, yolo, computer-vision]
+---
+
+<h1>YOLO</h1>
+<p><strong>YOLO（You Only Look Once）は、画像から物体の位置とclassを1つのnetworkでまとめて予測するsingle-stage Object Detectorです。</strong></p>
+<p>Classificationが「画像に何があるか」だけを答えるのに対し、Detectionでは<strong>どこに・何があるか</strong>を答えます。YOLO familyは高速なend-to-end detectionの代表で、Kaggleでも物体検出や2-stage pipelineの候補生成に使われます。</p>
+<nav class="article-jump-nav"><a href="#prediction">1予測の中身</a><a href="#architecture">全体構造</a><a href="#nms">NMS</a><a href="#comparison">Two-stageとの違い</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
+
+<h2 id="prediction">1つの候補で何を出すか</h2>
+<p>Detection headは1つの候補について、少なくとも<strong>bounding boxの位置・その場所に物体がある確信度・class score</strong>を出します。</p>
+<div class="model-architecture" aria-label="YOLO detection prediction">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">1つのfeature位置から「場所 + 物体らしさ + class」を予測</div><p class="model-architecture__subtitle">versionによりanchor-based / anchor-free等の違いはありますが、最終的にboxとclass predictionを作る点は共通です。</p></div><span class="model-architecture__badge">detection head</span></div>
+  <div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>Feature<br>location</span></div></div><div class="model-stage"><div class="model-op-box"><span>Box<br>x,y,w,h</span></div></div><div class="model-stage"><div class="model-op-box"><span>Object<br>score</span></div></div><div class="model-stage"><div class="model-op-box"><span>Class<br>scores</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Candidate<br>detection</span></div></div></div>
+</div>
+
+<p>画像内の多数の位置から候補が出るため、そのままでは同じ物体にboxが何個も重なります。後段で重複を整理します。</p>
+<h2 id="architecture">YOLO全体</h2>
+<p>現代のYOLO familyは概ね<strong>Backbone → Neck → Detection Head</strong>の3部分として理解すると整理しやすいです。</p>
+<div class="model-architecture" aria-label="YOLO full architecture">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">Backboneで特徴抽出、Neckで複数scaleを融合、Headでbox/class予測</div><p class="model-architecture__subtitle">小さい物体と大きい物体を扱うため、異なるresolutionのfeature mapを利用します。</p></div><span class="model-architecture__badge">single-stage detector</span></div>
+  <div class="model-stage-row" style="--model-cols:6"><div class="model-stage"><div class="model-tensor"><span>Image</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Backbone<br>multi-scale features</span></div></div><div class="model-stage"><div class="model-op-box"><span>Neck<br>FPN/PAN-like fusion</span></div></div><div class="model-stage"><div class="model-tensor"><span>Small-scale<br>feature</span></div></div><div class="model-stage"><div class="model-tensor is-thin"><span>Large-scale<br>feature</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Boxes + Classes</span></div></div></div>
+</div>
+
+<p>「YOLO」という名前だけでarchitectureが1種類あるわけではありません。YOLOv5/v8/YOLO11などでbackbone、head、loss、anchor方式は変わっています。このページではfamily共通のDetection原理を扱います。</p>
+<h2 id="nms">重複boxをNMSで整理する</h2>
+<p>同じ物体へ近いboxが複数出たら、confidenceが高いboxを残し、IoUが大きく重なるboxを削除する<strong>Non-Maximum Suppression（NMS）</strong>が代表的です。</p>
+<div class="comparison-board"><section class="comparison-card"><h4>低いNMS IoU threshold</h4><dl><dt>効果</dt><dd>重複を強く消す</dd><dt>risk</dt><dd>近接した別物体まで消す</dd></dl></section><section class="comparison-card is-primary"><h4>高いNMS IoU threshold</h4><dl><dt>効果</dt><dd>近いboxを残しやすい</dd><dt>risk</dt><dd>同一物体のduplicateが残る</dd></dl></section></div>
+
+<p>Competition MetricがmAP等ならconfidence thresholdとNMS設定もValidation上で評価します。</p>
+<h2 id="comparison">Two-stage detectorとの違い</h2>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>YOLO / single-stage</h4><dl><dt>流れ</dt><dd>featureから直接box/class</dd><dt>強み</dt><dd>高速・pipelineが単純</dd><dt>用途</dt><dd>高throughput detection</dd></dl></section><section class="comparison-card"><h4>Faster R-CNN / two-stage</h4><dl><dt>流れ</dt><dd>proposal → RoI classification/refinement</dd><dt>強み</dt><dd>候補ごとに詳細処理</dd><dt>用途</dt><dd>精密なproposal-based detection</dd></dl></section></div>
+
+<p>Kaggleでは片方が常に強いわけではなく、object size、annotation数、runtime制約で選びます。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>Dal Shemagh Detection Challenge 2026の3位解法では、Stage 1に<strong>YOLO11m</strong>を使って物体を検出し、そのcropをStage 2のConvNeXt classifierへ渡す2-stage pipelineを構築しています（<a href="https://www.kaggle.com/competitions/dal-shemagh-detection-challenge/writeups/3rd-place-solution">3rd place solution</a>）。</p>
+<p>Ultra MNISTの1位解法ではYOLO detectorを高recall設定で使い、その後EfficientNetV2 classifierでdigitを分類しています（<a href="https://www.kaggle.com/competitions/ultra-mnist/writeups/agpt-1st-place-solution">1st place solution</a>）。Detector単体で最終classを決めず、<strong>candidate generationとしてYOLOを使う</strong>例です。</p>
+<p>一方Image Matching Challenge 2024の5位解法ではYOLOv8/YOLOWorldを試したものの対象物にgeneralizeせず、最終的にはsegmentation-based object localizationへ切り替えています（<a href="https://www.kaggle.com/competitions/image-matching-challenge-2024/discussion/510603">5th place solution</a>）。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>mAPだけでなくrecall用途を考える</h3>
+<p>後段classifierがある場合、YOLO自身のprecisionより「正しいcandidateを落とさないrecall」を優先する場合があります。</p>
+<h3>小物体とresolution</h3>
+<p>小さいobjectはdownsamplingで情報が消えやすいです。input resolution、tiling、multi-scale headをセットで検証します。</p>
+<h3>YOLO version差</h3>
+<p>YOLOv8とYOLO11等では内部実装・head・training recipeが違います。記事やNotebookで「YOLO」とだけ書かれている場合はversionを確認します。</p>
+<h2>Quick Reference</h2>
+<ul>
+<li>single-stageでbox + classを予測。</li>
+<li>Backbone → Neck → Detection Headで理解する。</li>
+<li>multi-scale featureで大小のobjectを扱う。</li>
+<li>NMS/confidence thresholdもValidation対象。</li>
+<li>classifier前のcandidate generatorとして使うことも多い。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/modeling/cnn-backbones.html' | relative_url }}">CNN</a></li>
+<li><a href="{{ '/wiki/modeling/convnext.html' | relative_url }}">ConvNeXt</a></li>
+<li><a href="{{ '/wiki/metrics/dice-iou.html' | relative_url }}">Dice / IoU</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li>Redmon et al., “You Only Look Once: Unified, Real-Time Object Detection”, 2016. https://arxiv.org/abs/1506.02640</li>
+<li>Ultralytics YOLO Documentation. https://docs.ultralytics.com/</li>
+<li>Kaggle, “Dal Shemagh Object Detection Challenge: 3rd place solution”, 2026. https://www.kaggle.com/competitions/dal-shemagh-detection-challenge/writeups/3rd-place-solution</li>
+<li>Kaggle, “Ultra MNIST: 1st Place Solution”, 2022. https://www.kaggle.com/competitions/ultra-mnist/writeups/agpt-1st-place-solution</li>
+<li>Kaggle, “Image Matching Challenge 2024: 5th Place Solution”, 2024. https://www.kaggle.com/competitions/image-matching-challenge-2024/discussion/510603</li>
+</ol>

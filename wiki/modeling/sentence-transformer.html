@@ -1,0 +1,78 @@
+---
+layout: default
+title: Sentence Transformer
+summary: Text Encoderからsentence embeddingを作り、cosine similarityやcontrastive lossで検索・類似度・retrievalへ使うbi-encoder architecture。
+type: reference
+domain: kaggle
+topic: sentence-transformer
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 5
+tags: [kaggle, modeling, transformer, embedding, retrieval, sentence-transformer]
+---
+
+<h1>Sentence Transformer</h1>
+<p><strong>Sentence Transformerは、文章を1本のdense vectorへ変換し、文章同士の意味の近さをcosine similarityなどで高速に比較できるようにするモデルfamilyです。</strong></p>
+<p>BERTのようなencoderを各文章へ<strong>別々に1回ずつ</strong>通すbi-encoder構成が中心です。queryとdocumentのembeddingを先に保存できるため、大量候補からのretrievalに向きます（<a href="https://arxiv.org/abs/1908.10084">Sentence-BERT paper</a>）。</p>
+<nav class="article-jump-nav"><a href="#embedding">Sentence Embedding</a><a href="#biencoder">Bi-Encoder</a><a href="#training">Contrastive Training</a><a href="#comparison">Cross-Encoderとの違い</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
+
+<h2 id="embedding">token列を1本のvectorへする</h2>
+<p>BERT系encoderは各tokenにhidden stateを出します。Sentence Transformerではそれをpoolingして、文章全体を表すfixed-size vectorへします。</p>
+<div class="model-architecture" aria-label="Sentence Transformer pooling">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">Token embeddings → Pooling → Sentence embedding</div><p class="model-architecture__subtitle">Mean poolingやCLS pooling等でN×D token表現を1×Dへ圧縮します。</p></div><span class="model-architecture__badge">sentence embedding</span></div>
+  <div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>Text</span></div></div><div class="model-stage"><div class="model-op-box"><span>BERT /<br>RoBERTa等</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Token states<br>N×D</span></div></div><div class="model-stage"><div class="model-op-box"><span>Mean / CLS<br>Pooling</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Sentence vec<br>D</span></div></div></div>
+</div>
+
+<h2 id="biencoder">QueryとDocumentを別々にencodeする</h2>
+<p>retrievalではqueryと全documentを同じencoderへ通し、vector similarityを比較します。</p>
+<div class="model-architecture" aria-label="Sentence Transformer bi encoder retrieval">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">Document embeddingを事前計算し、query vectorと近いものを検索</div><p class="model-architecture__subtitle">候補ごとにquery+documentをTransformerへ再入力しないため、大規模retrievalへ使いやすい構造です。</p></div><span class="model-architecture__badge">bi-encoder</span></div>
+  <div class="model-stage-row" style="--model-cols:7"><div class="model-stage"><div class="model-tensor"><span>Query</span></div></div><div class="model-stage"><div class="model-op-box"><span>Shared<br>Encoder</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>q vector</span></div></div><div class="model-stage"><div class="model-op-box"><span>Cosine /<br>Dot Product</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>d vectors</span></div></div><div class="model-stage"><div class="model-op-box"><span>Shared<br>Encoder</span></div></div><div class="model-stage"><div class="model-tensor"><span>Documents</span></div></div></div>
+</div>
+
+<p>FAISS等のApproximate Nearest Neighbor indexと組み合わせれば、数万〜数百万候補から近いvectorを高速に検索できます。</p>
+<h2 id="training">近いpairと遠いpairを学習する</h2>
+<p>Sentence Transformerは「同じ意味のpairは近く、違うpairは遠く」なるようcontrastive / ranking lossでfine-tuneできます。</p>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>Positive Pair</h4><dl><dt>例</dt><dd>question ↔ relevant passage</dd><dt>学習</dt><dd>similarityを高くする</dd></dl></section><section class="comparison-card"><h4>Negative Pair</h4><dl><dt>例</dt><dd>question ↔ irrelevant passage</dd><dt>学習</dt><dd>similarityを低くする</dd></dl></section><section class="comparison-card"><h4>Hard Negative</h4><dl><dt>例</dt><dd>一見似ているが不正解のpassage</dd><dt>効果</dt><dd>ranking boundaryを精密化</dd></dl></section></div>
+
+<p>In-batch negativesを使うと、同じbatchの他documentをnegativeとして効率よく学習できます。</p>
+<h2 id="comparison">Cross-Encoderとの違い</h2>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>Bi-Encoder / Sentence Transformer</h4><dl><dt>入力</dt><dd>queryとdocumentを別々にencode</dd><dt>速度</dt><dd>候補embeddingをcache可能</dd><dt>用途</dt><dd>retrieval / candidate generation</dd></dl></section><section class="comparison-card"><h4>Cross-Encoder</h4><dl><dt>入力</dt><dd>[query, document]を一緒にTransformerへ</dd><dt>速度</dt><dd>候補ごとにforwardが必要</dd><dt>用途</dt><dd>top-K reranking</dd></dl></section></div>
+
+<p>Kaggleのretrieval taskでは<strong>Bi-Encoderで広く候補を取る → Cross-Encoder/LLMでrerank</strong>の2-stage構成がよく使われます。</p>
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>Kaggle LLM Science Exam 2023の1位解法では、最初のcontext retrievalに<code>all-MiniLM-L6-v2</code>を使っただけでnon-context modelより大きく改善し、その後MTEB上位embedding modelを多数比較しました（<a href="https://www.kaggle.com/competitions/kaggle-llm-science-exam/writeups/team-h2o-llm-studio-1st-place-solution">1st place solution</a>）。</p>
+<p>2026-shinnen-promptの1位解法ではVLMが生成したpromptを<strong>SentenceTransformerでembedding化</strong>し、複数model/seed/promptをensembleしています（<a href="https://www.kaggle.com/competitions/2026-shinnnen-prompt/writeups/1st-place-solution">1st place solution</a>）。</p>
+<p>Learning Equalityの公開solutionではSentence-TransformersをBi-Encoder retrievalに使い、その後Cross-Encoderでrerankする2-stage pipelineが共有されています（<a href="https://www.kaggle.com/competitions/learning-equality-curriculum-recommendations/writeups/moro-32th-place-solution">solution</a>）。</p>
+<h2 id="pitfalls">注意点</h2>
+<h3>cosine similarityはtask Metricではない場合がある</h3>
+<p>retrieval recallを上げても最終MAP/F1等が上がるとは限りません。top-K recallとend-to-end Metricを両方追います。</p>
+<h3>embedding modelのdomain差</h3>
+<p>一般英語、multilingual、code、scientific textで最適encoderは異なります。MTEB順位だけで決めずCompetition dataのOOF retrievalで比較します。</p>
+<h3>hard negative Leakage</h3>
+<p>Validationの正解関係を使ってTrain hard negativesを作るとLeakageになる場合があります。foldごとにcandidate miningを閉じます。</p>
+<h3>poolingだけ変えてもpretraining objectiveは同じではない</h3>
+<p>通常BERTへmean poolingを付けただけでもvectorは作れますが、semantic similarity用にcontrastive trainingされたSentence Transformerとはembedding geometryが異なります。</p>
+<h2>Quick Reference</h2>
+<ul>
+<li>Text → Encoder → Pooling → 1 vector。</li>
+<li>Bi-Encoderはquery/documentを別々にencode。</li>
+<li>cosine/dot-productで高速retrieval。</li>
+<li>Cross-Encoderより高速、rerank精度はCross-Encoderが有利な場合が多い。</li>
+<li>Kaggle RAG/retrievalではtop-K candidate generationの基盤。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/modeling/bert.html' | relative_url }}">BERT</a></li>
+<li><a href="{{ '/wiki/modeling/roberta.html' | relative_url }}">RoBERTa</a></li>
+<li><a href="{{ '/wiki/modeling/transformer.html' | relative_url }}">Transformer</a></li>
+<li><a href="{{ '/wiki/modeling/clip.html' | relative_url }}">CLIP</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li>Reimers &amp; Gurevych, “Sentence-BERT: Sentence Embeddings using Siamese BERT-Networks”, 2019. https://arxiv.org/abs/1908.10084</li>
+<li>Sentence Transformers Documentation. https://www.sbert.net/</li>
+<li>Kaggle, “LLM Science Exam: 1st Place Solution”, 2023. https://www.kaggle.com/competitions/kaggle-llm-science-exam/writeups/team-h2o-llm-studio-1st-place-solution</li>
+<li>Kaggle, “2026-shinnen-prompt: 1st place solution”, 2026. https://www.kaggle.com/competitions/2026-shinnnen-prompt/writeups/1st-place-solution</li>
+<li>Kaggle, “Learning Equality: 32nd place solution”, 2023. https://www.kaggle.com/competitions/learning-equality-curriculum-recommendations/writeups/moro-32th-place-solution</li>
+</ol>

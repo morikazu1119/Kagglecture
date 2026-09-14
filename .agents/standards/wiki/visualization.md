@@ -1,5 +1,18 @@
 # Wiki Visualization Standard
 
+## HTML-first publishing requirement
+
+Kagglectureの公開ページは **HTML-first** とする。公開本文にMarkdown記法を使用しない。
+
+- 公開ページは `index.html` または `wiki/**/*.html` とする。
+- JekyllのYAML Front Matter (`---` で囲まれた先頭metadata) は保持してよい。Front Matterより後ろはHTMLのみとする。
+- 見出しは `<h1>`〜`<h6>`、段落は `<p>`、リストは `<ul>` / `<ol>`、リンクは `<a>`、codeは `<code>` / `<pre><code>` を使う。
+- Markdown見出し (`#`)、Markdown link (`[text](url)`)、強調 (`**text**`)、fenced code、pipe table、Markdown listを公開本文へ追加しない。
+- 表・比較・図は既存のHTML component classを優先して再利用する。
+- Liquid (`{{ ... }}`, `{% ... %}`) はHTML内で使用してよい。
+- 公開URLは従来どおり `.html` / category directory URLを維持する。
+- `.agents/**/*.md` はAgent / Skill loader用の内部instructionなのでMarkdownのまま維持する。これは公開記事の例外であり、公開コンテンツではない。
+
 Kagglectureの記事内で使う可視化の選択基準。描画ライブラリの実装説明は公開記事に書かない。
 
 ## Goal

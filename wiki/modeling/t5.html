@@ -1,0 +1,81 @@
+---
+layout: default
+title: T5
+summary: あらゆるNLP taskをtext-to-text形式へ統一し、Transformer Encoder-Decoderで入力sequenceから出力sequenceを生成するmodel family。
+type: reference
+domain: kaggle
+topic: t5
+created: 2026-09-03
+updated: 2026-09-03
+source_count: 5
+tags: [kaggle, modeling, transformer, t5, nlp, encoder-decoder]
+---
+
+<h1>T5</h1>
+<p><strong>T5（Text-to-Text Transfer Transformer）は、分類・翻訳・要約など異なるNLP taskをすべて「textを入力してtextを出す」問題へ統一するEncoder-Decoder Transformerです。</strong></p>
+<p>Encoderが入力全体をbidirectionalに読み、DecoderがEncoderの表現をCross-Attentionで参照しながらoutputを左から生成します。BERTのencoder-only、GPT系のdecoder-onlyの中間ではなく、<strong>EncoderとDecoderの両方を持つ別構成</strong>です（<a href="https://arxiv.org/abs/1910.10683">T5 paper</a>）。</p>
+<nav class="article-jump-nav"><a href="#text2text">Text-to-Text</a><a href="#span">Span Corruption</a><a href="#architecture">全体構造</a><a href="#cross-attention">Cross-Attention</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
+
+<h2 id="text2text">すべてをtext-to-textへする</h2>
+<p>分類もlabel IDではなくtextとして出せます。</p>
+<div class="comparison-board"><section class="comparison-card"><h4>Classification</h4><dl><dt>Input</dt><dd>`sentiment: この映画は最高`</dd><dt>Output</dt><dd>`positive`</dd></dl></section><section class="comparison-card"><h4>Translation</h4><dl><dt>Input</dt><dd>`translate en-ja: ...`</dd><dt>Output</dt><dd>日本語文</dd></dl></section><section class="comparison-card is-primary"><h4>Generation</h4><dl><dt>Input</dt><dd>prompt / context</dd><dt>Output</dt><dd>新しいtext sequence</dd></dl></section></div>
+
+<p>taskごとにhead architectureを大きく変えず、prefixとtarget textを変える設計です。</p>
+<h2 id="span">事前学習ではspanをまとめて隠す</h2>
+<p>T5の代表的なpretrainingは<strong>span corruption</strong>です。連続したtoken spanをsentinel tokenへ置き換え、Decoderに隠したspanを復元させます。</p>
+<div class="model-architecture" aria-label="T5 span corruption">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">連続spanをsentinelへ置換し、Decoderが欠けたtextを生成する</div><p class="model-architecture__subtitle">1 tokenずつ[MASK]するBERTのMLMとは入力・target形式が違います。</p></div><span class="model-architecture__badge">span corruption</span></div>
+  <div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>Original<br>A B C D E</span></div></div><div class="model-stage"><div class="model-op-box"><span>Hide<br>B C</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Encoder input<br>A &lt;extra_id_0&gt; D E</span></div></div><div class="model-stage"><div class="model-op-box"><span>Encoder<br>+ Decoder</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Target<br>&lt;extra_id_0&gt; B C</span></div></div></div>
+  <p class="model-architecture__caption">tokenは理解用の模式例です。</p>
+</div>
+
+<h2 id="architecture">T5全体</h2>
+<div class="model-architecture" aria-label="T5 full architecture">
+  <div class="model-architecture__header"><div><div class="model-architecture__title">Input → Encoder → Decoder with Cross-Attention → Output tokens</div><p class="model-architecture__subtitle">Decoderは過去outputへCausal Self-Attentionしつつ、Encoder outputへCross-Attentionします。</p></div><span class="model-architecture__badge">encoder-decoder</span></div>
+  <div class="model-stage-row" style="--model-cols:7"><div class="model-stage"><div class="model-tensor"><span>Input<br>tokens</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Encoder<br>Blocks × L</span></div></div><div class="model-stage"><div class="model-tensor"><span>Encoder<br>Memory</span></div></div><div class="model-stage"><div class="model-op-box"><span>Cross<br>Attention</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Decoder<br>Blocks × L</span></div></div><div class="model-stage"><div class="model-op-box"><span>LM Head</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Output<br>tokens</span></div></div></div>
+</div>
+
+<h2 id="cross-attention">Cross-Attention</h2>
+<p>Self-AttentionではQ/K/Vが同じsequence由来です。Cross-Attentionでは<strong>Decoder側のhidden stateがQuery、Encoder outputがKey/Value</strong>になります。</p>
+<div class="model-architecture"><div class="model-architecture__header"><div><div class="model-architecture__title">Decoderが「今何を書きたいか」をQueryにしてEncoder memoryを検索する</div><p class="model-architecture__subtitle">入力文のどの部分を参照して次output tokenを作るかを学びます。</p></div><span class="model-architecture__badge">cross-attention</span></div><div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>Decoder state<br>Q</span></div></div><div class="model-stage"><div class="model-tensor"><span>Encoder states<br>K / V</span></div></div><div class="model-stage"><div class="model-op-box"><span>Attention<br>scores</span></div></div><div class="model-stage"><div class="model-op-box"><span>Weighted<br>Encoder info</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Next decoder<br>representation</span></div></div></div></div>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p>Feedback Prize - Predicting Effective Argumentsの3位解法では<strong>T5-largeをtext-to-text generationとしてfine-tuneし、約25kのsynthetic essay/discourse dataを生成</strong>してaugmentationへ使っています（<a href="https://www.kaggle.com/competitions/feedback-prize-effectiveness/writeups/darjeeling-tea-3rd-place-solution-span-mlm-t5-augm">3rd place solution</a>）。</p>
+<p>Google AI4Codeの9位解法ではcode/text encoder候補としてCodeT5も比較し、最終的にはUniXcoderが最良でした（<a href="https://www.kaggle.com/competitions/AI4Code/writeups/ogy-9th-place-solution">9th place solution</a>）。これはT5系が万能ではなくdomain-specific backbone比較が必要な例です。</p>
+<p>Feedback Prize ELLの5位解法ではT5/GPT等も試したもののDeBERTa系が強かったと報告されています（<a href="https://www.kaggle.com/competitions/feedback-prize-english-language-learning/writeups/psi-5th-place-solution">5th place solution</a>）。</p>
+<h2>使う場面</h2>
+<ul>
+<li>input textから別textを生成するseq2seq task。</li>
+<li>synthetic data generation。</li>
+<li>summarization / rewriting / extractionをtext出力で統一したい。</li>
+<li>FLAN-T5等instruction-tuned encoder-decoderを軽量generatorとして使う。</li>
+</ul>
+<h2 id="pitfalls">注意点</h2>
+<h3>classificationではdecoder costが不要なことがある</h3>
+<p>固定class分類だけならBERT/DeBERTaのencoder-only headの方が単純・高速な場合があります。T5を選ぶ理由がtext generationにあるか確認します。</p>
+<h3>teacher forcingとinferenceの差</h3>
+<p>trainingでは正しい過去target tokenをDecoderへ入れますが、inferenceでは自分が生成したtokenを次へ使います。生成誤りが連鎖する場合があります。</p>
+<h3>T5 / FLAN-T5 / CodeT5は同一ではない</h3>
+<p>共通Encoder-Decoder構造を持ってもpretraining data/objective/domainが違います。使用checkpointの目的を確認します。</p>
+<h2>Quick Reference</h2>
+<ul>
+<li>Encoder-Decoder Transformer。</li>
+<li>taskをtext-to-textへ統一。</li>
+<li>pretrainingはspan corruptionが代表。</li>
+<li>DecoderはEncoderへCross-Attention。</li>
+<li>generation / synthetic augmentationで特に有用。</li>
+</ul>
+<h2>関連項目</h2>
+<ul>
+<li><a href="{{ '/wiki/modeling/transformer.html' | relative_url }}">Transformer</a></li>
+<li><a href="{{ '/wiki/modeling/bert.html' | relative_url }}">BERT</a></li>
+<li><a href="{{ '/wiki/modeling/decoder-only-transformer.html' | relative_url }}">Decoder-only Transformer / LLM</a></li>
+</ul>
+<h2>参考文献</h2>
+<ol>
+<li>Raffel et al., “Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer”, 2020. https://arxiv.org/abs/1910.10683</li>
+<li>Kaggle, “Feedback Prize Effectiveness: 3rd Place Solution — T5 Augmentations”, 2022. https://www.kaggle.com/competitions/feedback-prize-effectiveness/writeups/darjeeling-tea-3rd-place-solution-span-mlm-t5-augm</li>
+<li>Kaggle, “Google AI4Code: 9th Place Solution”, 2022. https://www.kaggle.com/competitions/AI4Code/writeups/ogy-9th-place-solution</li>
+<li>Kaggle, “Feedback Prize ELL: 5th place solution”, 2022. https://www.kaggle.com/competitions/feedback-prize-english-language-learning/writeups/psi-5th-place-solution</li>
+<li>Hugging Face Transformers T5 documentation. https://huggingface.co/docs/transformers/model_doc/t5</li>
+</ol>
