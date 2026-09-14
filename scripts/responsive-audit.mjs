@@ -44,7 +44,7 @@ for (const viewport of viewports) {
       if (msg.type() === 'error') consoleErrors.push(msg.text());
     });
 
-    await page.goto(url, { waitUntil: 'networkidle' });
+    await page.goto(url, { waitUntil: 'load' });
     await page.evaluate(async () => {
       if (document.fonts?.ready) await document.fonts.ready;
       await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
