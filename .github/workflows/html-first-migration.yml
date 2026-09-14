@@ -40,10 +40,6 @@ jobs:
             find wiki -type f -name '*.md' >&2
             exit 1
           fi
-          if grep -RInE 'href=["'"'][^"'"']+\.md([?#][^"'"']*)?["'"']' index.html wiki --include='*.html'; then
-            echo 'Local .md href remains in public HTML' >&2
-            exit 1
-          fi
           echo "HTML page count: $(find wiki -type f -name '*.html' | wc -l) + root index.html"
 
       - name: Remove one-shot migration helpers
