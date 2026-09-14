@@ -102,12 +102,26 @@ for (const viewport of viewports) {
         }
       }
 
-      const textBoxes = '.flow-node, .layer-block, .comparison-card, .metric-card, .model-stage, .transformer-block, .tree-node, .sample-tile, .interactive-button, .interactive-status, .viz-badge, .model-architecture__badge';
-      for (const el of document.querySelectorAll(textBoxes)) {
+      // Check the actual text-bearing elements, not connector containers such as
+      // .model-stage / .flow-node whose ::before/::after arrows intentionally extend
+      // beyond the box and are included in scrollWidth by Chromium.
+      const textElements = [
+        '.flow-node strong', '.flow-node span',
+        '.layer-block strong', '.layer-block span',
+        '.comparison-card dt', '.comparison-card dd',
+        '.metric-card span', '.metric-card strong',
+        '.model-stage__label', '.model-stage__note',
+        '.transformer-block', '.tree-node',
+        '.sample-tile strong', '.sample-tile span',
+        '.interactive-button', '.interactive-status',
+        '.viz-badge', '.model-architecture__badge'
+      ].join(',');
+
+      for (const el of document.querySelectorAll(textElements)) {
         if (intendedScroll(el)) continue;
         if (el.scrollWidth > el.clientWidth + tolerance) {
           issues.push({
-            type: 'internal-horizontal-overflow',
+            type: 'text-horizontal-overflow',
             tag: el.tagName.toLowerCase(),
             cls: el.className ?? '',
             detail: `scrollWidth=${el.scrollWidth} clientWidth=${el.clientWidth}`
