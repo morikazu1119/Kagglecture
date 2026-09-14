@@ -5,9 +5,11 @@ import path from 'node:path';
 const SITE_DIR = path.resolve(process.env.SITE_DIR || '_site');
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:4173';
 const viewports = [
+  { name: 'mobile-320', width: 320, height: 720 },
   { name: 'mobile-360', width: 360, height: 800 },
   { name: 'mobile-390', width: 390, height: 844 },
-  { name: 'desktop-1366', width: 1366, height: 900 },
+  { name: 'tablet-768', width: 768, height: 1024 },
+  { name: 'desktop-1024', width: 1024, height: 768 },
   { name: 'desktop-1440', width: 1440, height: 1000 },
 ];
 
@@ -64,7 +66,7 @@ for (const viewport of viewports) {
         '.comparison-board', '.html-flow', '.layer-scene', '.model-stage-row', '.residual-architecture',
         '.transformer-encoder', '.conv-board', '.vit-operation-board', '.tree-ensemble', '.sample-visual-pair',
         '.flow-strip', '.distribution-board', '.calibration-list', '.mask-layout', '.gkf-grid',
-        'svg', 'canvas', 'img', 'pre'
+        'svg', 'canvas', 'img', 'video', 'iframe', 'pre'
       ].join(',');
 
       for (const el of document.querySelectorAll(selectors)) {
@@ -100,6 +102,33 @@ for (const viewport of viewports) {
         }
       }
 
+      const textBoxes = '.flow-node, .layer-block, .comparison-card, .metric-card, .model-stage, .transformer-block, .tree-node, .sample-tile, .interactive-button, .interactive-status, .viz-badge, .model-architecture__badge';
+      for (const el of document.querySelectorAll(textBoxes)) {
+        if (intendedScroll(el)) continue;
+        if (el.scrollWidth > el.clientWidth + tolerance) {
+          issues.push({
+            type: 'internal-horizontal-overflow',
+            tag: el.tagName.toLowerCase(),
+            cls: el.className ?? '',
+            detail: `scrollWidth=${el.scrollWidth} clientWidth=${el.clientWidth}`
+          });
+        }
+      }
+
+      for (const svg of document.querySelectorAll('svg')) {
+        if (svg.closest('mjx-container')) continue;
+        const hasViewBox = Boolean(svg.getAttribute('viewBox'));
+        const hasDimensions = Boolean(svg.getAttribute('width') || svg.getAttribute('height'));
+        if (!hasViewBox && hasDimensions) {
+          issues.push({
+            type: 'svg-missing-viewbox',
+            tag: 'svg',
+            cls: svg.className?.baseVal ?? '',
+            detail: `width=${svg.getAttribute('width') || ''} height=${svg.getAttribute('height') || ''}`
+          });
+        }
+      }
+
       return { issues, viewportWidth: doc.clientWidth, scrollWidth: Math.max(doc.scrollWidth, body?.scrollWidth || 0) };
     }, { width: viewport.width });
 
@@ -123,4 +152,4 @@ if (failures.length) {
   console.error(`Responsive audit failed on ${failures.length} page/viewport combinations.`);
   process.exit(1);
 }
-console.log('Responsive audit passed with no detected horizontal overflow or clipped visual structures.');
+console.log('Responsive audit passed with no detected horizontal overflow, clipped visual structures, or visual text overflow.');
