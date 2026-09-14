@@ -1,9 +1,6 @@
 name: Responsive audit
 
 on:
-  push:
-    branches:
-      - chore/html-first-migration-20260914
   pull_request:
     branches:
       - main
