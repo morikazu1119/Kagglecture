@@ -44,11 +44,19 @@
 .html-chart svg,
 .html-diagram svg,
 .interactive-viz svg,
-.model-architecture svg,
-.content-shell img,
-.content-shell video {
+.model-architecture svg {
   width: 100%;
   height: auto;
+}
+
+.content-shell img,
+.content-shell video {
+  width: auto;
+  height: auto;
+}
+
+.content-shell iframe {
+  width: 100%;
 }
 
 .static-viz canvas,
