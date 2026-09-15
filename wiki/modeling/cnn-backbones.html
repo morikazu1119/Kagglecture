@@ -1,98 +1,91 @@
 ---
 layout: default
 title: CNN
-summary: 小さなkernelを画像上で共有しながら走査し、局所特徴をfeature mapとして階層的に抽出するConvolutional Neural Network。
+summary: kernelが局所領域へ作用し、feature mapをchannel方向へ積み重ねながら画像表現を階層化するConvolutional Neural Network。
 type: reference
 domain: kaggle
 topic: cnn
 created: 2026-09-03
-updated: 2026-09-03
-source_count: 4
+updated: 2026-09-15
+source_count: 6
 tags:
   - kaggle
   - modeling
   - cnn
   - computer-vision
 ---
+<link rel="stylesheet" href="{{ '/assets/css/cnn-3d.css' | relative_url }}">
 
 <h1>CNN</h1>
-<p><strong>CNN（Convolutional Neural Network）は、画像の小さな領域へ同じkernelを繰り返し当て、edge・texture・shapeのような局所特徴をfeature mapへ変換するモデルです。</strong></p>
-<p>このページはCNN共通の原理だけを扱います。Residual connection、compound scaling、modern CNN blockなどは、それぞれ<a href="{{ '/wiki/modeling/resnet.html' | relative_url }}">ResNet</a>、<a href="{{ '/wiki/modeling/efficientnet.html' | relative_url }}">EfficientNet</a>、<a href="{{ '/wiki/modeling/convnext.html' | relative_url }}">ConvNeXt</a>の記事で分けて説明します。</p>
-<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
-  <a href="#convolution">畳み込み</a><a href="#channels">Channel</a><a href="#architecture">全体構造</a><a href="#use-cases">使う場面</a><a href="#comparison">使い分け</a><a href="#pitfalls">注意点</a>
-</nav>
+<p><strong>CNN（Convolutional Neural Network）は、画像の小領域へ同じkernelを繰り返し当て、その反応をfeature mapとして積み重ねるモデルです。</strong></p>
+<p>入力は高さ×幅×channelのtensorです。Convolutionで局所patternを抽出し、stageを進むにつれて空間を圧縮しながらchannel方向へ特徴の種類を増やし、最後にclassification・segmentation・detectionなどのheadへ渡します。</p>
+<p>Residual connection、compound scaling、modern CNN blockは、それぞれ<a href="{{ '/wiki/modeling/resnet.html' | relative_url }}">ResNet</a>、<a href="{{ '/wiki/modeling/efficientnet.html' | relative_url }}">EfficientNet</a>、<a href="{{ '/wiki/modeling/convnext.html' | relative_url }}">ConvNeXt</a>で扱います。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション"><a href="#operation-3d">3Dで見る演算</a><a href="#convolution">積和を追う</a><a href="#architecture">全体構造</a><a href="#use-cases">使う場面</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
 
-<h2 id="convolution">1回のConvolutionを目で追う</h2>
-<p>3×3 kernelなら、画像の3×3領域とkernelの9個の重みを掛け合わせて足します。<strong>この積和1回でoutput feature mapの1セル</strong>ができます。kernelを1マスずつ動かすと、同じ重みで画像全体を調べられます。</p>
+<h2 id="operation-3d">3Dで見る：画像からfeature volumeができるまで</h2>
+<p>平面画像にkernelを当てると、出力は単なる1枚の画像ではなく、<strong>複数filterの反応を奥行き方向へ積んだfeature volume</strong>になります。下の奥行きはchannel数を表し、見た目の遠近でtensor sizeを比較するためのものではありません。</p>
+<div class="cnn-3d-scene" aria-label="CNNの入力、kernel、feature volumeを立体的に示す模式図">
+  <div class="cnn-3d-scene__header"><div><div class="cnn-3d-scene__title">局所を見るkernelが、channel方向に特徴を積み上げる</div><p class="cnn-3d-scene__subtitle">模式図。横・縦は空間、奥行きはchannelを表します。kernelを共有して画像全体を走査します。</p></div><span class="model-architecture__badge">operation 3D</span></div>
+  <div class="cnn-3d-stage">
+    <div><div class="cnn-volume" aria-hidden="true"><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"><span>RGB</span></div></div><div class="cnn-3d-label">Input image<span class="cnn-3d-note">高さ × 幅 × RGB</span><span class="cnn-3d-shape">H × W × 3</span></div></div>
+    <div class="cnn-3d-arrow" aria-hidden="true"></div>
+    <div><div class="cnn-kernel-cube" aria-hidden="true"><span>3×3</span></div><div class="cnn-3d-label">Kernel / Filter<span class="cnn-3d-note">局所領域へ同じ重みを適用</span></div></div>
+    <div class="cnn-3d-arrow" aria-hidden="true"></div>
+    <div><div class="cnn-volume is-feature" aria-hidden="true"><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"><span>features</span></div></div><div class="cnn-3d-label">Feature volume<span class="cnn-3d-note">filterごとの反応をchannel方向へ積む</span><span class="cnn-3d-shape">H' × W' × C</span></div></div>
+  </div>
+  <div class="cnn-3d-process"><div class="cnn-3d-process__card"><strong>1. 局所を見る</strong>kernelは入力全体ではなく小さなreceptive fieldだけを見る。</div><div class="cnn-3d-process__card"><strong>2. 積和する</strong>入力値×kernel weightを足し、outputの1セルを作る。</div><div class="cnn-3d-process__card"><strong>3. 走査する</strong>同じkernelを位置ごとに共有し、feature mapを埋める。</div><div class="cnn-3d-process__card"><strong>4. 奥行きへ積む</strong>複数filterのfeature mapをchannelとして重ねる。</div></div>
+</div>
+
+<h2 id="convolution">1回のConvolutionを数値で追う</h2>
+<p>3×3 kernelなら、画像の3×3領域とkernelの9個の重みを掛け合わせて足します。<strong>この積和1回でoutput feature mapの1セル</strong>ができます。kernelを動かすと、現在見ているreceptive fieldとoutput位置が対応して変わります。</p>
 <div class="interactive-viz" data-model-interactive="cnn-convolution">
-  <div class="interactive-viz__header"><div><div class="interactive-viz__title">3×3 kernelからfeature mapの1セルができる</div><p class="interactive-viz__subtitle">位置を動かすと、kernelが現在見ているreceptive fieldとoutput位置が対応して変わります。</p></div><span class="interactive-status" data-cnn-status data-state="safe">位置 (1, 1)</span></div>
-  <p class="interactive-note">模式例。入力値・kernel値は演算理解用の人工値です。</p>
+  <div class="interactive-viz__header"><div><div class="interactive-viz__title">3×3 kernelからfeature mapの1セルができる</div><p class="interactive-viz__subtitle">sliderまたはボタンで位置を変え、入力領域とoutput cellの対応を確認できます。</p></div><span class="interactive-status" data-cnn-status data-state="safe">位置 (1, 1)</span></div>
+  <p class="interactive-note">模式例。入力値・kernel値は演算理解用の人工値で、Kaggle実測値ではありません。</p>
   <div class="interactive-control-row"><span class="interactive-control-label">Kernel位置</span><button class="interactive-button" type="button" data-cnn-prev>前</button><label class="interactive-range"><input type="range" min="0" max="8" step="1" value="0" data-cnn-position aria-label="畳み込みkernelの位置"><span class="interactive-range-labels"><span>左上</span><span>右下</span></span></label><button class="interactive-button" type="button" data-cnn-next>次</button></div>
   <div class="conv-board"><section class="conv-panel"><div class="conv-panel__title">Input 5×5</div><div class="conv-grid" style="--grid-size:5" data-cnn-input-grid></div></section><section class="conv-panel conv-kernel"><div class="conv-panel__title">Kernel 3×3</div><div class="conv-grid" style="--grid-size:3" data-cnn-kernel-grid></div></section><section class="conv-panel"><div class="conv-panel__title">Output 3×3</div><div class="conv-grid" style="--grid-size:3" data-cnn-output-grid></div></section></div>
   <div class="conv-equation" data-cnn-equation>選択領域とkernelの積和がここに表示されます。</div>
-  <p class="interactive-explanation">同じkernel weightを場所ごとに共有するため、「左上専用のedge detector」「右下専用のedge detector」を別々に学ぶ必要がありません。</p>
-  <noscript><p class="interactive-explanation">Convolutionは小さな領域とkernelの積和を取り、その結果をfeature mapの対応セルへ書き込む処理です。</p></noscript>
+  <noscript><p class="interactive-explanation">Convolutionは小領域とkernelの積和を取り、その結果をfeature mapの対応セルへ書き込みます。</p></noscript>
 </div>
 
 <h3>stride / padding / receptive field</h3>
-<ul>
-<li><strong>stride</strong>: kernelを何マスずつ動かすか。大きいほどoutputの縦横が小さくなる。</li>
-<li><strong>padding</strong>: 入力の外側へ値を足し、端の情報やoutput sizeを制御する。</li>
-<li><strong>receptive field</strong>: あるfeatureが元画像のどこまでを見ているか。層を重ねるほど実質的な受容野は広がる。</li>
-</ul>
-<h2 id="channels">1枚ではなく複数channelを作る</h2>
-<p>実際のCNNはkernelを1個だけ持ちません。複数filterが同じ入力を見ることで、<strong>同じH×W位置に異なる種類の特徴</strong>を並べます。</p>
-<div class="model-architecture" aria-label="複数filterからfeature channel stackができる図">
-  <div class="model-architecture__header"><div><div class="model-architecture__title">1つの画像位置に、複数種類の特徴量を持たせる</div><p class="model-architecture__subtitle">filter A/B/Cが別のpatternへ反応し、outputはH×W×Cのtensorになります。</p></div><span class="model-architecture__badge">channel stack</span></div>
-  <div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>RGB<br>H×W×3</span></div><span class="model-stage__label">Input</span></div><div class="model-stage"><div class="model-op-box"><span>Filter A<br>edge</span></div></div><div class="model-stage"><div class="model-op-box"><span>Filter B<br>texture</span></div></div><div class="model-stage"><div class="model-op-box"><span>Filter C<br>pattern</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Feature maps<br>H'×W'×C</span></div><span class="model-stage__label">次層へ</span></div></div>
-  <p class="model-architecture__caption">edge / texture等の名前は直感用です。実際のfilterが学ぶpatternはtrainingから自動的に決まります。</p>
+<ul><li><strong>stride</strong>: kernelを何マスずつ動かすか。大きいほどoutputの縦横が小さくなる。</li><li><strong>padding</strong>: 入力の外側へ値を足し、端の情報やoutput sizeを制御する。</li><li><strong>receptive field</strong>: あるfeatureが元画像のどこまでを見ているか。層を重ねるほど広いcontextへつながる。</li></ul>
+
+<h2 id="architecture">CNN全体ではshapeがどう変わるか</h2>
+<p>典型的なCNN backboneでは、stageが進むほど<strong>H×Wを縮め、channelを増やす</strong>設計を取ります。浅い層では細かな局所patternを保ち、深い層ではより広いcontextをまとめます。</p>
+<div class="cnn-3d-scene" aria-label="CNNのstageが進むにつれて空間が縮小しchannelが増える模式図">
+  <div class="cnn-3d-scene__header"><div><div class="cnn-3d-scene__title">Full architecture：空間を縮め、特徴の奥行きを増やす</div><p class="cnn-3d-scene__subtitle">各stageの立体はtensorを表します。奥行きはchannel stack、面の大きさは空間解像度の概念を示します。</p></div><span class="model-architecture__badge">full architecture 3D</span></div>
+  <div class="cnn-3d-stage">
+    <div><div class="cnn-volume" aria-hidden="true"><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane">image</div></div><div class="cnn-3d-label">Input<span class="cnn-3d-shape">H × W × 3</span></div></div>
+    <div class="cnn-3d-arrow" aria-hidden="true"></div>
+    <div><div class="cnn-volume is-feature" aria-hidden="true"><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane">stage 1</div></div><div class="cnn-3d-label">Local features<span class="cnn-3d-shape">H/2 × W/2 × C</span></div></div>
+    <div class="cnn-3d-arrow" aria-hidden="true"></div>
+    <div><div class="cnn-volume is-feature is-deep" aria-hidden="true"><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane"></div><div class="cnn-volume__plane">deep</div></div><div class="cnn-3d-label">Deep features<span class="cnn-3d-shape">H/16 × W/16 × 8C</span></div></div>
+  </div>
+  <p class="model-architecture__caption">Classificationではdeep featureをpoolingしてclass headへ、segmentationではdecoderへ、detectionではmulti-scale featureをheadへ渡します。</p>
 </div>
 
-<h2 id="architecture">CNN全体では何が起きるか</h2>
-<p>CNNは<strong>局所演算 → feature map → 次の局所演算</strong>を何段も繰り返します。典型的なbackboneではstageが進むほど縦横を小さくし、channelを増やします。</p>
-<div class="model-architecture" aria-label="CNN全体のfeature map変化">
-  <div class="model-architecture__header"><div><div class="model-architecture__title">空間を圧縮しながら、特徴の種類を増やす</div><p class="model-architecture__subtitle">浅い層の局所patternから、深い層のより広いcontextを使う表現へ変わります。</p></div><span class="model-architecture__badge">full architecture</span></div>
-  <div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor"><span>Image<br>H×W×3</span></div><span class="model-stage__label">Input</span></div><div class="model-stage"><div class="model-tensor is-wide"><span>H/2×W/2<br>× C</span></div><span class="model-stage__label">Stage 1</span></div><div class="model-stage"><div class="model-tensor"><span>H/4×W/4<br>× 2C</span></div><span class="model-stage__label">Stage 2</span></div><div class="model-stage"><div class="model-tensor is-thin"><span>H/16×W/16<br>× 8C</span></div><span class="model-stage__label">Deep feature</span></div><div class="model-stage"><div class="model-tensor is-accent is-wide"><span>Class / Mask / Box</span></div><span class="model-stage__label">Task head</span></div></div>
-</div>
-
-<p>Classificationならdeep featureをpoolingしてclass headへ、segmentationなら<a href="{{ '/wiki/modeling/unet.html' | relative_url }}">U-Net</a>のようなdecoderへ、detectionなら<a href="{{ '/wiki/modeling/yolo.html' | relative_url }}">YOLO</a>のようなdetection headへ渡します。</p>
 <h2 id="use-cases">使う場面</h2>
-<ul>
-<li>画像classificationやspectrogram分類のbaseline。</li>
-<li>segmentation / detectionのencoder・backbone。</li>
-<li>pretrained weightを使って少量データへtransfer learningする。</li>
-<li>局所patternが重要で、画像resolutionを比較的柔軟に扱いたい。</li>
-</ul>
-<h2 id="comparison">CNNとTransformerの違い</h2>
-<div class="comparison-board"><section class="comparison-card is-primary"><h4>CNN</h4><dl><dt>最初に見る範囲</dt><dd>局所kernel</dd><dt>共有</dt><dd>同じkernelを全位置で使う</dd><dt>長距離関係</dt><dd>層を重ねて広げる</dd></dl></section><section class="comparison-card"><h4>Vision Transformer</h4><dl><dt>単位</dt><dd>patch token</dd><dt>共有</dt><dd>Attention projection</dd><dt>長距離関係</dt><dd>global attentionなら早い段階から直接参照</dd></dl></section></div>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>向いている</h4><dl><dt>画像</dt><dd>classification / segmentation / detection</dd><dt>音声</dt><dd>mel-spectrogramを画像として扱う</dd><dt>少量データ</dt><dd>pretrained backboneをfine-tune</dd></dl></section><section class="comparison-card"><h4>比較する</h4><dl><dt>長距離関係</dt><dd>Vision Transformer / Swin</dd><dt>計算量</dt><dd>resolutionとbackbone sizeをOOFで比較</dd><dt>局所性</dt><dd>CNNのinductive biasが有利か確認</dd></dl></section></div>
 
-<p>Kaggleでは優劣を固定せずOOFで比較します。BirdCLEF 2024の1位解法ではEfficientNet/RegNet系CNNが採用され、同チームではViT系が大きく劣ったと報告されています（<a href="https://www.kaggle.com/competitions/birdclef-2024/writeups/team-kefir-1st-place-solution">1st place solution</a>）。</p>
+<h2>使い分け：CNNとVision Transformer</h2>
+<div class="html-table-wrap"><table class="html-table"><thead><tr><th>観点</th><th>CNN</th><th>Vision Transformer</th></tr></thead><tbody><tr><td>最初に見る単位</td><td>局所kernel</td><td>patch token</td></tr><tr><td>位置をまたぐ情報</td><td>層を重ねてreceptive fieldを広げる</td><td>global attentionなら早期から直接参照</td></tr><tr><td>強い前提</td><td>局所性・weight sharing</td><td>token間関係をAttentionで学習</td></tr><tr><td>Kaggleでの判断</td><td colspan="2">pretraining、resolution、augmentation、CV、推論制約を揃えてOOFで比較する</td></tr></tbody></table></div>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<p><strong>BirdCLEF+ 2026</strong>では、音声をspectrogramへ変換してCNN/SED backboneで処理する解法が上位でも継続して使われました。5位解法はHGNetV2-B0、EfficientNetV2-S、EfficientNet-B3のCNN ensembleを最終系に含め、13位解法も3 CNN + 3 SED modelを使っています（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/5th-place-solution-both-are-all-you-need">5th place solution</a>、<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/13th-solution">13th place solution</a>）。これは「画像以外でも2D局所patternが意味を持つ表現ならCNNが候補になる」実例です。Evidence: C。</p>
+<p><strong>ICDAR 2026 CircleID: Pen Classification</strong>の7位解法ではConvNeXt-Tiny単体 + rotational TTAがPrivate 0.92313、最終Private 0.92337でした。一方、EfficientNet-B0・ConvNeXt-Tiny・ConvNeXtV2-Nanoの3-model ensembleはPrivate 0.908で、弱いbackboneを混ぜると悪化したと報告されています（<a href="https://www.kaggle.com/competitions/icdar-2026-circleid-pen-classification/writeups/7th-place-solution-convnext-tiny-label-fix">7th place writeup</a>）。CNN family内でも「多ければよい」ではなく、validationとhidden distributionへの一般化を優先する例です。Evidence: A。</p>
+<p>日本語圏でもBirdCLEF系ではCNN/SEDの利用例が継続して共有されており、BirdCLEF 2023の銀メダル解法ではEfficientNet系など複数CNNを使ったensembleが説明されています（<a href="https://moritake04.hatenablog.com/entry/2023/05/29/213619">BirdCLEF 2023 振り返り</a>）。一次情報の2026 writeupと合わせ、CNNがspectrogram modelingの再利用可能な選択肢であることを確認できます。</p>
+
 <h2 id="pitfalls">注意点</h2>
-<h3>resolutionと計算量</h3>
-<p>画像の縦横を2倍にするとpixel数は約4倍です。backbone名だけでなくinput resolution・batch size・augmentationをセットで比較します。</p>
-<h3>channel意味を固定して考えない</h3>
-<p>中間channelは人間が指定した「edge channel」ではありません。可視化は直感であり、実際の表現は学習で決まります。</p>
-<h3>backbone固有の設計をCNN一般論と混ぜない</h3>
-<p>Residual connection、MBConv、large-kernel ConvNeXt blockはCNNそのものの定義ではありません。各モデル記事で分けて理解します。</p>
+<h3>3D図の奥行きを実寸だと思わない</h3><p>このページの奥行きはchannel stackを理解するための模式表現です。parameter数やmemory量を遠近法から比較しません。</p>
+<h3>resolutionと計算量</h3><p>画像の縦横を2倍にするとpixel数は約4倍です。backbone名だけでなくinput resolution・batch size・augmentation・inference budgetをセットで比較します。</p>
+<h3>channel意味を固定しない</h3><p>中間channelは人間が指定した「edge channel」ではありません。図中のpattern名は直感用で、実際のfilterはtrainingから学習されます。</p>
+<h3>弱いmodelをensembleへ足せば強くなるとは限らない</h3><p>2026 CircleIDの例のように、単体よりensembleが悪化することがあります。OOF diversityとgeneralizationを確認し、model数そのものを目的にしません。</p>
+
 <h2>Quick Reference</h2>
-<ul>
-<li>kernelの積和1回 → feature map 1セル。</li>
-<li>複数filter → 複数channel。</li>
-<li>stageが深くなるほど空間を縮小しchannelを増やす設計が多い。</li>
-<li>CNNは局所性とweight sharingを強いinductive biasとして持つ。</li>
-<li>ResNet / EfficientNet / ConvNeXtは別記事でモデル固有設計を見る。</li>
-</ul>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>局所演算</h4><p>kernelの積和1回でfeature mapの1セルを作る。</p></section><section class="comparison-card"><h4>Channel</h4><p>複数filterの反応を奥行き方向へstackする。</p></section><section class="comparison-card"><h4>Stage</h4><p>典型的には空間を縮めながらchannelを増やす。</p></section><section class="comparison-card"><h4>Kaggle</h4><p>pretraining・resolution・CV・推論制約まで含めてbackboneを比較する。</p></section></div>
+
 <h2>関連項目</h2>
-<ul>
-<li><a href="{{ '/wiki/modeling/resnet.html' | relative_url }}">ResNet</a></li>
-<li><a href="{{ '/wiki/modeling/efficientnet.html' | relative_url }}">EfficientNet</a></li>
-<li><a href="{{ '/wiki/modeling/convnext.html' | relative_url }}">ConvNeXt</a></li>
-<li><a href="{{ '/wiki/modeling/vision-transformer.html' | relative_url }}">Vision Transformer</a></li>
-</ul>
+<ul><li><a href="{{ '/wiki/modeling/resnet.html' | relative_url }}">ResNet</a></li><li><a href="{{ '/wiki/modeling/efficientnet.html' | relative_url }}">EfficientNet</a></li><li><a href="{{ '/wiki/modeling/convnext.html' | relative_url }}">ConvNeXt</a></li><li><a href="{{ '/wiki/modeling/vision-transformer.html' | relative_url }}">Vision Transformer</a></li></ul>
+
 <h2>参考文献</h2>
-<ol>
-<li>LeCun et al., “Gradient-Based Learning Applied to Document Recognition”, 1998.</li>
-<li>Dumoulin &amp; Visin, “A guide to convolution arithmetic for deep learning”, 2016. https://arxiv.org/abs/1603.07285</li>
-<li>Kaggle, “BirdCLEF 2024: 1st place solution”, 2024. https://www.kaggle.com/competitions/birdclef-2024/writeups/team-kefir-1st-place-solution</li>
-<li>PyTorch, “Conv2d”. https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html</li>
-</ol>
+<ol><li><a href="https://ieeexplore.ieee.org/document/726791">LeCun et al., “Gradient-Based Learning Applied to Document Recognition”</a>, Proceedings of the IEEE, 1998.</li><li><a href="https://arxiv.org/abs/1603.07285">Dumoulin &amp; Visin, “A guide to convolution arithmetic for deep learning”</a>, arXiv, 2016.</li><li><a href="https://pytorch.org/docs/stable/generated/torch.nn.Conv2d.html">PyTorch, “Conv2d”</a>, official documentation.</li><li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/5th-place-solution-both-are-all-you-need">BirdCLEF+ 2026, “5th Place Solution: Diversity and Bug - Both Are All You Need”</a>, Kaggle Solution Writeup, 2026.</li><li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/13th-solution">BirdCLEF+ 2026, “13th place solution”</a>, Kaggle Solution Writeup, 2026.</li><li><a href="https://www.kaggle.com/competitions/icdar-2026-circleid-pen-classification/writeups/7th-place-solution-convnext-tiny-label-fix">ICDAR 2026 CircleID, “7th Place Writeup: ConvNeXt-Tiny + Label Fix + Rotational TTA”</a>, Kaggle Solution Writeup, 2026.</li></ol>
