@@ -6,76 +6,69 @@ type: reference
 domain: kaggle
 topic: unet
 created: 2026-09-03
-updated: 2026-09-03
-source_count: 5
+updated: 2026-09-15
+source_count: 7
 tags: [kaggle, modeling, segmentation, unet, computer-vision]
 ---
-
+<link rel="stylesheet" href="{{ '/assets/css/unet-3d.css' | relative_url }}">
 <h1>U-Net</h1>
-<p><strong>U-Netは、画像を小さくしながら意味を抽出するEncoderと、再び大きくしながらpixel単位の予測を作るDecoderを、skip connectionでつないだSegmentationモデルです。</strong></p>
-<p>Classificationが「画像全体は何？」を答えるのに対し、Segmentationは<strong>各pixelが何か</strong>を答える必要があります。U-Netは深い層の意味情報と浅い層の細かい位置情報を両方使います（<a href="https://arxiv.org/abs/1505.04597">U-Net paper</a>）。</p>
-<nav class="article-jump-nav"><a href="#skip">Skip Connection</a><a href="#architecture">全体構造</a><a href="#encoder">Encoder選択</a><a href="#use-cases">使う場面</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
+<p><strong>U-Netは、画像を小さくしながら「何があるか」を抽出し、再び大きくしながら「どこにあるか」を復元するSegmentationモデルです。</strong> EncoderとDecoderの同じ解像度をskip connectionでつなぐため、深い意味情報と浅い位置情報を同時に使えます。</p>
+<p>Classificationが画像全体へ1つの答えを出すのに対し、Segmentationは各pixelへ答えを出します。U-Netの本質は、圧縮で失いやすい境界情報をEncoder側からDecoderへ直接戻すことです（<a href="https://arxiv.org/abs/1505.04597">Ronneberger et al., 2015</a>）。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション"><a href="#architecture">3D構造</a><a href="#skip">Skip Connection</a><a href="#encoder">Encoder選択</a><a href="#use-cases">使う場面</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a></nav>
+
+<h2 id="architecture">3Dで見る処理：空間を縮め、channelを増やし、maskへ戻す</h2>
+<p>下の模式図では、板の縦横がfeature mapの空間解像度、奥行きがchannel stackを表します。perspectiveは構造理解用であり、板の見た目の大きさを定量比較する図ではありません。</p>
+<div class="unet-volume-scene" aria-label="U-Netの3Dテンソル処理模式図">
+  <div class="unet-volume-grid">
+    <div class="unet-volume-stage"><div class="unet-volume"></div><div><strong>Input</strong><span>H×W×3</span></div></div>
+    <div class="unet-volume-stage"><div class="unet-volume"></div><div><strong>Encoder 1</strong><span>H/2×W/2×C</span></div></div>
+    <div class="unet-volume-stage"><div class="unet-volume is-mid"></div><div><strong>Encoder 2</strong><span>H/4×W/4×2C</span></div></div>
+    <div class="unet-volume-stage"><div class="unet-volume is-bottleneck"></div><div><strong>Bottleneck</strong><span>小さい空間・深い特徴</span></div></div>
+    <div class="unet-volume-stage"><div class="unet-volume is-mid"></div><div><strong>Decoder 2</strong><span>Upsample + skip</span></div></div>
+    <div class="unet-volume-stage"><div class="unet-volume"></div><div><strong>Decoder 1</strong><span>Upsample + skip</span></div></div>
+    <div class="unet-volume-stage"><div class="unet-volume is-mask"></div><div><strong>Mask</strong><span>H×W×K</span></div></div>
+  </div>
+  <div class="unet-skip-map" aria-hidden="true"><div class="unet-skip s1"></div><div class="unet-skip s2"></div></div>
+  <div class="unet-process-note">
+    <div><strong>Encoder</strong><p>downsampleしながらreceptive fieldを広げ、局所的な線や境界から物体レベルの特徴へ変換します。</p></div>
+    <div><strong>Bottleneck</strong><p>空間解像度は最小ですが、広いcontextを見た高次特徴を持ちます。</p></div>
+    <div><strong>Decoder</strong><p>upsampleした特徴へ同scaleのEncoder featureをconcatし、位置を復元しながらpixel predictionへ戻します。</p></div>
+  </div>
+  <p class="model-architecture__caption">模式例。実際のstage数・channel数・downsampling倍率は実装やEncoderで異なります。</p>
+</div>
 
 <h2 id="skip">1つのskipで何が起きるか</h2>
-<p>Encoderを深く進むと「これは血管らしい」「これは臓器らしい」といった意味は強くなりますが、feature mapの縦横は小さくなります。Decoderだけで元解像度へ戻すと、<strong>境界の細かい位置を復元しにくい</strong>問題があります。</p>
-<p>そこでU-Netは、Encoderの同じ解像度にあるfeature mapをDecoderへ直接渡します。</p>
+<p>Encoderを深く進むほど「これは血管らしい」「これは臓器らしい」という意味は強くなりますが、feature mapの縦横は小さくなります。Decoderだけで元解像度へ戻すと境界の細かい位置を復元しにくいため、同じscaleのEncoder featureを直接渡します。</p>
 <div class="model-architecture" aria-label="U-Net skip connection">
-  <div class="model-architecture__header"><div><div class="model-architecture__title">深い意味情報に、浅い位置情報をconcatして戻す</div><p class="model-architecture__subtitle">DecoderはupsampleしたfeatureとEncoder側のfeatureを同じ解像度で結合します。</p></div><span class="model-architecture__badge">skip connection</span></div>
+  <div class="model-architecture__header"><div><div class="model-architecture__title">Upsampleした特徴に、Encoderの位置情報をconcat</div><p class="model-architecture__subtitle">典型的なU-Netではchannel方向に結合してから畳み込みで融合します。</p></div><span class="model-architecture__badge">skip connection</span></div>
   <div class="model-stage-row" style="--model-cols:5"><div class="model-stage"><div class="model-tensor is-wide"><span>Encoder feature<br>H/4×W/4×C</span></div></div><div class="model-stage"><div class="model-op-box"><span>Skip<br>copy</span></div></div><div class="model-stage"><div class="model-tensor"><span>Decoder upsample<br>H/4×W/4×C'</span></div></div><div class="model-stage"><div class="model-op-box"><span>Concat<br>C + C'</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Refined<br>feature</span></div></div></div>
 </div>
-
-<p>ResNetのResidual Addと違い、典型的なU-Net skipは<strong>Encoder featureをDecoder featureへconcat</strong>します。</p>
-<h2 id="architecture">U-Net全体</h2>
-<p>形がU字に見えるためU-Netと呼ばれます。左側でdownsample、中央にbottleneck、右側でupsampleします。</p>
-<div class="model-architecture" aria-label="U-Net full architecture">
-  <div class="model-architecture__header"><div><div class="model-architecture__title">Encoderで縮め、Decoderで戻し、同じscale同士をskipで結ぶ</div><p class="model-architecture__subtitle">最終出力は入力画像と同じ、または近いH×Wのpixel-wise predictionです。</p></div><span class="model-architecture__badge">encoder-decoder</span></div>
-  <div class="model-stage-row" style="--model-cols:7"><div class="model-stage"><div class="model-tensor"><span>Image<br>H×W</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Encoder 1<br>H/2</span></div></div><div class="model-stage"><div class="model-tensor"><span>Encoder 2<br>H/4</span></div></div><div class="model-stage"><div class="model-tensor is-thin"><span>Bottleneck<br>H/16</span></div></div><div class="model-stage"><div class="model-tensor"><span>Decoder 2<br>+ skip</span></div></div><div class="model-stage"><div class="model-tensor is-wide"><span>Decoder 1<br>+ skip</span></div></div><div class="model-stage"><div class="model-tensor is-accent"><span>Mask<br>H×W×K</span></div></div></div>
-  <p class="model-architecture__caption">図ではskip線を簡略化しています。実際は複数scaleのEncoder featureが対応するDecoder stageへ渡ります。</p>
-</div>
+<p><a href="{{ '/wiki/modeling/resnet.html' | relative_url }}">ResNet</a>のResidual Addが同shapeの特徴を加算するのに対し、典型的なU-Net skipは特徴をchannel方向へconcatする点が重要です。</p>
 
 <h2 id="encoder">Encoderは別モデルへ交換できる</h2>
-<p>U-Netの重要な特徴は、Encoderを固定せず<strong>ResNet / EfficientNet / ConvNeXt / Swin等のpretrained backboneへ交換できる</strong>ことです。</p>
-<div class="comparison-board"><section class="comparison-card"><h4>Original U-Net</h4><dl><dt>Encoder</dt><dd>独自CNN</dd><dt>利点</dt><dd>構造が単純</dd></dl></section><section class="comparison-card is-primary"><h4>Pretrained Encoder U-Net</h4><dl><dt>Encoder</dt><dd>ResNet / EfficientNet / ConvNeXt等</dd><dt>利点</dt><dd>ImageNet等のfeatureをtransferできる</dd></dl></section><section class="comparison-card"><h4>UNet++ / FPN / SegFormer</h4><dl><dt>違い</dt><dd>Decoder接続やfusion方式を変更</dd><dt>意味</dt><dd>同じEncoderでも結果が変わる</dd></dl></section></div>
+<p>実戦ではEncoderをResNet、EfficientNet、ConvNeXtなどのpretrained backboneへ交換する構成が一般的です。ただし「U-Net」という名前だけで性能は決まりません。Encoder、Decoder、skip、loss、input resolution、augmentationを一体で検証します。</p>
+<div class="comparison-board"><section class="comparison-card"><h4>Original U-Net</h4><dl><dt>Encoder</dt><dd>独自CNN</dd><dt>向く場面</dt><dd>構造を単純に保ちたい</dd></dl></section><section class="comparison-card is-primary"><h4>Pretrained Encoder U-Net</h4><dl><dt>Encoder</dt><dd>ResNet / EfficientNet / ConvNeXt等</dd><dt>向く場面</dt><dd>自然画像pretrainingを転用できる</dd></dl></section><section class="comparison-card"><h4>UNet++ / FPN / SegFormer</h4><dl><dt>違い</dt><dd>Decoderやmulti-scale fusionを変更</dd><dt>判断</dt><dd>同じEncoderでOOF比較する</dd></dl></section></div>
 
 <h2 id="use-cases">使う場面</h2>
-<ul>
-<li>医療画像で臓器・病変・血管maskを予測。</li>
-<li>衛星画像の道路・建物・土地被覆。</li>
-<li>工業画像の欠陥領域。</li>
-<li>2D/2.5D slice segmentation。</li>
-</ul>
+<ul><li>医療画像で臓器・病変・血管maskを予測する。</li><li>衛星画像の道路・建物・土地被覆をpixel単位で分類する。</li><li>工業画像の欠陥領域を抽出する。</li><li>2D sliceだけでなく、3D U-NetでCT・CryoET等のvolumeを直接扱う。</li></ul>
+
 <h2 id="kaggle-examples">Kaggleでの実例</h2>
-<p>HuBMAP Kidney Segmentationの1位解法では<strong>U-Net + SE-ResNeXt101</strong>を中心に、CBAM・hypercolumns・deep supervision等を追加しています（<a href="https://www.kaggle.com/competitions/hubmap-kidney-segmentation/writeups/tom-1st-place-solution">1st place solution</a>）。</p>
-<p>Blood Vessel Segmentation 2023の1位解法は<strong>U-Net + ConvNeXt Tiny</strong>を採用しています（<a href="https://www.kaggle.com/competitions/blood-vessel-segmentation/writeups/clevert-1st-place-solution-code-updated">1st place solution</a>）。</p>
-<p>2026年の3D pathology competitionの1位team solutionでもEfficientNet-B5 + U-NetやResNet34 + U-Netが使われています（<a href="https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614">solution</a>）。</p>
+<p><strong>BYU - Locating Bacterial Flagellar Motors 2025の1位解法</strong>は3D U-Netを使い、heavy augmentationとauxiliary lossで学習しています。4-fold CVを用い、著者はlocal CVがLB約0.93までは強く相関したと報告しています。さらにtomogramごとの最大予測値をrank化し、quantile thresholdingでmotor有無を判定しています（<a href="https://www.kaggle.com/competitions/byu-locating-bacterial-flagellar-motors-2025/writeups/bartley-1st-place-3d-u-net-quantile-thresholding">1st Place - 3D U-Net + Quantile Thresholding</a>）。<strong>Evidence A/B:</strong> 1位本人の最終解法とCV設計が公開されています。</p>
+<p><strong>第7回全国医療AIコンテスト 2025の1位解法</strong>では、同じEncoder <code>tu-seresnextaa201d_32x8d</code>で複数decoderを比較し、U-Net単独ではなくUNet++やSegFormerを含む3モデル×5-fold×8TTAの平均を最終提出に採用しました。最終提出はPublic 0.48413 / Private 0.48617、単体ベストはPublic 0.48376 / Private 0.48624です（<a href="https://www.kaggle.com/competitions/medical-ai-contest-7th-2025/writeups/1st-place-solution">1st Place Solution</a>）。<strong>Evidence A:</strong> decoder比較とPublic/Private値が公開されています。</p>
+<p><strong>「SegmentationならU-Net」とは限りません。</strong> Yale/UNC-CH Geophysical Waveform Inversion 2025の1位解法では、入力と出力pixelが空間的に対応しないため、著者はU-Netのskip connectionが問題設定に合わないと判断しています（<a href="https://www.kaggle.com/competitions/waveform-inversion/writeups/harshit-sheoran-1st-place-solution">1st Place Solution</a>）。これはskipが有効になる前提が「浅い位置情報を出力位置へ戻す価値があること」だと示す反例です。<strong>Evidence B:</strong> 1位本人が不採用理由を明示しています。</p>
+<p>現在進行中のSolar Filament Segmentation Challenge 2026ではDice/IoUに加えてfragmentationやover-segmentationも評価対象で、主催者はleaderboardだけを最終品質と解釈しないよう注意しています（<a href="https://www.kaggle.com/competitions/filament-segmentation-2026/overview/announcements">Competition Overview</a>）。Segmentationではarchitectureだけでなく、評価対象となる構造的エラーまでvalidationへ含める必要があります。</p>
+
 <h2 id="pitfalls">注意点</h2>
-<h3>Encoderだけでモデルを評価しない</h3>
-<p>同じEncoderでもDecoder、skipの取り方、loss、input resolutionで性能は大きく変わります。Medical AI Contest 2025の1位解法では、U-NetよりUNet++やSegFormer decoderとの組合せが良かったと報告されています（<a href="https://www.kaggle.com/competitions/medical-ai-contest-7th-2025/writeups/1st-place-solution">1st place solution</a>）。</p>
-<h3>pixel imbalance</h3>
-<p>背景が99%のtaskではBCEだけで背景予測に偏る場合があります。Dice/Focal/Boundary系lossをOOFで比較します。</p>
-<h3>cropとfull imageの分布差</h3>
-<p>高解像度画像ではtile学習が必要ですが、tile borderやcontext不足が本番推論とずれることがあります。</p>
+<h3>Skip connectionが常に正しいとは限らない</h3><p>入力の位置と出力の位置が対応しない問題では、浅いfeatureを同位置へ戻すinductive biasが不適切になり得ます。Waveform Inversion 2025の1位解法はこの理由でU-Netを避けています。</p>
+<h3>Encoderだけでモデルを評価しない</h3><p>同じEncoderでもDecoder、skipの取り方、loss、input resolutionで結果は変わります。decoder比較はEncoderを揃えたOOFで行うのが安全です。</p>
+<h3>pixel imbalance</h3><p>背景が大半のtaskではBCEだけで背景予測に偏る場合があります。Dice/Focal/Boundary系lossをvalidationで比較します。</p>
+<h3>cropとfull imageの分布差</h3><p>高解像度画像ではtile学習が必要ですが、tile borderやcontext不足が本番推論とずれることがあります。3D volumeではpatch間のcontext欠落にも注意します。</p>
+
 <h2>Quick Reference</h2>
-<ul>
-<li>Encoder = 意味を抽出しながらdownsample。</li>
-<li>Decoder = upsampleしてpixel予測へ戻す。</li>
-<li>skip = Encoderの細かい位置情報をDecoderへ渡す。</li>
-<li>EncoderはResNet/EfficientNet/ConvNeXt等へ交換可能。</li>
-<li>segmentationではEncoderだけでなくDecoder/loss/resolutionもセットで比較する。</li>
-</ul>
+<div class="comparison-board"><section class="comparison-card"><h4>使う</h4><p>入力と出力の位置対応があり、pixel/voxel単位で局所化したい。</p></section><section class="comparison-card"><h4>比較する</h4><p>EncoderだけでなくDecoder、loss、resolution、2D/2.5D/3Dを同じCVで比較する。</p></section><section class="comparison-card"><h4>避ける候補</h4><p>入力pixelと出力位置が対応せず、skipで浅い位置情報を戻す意味が薄い。</p></section></div>
+
 <h2>関連項目</h2>
-<ul>
-<li><a href="{{ '/wiki/modeling/cnn-backbones.html' | relative_url }}">CNN</a></li>
-<li><a href="{{ '/wiki/modeling/resnet.html' | relative_url }}">ResNet</a></li>
-<li><a href="{{ '/wiki/modeling/efficientnet.html' | relative_url }}">EfficientNet</a></li>
-<li><a href="{{ '/wiki/modeling/convnext.html' | relative_url }}">ConvNeXt</a></li>
-<li><a href="{{ '/wiki/metrics/dice-iou.html' | relative_url }}">Dice / IoU</a></li>
-</ul>
+<ul><li><a href="{{ '/wiki/modeling/cnn-backbones.html' | relative_url }}">CNN</a></li><li><a href="{{ '/wiki/modeling/resnet.html' | relative_url }}">ResNet</a></li><li><a href="{{ '/wiki/modeling/convnext.html' | relative_url }}">ConvNeXt</a></li><li><a href="{{ '/wiki/metrics/dice-iou.html' | relative_url }}">Dice / IoU</a></li><li><a href="{{ '/wiki/training/focal-loss.html' | relative_url }}">Focal Loss</a></li></ul>
+
 <h2>参考文献</h2>
-<ol>
-<li>Ronneberger et al., “U-Net: Convolutional Networks for Biomedical Image Segmentation”, 2015. https://arxiv.org/abs/1505.04597</li>
-<li>Kaggle, “HuBMAP Kidney Segmentation: 1st place solution”, 2021. https://www.kaggle.com/competitions/hubmap-kidney-segmentation/writeups/tom-1st-place-solution</li>
-<li>Kaggle, “Blood Vessel Segmentation: 1st Place Solution”, 2023. https://www.kaggle.com/competitions/blood-vessel-segmentation/writeups/clevert-1st-place-solution-code-updated</li>
-<li>Kaggle, “26-shinnen-3Dpathology: 1st place solution”, 2026. https://www.kaggle.com/competitions/26-shinnen-3-dp/discussion/671614</li>
-<li>Kaggle, “Medical AI Contest 7th 2025: 1st Place Solution”, 2026. https://www.kaggle.com/competitions/medical-ai-contest-7th-2025/writeups/1st-place-solution</li>
-</ol>
+<ol><li><a href="https://arxiv.org/abs/1505.04597">Ronneberger, Fischer, Brox, “U-Net: Convolutional Networks for Biomedical Image Segmentation”, 2015.</a></li><li><a href="https://www.kaggle.com/competitions/byu-locating-bacterial-flagellar-motors-2025/writeups/bartley-1st-place-3d-u-net-quantile-thresholding">Bartley, “1st Place - 3D U-Net + Quantile Thresholding”, BYU - Locating Bacterial Flagellar Motors 2025, Kaggle, 2025.</a></li><li><a href="https://www.kaggle.com/competitions/medical-ai-contest-7th-2025/writeups/1st-place-solution">Neilsaw, “1st Place Solution”, 第7回全国医療AIコンテスト, Kaggle, 2026.</a></li><li><a href="https://www.kaggle.com/competitions/waveform-inversion/writeups/harshit-sheoran-1st-place-solution">Harshit Sheoran, “1st Place Solution”, Yale/UNC-CH Geophysical Waveform Inversion, Kaggle, 2025.</a></li><li><a href="https://www.kaggle.com/competitions/filament-segmentation-2026/overview/announcements">Solar Filament Segmentation Challenge 2026, Competition Overview / Announcements, Kaggle, 2026.</a></li><li><a href="https://www.kaggle.com/competitions/hubmap-kidney-segmentation/writeups/tom-1st-place-solution">Tom, “1st place solution”, HuBMAP Kidney Segmentation, Kaggle, 2021.</a></li><li><a href="https://www.kaggle.com/competitions/blood-vessel-segmentation/writeups/clevert-1st-place-solution-code-updated">clevert, “1st Place Solution”, Blood Vessel Segmentation, Kaggle, 2023.</a></li></ol>
