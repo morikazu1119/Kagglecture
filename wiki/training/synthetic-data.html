@@ -1,0 +1,98 @@
+---
+layout: default
+title: Synthetic Data / Procedural Synthesis
+summary: 実データの不足やTrain/Testのdomain gapを、生成規則を設計して埋める学習データ戦略。
+type: reference
+domain: kaggle
+topic: synthetic-data
+created: 2026-09-17
+updated: 2026-09-17
+source_count: 6
+tags:
+  - kaggle
+  - training
+  - synthetic-data
+---
+
+<h1>Synthetic Data / Procedural Synthesis</h1>
+<p><strong>Synthetic Dataは、実データをそのまま増やすのではなく、既知の素材・simulation・生成モデル・規則から新しい学習sampleを作る戦略です。</strong></p>
+<p>Kaggleでは特に、label付き実データが少ない場合や、TrainとTestで見え方・配置・生成過程が違う場合に使われます。重要なのは「大量に作ること」ではなく、<strong>Testで起きる変化を生成規則へ入れること</strong>です。</p>
+
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a><a href="#mechanism">仕組み</a><a href="#comparison">使い分け</a><a href="#examples">Kaggle実例</a><a href="#pitfalls">注意点</a><a href="#references">参考文献</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>TrainとTestのsceneが違う</h4><dl><dt>例</dt><dd>単体物体で学習し、密集sceneを推論</dd><dt>狙い</dt><dd>target-domainに近いsceneを合成</dd></dl></section>
+  <section class="comparison-card"><h4>label付きdataが少ない</h4><dl><dt>例</dt><dd>稀なclass・配置・姿勢</dd><dt>狙い</dt><dd>既知のlabelを保ったままvariationを増やす</dd></dl></section>
+  <section class="comparison-card"><h4>Test固有の劣化がある</h4><dl><dt>例</dt><dd>JPEG、resize、blur、rotation</dd><dt>狙い</dt><dd>推論時operationをtrainingで再現</dd></dl></section>
+</div>
+
+<h2 id="mechanism">仕組み</h2>
+<p>最も理解しづらい点は、Synthetic Dataが単なるData Augmentationではなく、<strong>「どの分布から学習sampleを出すか」を設計すること</strong>です。</p>
+<div class="static-viz html-diagram" aria-label="Synthetic Dataでdomain gapを埋める模式図">
+  <div class="html-flow" style="align-items:stretch">
+    <div class="flow-node"><strong>Real source</strong><br><span>label付き素材</span><br><small>単体・clean・限定条件</small></div>
+    <div class="flow-connector" aria-hidden="true">＋</div>
+    <div class="flow-node"><strong>Generation rules</strong><br><span>配置 / 姿勢 / scale / noise / compression</span><br><small>Testで起きる変化をモデル化</small></div>
+    <div class="flow-connector" aria-hidden="true">＝</div>
+    <div class="flow-node"><strong>Synthetic target-like data</strong><br><span>labelを自動生成できる</span><br><small>Train/Test gapを縮める</small></div>
+  </div>
+  <p class="viz-caption">模式図。生成規則はCompetitionごとに異なり、実測scoreを表す図ではありません。</p>
+</div>
+<p>たとえば単体CTしかlabelがなく、Testが多数の物体が詰まった3D volumeなら、単体volumeを回転・scale変換して複数配置すれば、位置とclassのground truthを構築時点で知ることができます。逆にTestに存在しないartifactを大量生成すると、modelはそのsynthetic artifactを覚えて悪化します。</p>
+
+<h2 id="comparison">使い分け</h2>
+<div class="html-table-wrap"><table class="html-table"><thead><tr><th>手法</th><th>何を変えるか</th><th>向く状況</th><th>主なリスク</th></tr></thead><tbody>
+<tr><td>Data Augmentation</td><td>既存sampleを変換</td><td>label-preservingな局所変化</td><td>変換が現実離れ</td></tr>
+<tr><td>Synthetic Data</td><td>新しいsample / scene自体を生成</td><td>label不足、scene/domain gap</td><td>generator固有artifact</td></tr>
+<tr><td>Pseudo Label</td><td>実unlabeled dataへ予測labelを付与</td><td>Testに近いunlabeled dataがある</td><td>誤labelの自己増幅</td></tr>
+<tr><td>Pretraining</td><td>別dataで得たrepresentationを転移</td><td>汎用featureが使える</td><td>pretrain domainとの不一致</td></tr>
+</tbody></table></div>
+
+<h2 id="examples">Kaggleでの実例</h2>
+<h3>Forams2026 — 1位</h3>
+<p>Trainは「1 specimen / volume」、Testは約30個のshellが詰まったcolumnで、強いdomain gapがありました。1位解法は提供された単体CTからpacked columnをprocedural synthesisし、<strong>全モデルをsynthetic packed dataだけで学習</strong>しました。per-axis scale、3D rotation、flip、intensity scaling等も加えています（<a href="https://www.kaggle.com/competitions/forams-2026/writeups/forams2026-1st-place-solution-write-up">1st Place Solution Write-up</a>）。<strong>Evidence: B</strong> — 1位本人の最終解法採用で、domain gapを閉じる中心戦略として明示されています。</p>
+
+<h3>UltraMNIST Classification Challenge — 1位</h3>
+<p>1位解法はCompetition dataに似たsynthetic imageを生成し、小型YOLOでobjectを検出した後、synthetic cropで学習した高精度classifierで再分類しました（<a href="https://www.kaggle.com/competitions/ultra-mnist/writeups/agpt-1st-place-solution">1st Place Solution</a>）。<strong>Evidence: B</strong> — synthetic generationが最終pipelineの明示的な構成要素です。</p>
+
+<h3>LLM - Detect AI Generated Text — 1位</h3>
+<p>1位チームはhidden testの生成essay仕様が不明なため、size・diversity・complexityを広げたgenerated essay群を段階的に構築しました。writeupではdataset qualityが重要で、複数single modelが0.970+に達したと報告しています（<a href="https://www.kaggle.com/competitions/llm-detect-ai-generated-text/writeups/comprehensive-1st-place-write-up">Comprehensive 1st Place Write-Up</a>）。<strong>Evidence: B</strong> — 数値はdataset単独ablationではないため効果量とは扱いません。</p>
+
+<h3>DLMMDD Synthetic Image Attribution — 2位</h3>
+<p>Trainがclean、TestにはJPEG / WebP / crop / resize / rotation / blur等のpost-processingが入るdistribution mismatchに対し、2位解法は<strong>Test-time operationをtraining中にsimulation</strong>しました。最終scoreはPublic 0.9980 / Private 0.9973で、さらにsimulationしにくいartifactにはpseudo-labelingを併用しています（<a href="https://www.kaggle.com/competitions/dlmmdd-workshop-synthetic-source-attribution-challenge/writeups/2nd-place-solution-synthetic-image-attribution">2nd Place Solution</a>）。<strong>Evidence: B</strong> — 最終解法採用と有効性の明示はありますが、operation simulation単独の差は本文で確認できる範囲では分離されていません。</p>
+
+<h2 id="pitfalls">注意点</h2>
+<ul>
+  <li><strong>Generator artifactを学習しない:</strong> syntheticとrealを簡単に識別できる癖があると、本来のtargetではなく生成器を分類します。</li>
+  <li><strong>Validationもtarget conditionへ寄せる:</strong> synthetic validationだけが高くてもreal Testへのtransferは保証されません。可能ならreal holdout、public/privateの安定性、複数生成条件で確認します。</li>
+  <li><strong>「variationを増やす」と「分布を壊す」は別:</strong> 現実に起こらないscale・noise・配置を増やすほど良いわけではありません。</li>
+  <li><strong>元データ由来のleakageを確認する:</strong> 同じsource objectから作った派生sampleがTrain/Validationへ跨る場合、source単位でsplitしないと過大評価になります。</li>
+  <li><strong>生成コストも制約:</strong> 高品質simulationやLLM生成は時間・GPU/API costが大きいため、追加data量ではなくcoverageを基準にします。</li>
+</ul>
+
+<h2>Quick Reference</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>使う</h4><p>label不足または明確なdomain gapがあり、その差を生成規則として説明できる。</p></section>
+  <section class="comparison-card"><h4>確認する</h4><p>realism、coverage、source単位split、realに近いvalidation、generator artifact。</p></section>
+  <section class="comparison-card"><h4>避ける</h4><p>「dataが増えるから」という理由だけで、Testにない変化を無制限に生成する。</p></section>
+</div>
+
+<h2>関連項目</h2>
+<ul>
+  <li><a href="{{ '/wiki/training/data-augmentation.html' | relative_url }}">Data Augmentation</a></li>
+  <li><a href="{{ '/wiki/training/pretraining-transfer-learning.html' | relative_url }}">Pretraining / Transfer Learning</a></li>
+  <li><a href="{{ '/wiki/validation/adversarial-validation.html' | relative_url }}">Adversarial Validation</a></li>
+</ul>
+
+<h2 id="references">参考文献</h2>
+<ol>
+  <li><a href="https://www.kaggle.com/competitions/forams-2026/writeups/forams2026-1st-place-solution-write-up">Forams2026: 1st Place Solution Write-up</a>, Forams2026, Kaggle, 2026.</li>
+  <li><a href="https://www.kaggle.com/competitions/ultra-mnist/writeups/agpt-1st-place-solution">1st Place Solution</a>, UltraMNIST Classification Challenge, Kaggle, 2022.</li>
+  <li><a href="https://www.kaggle.com/competitions/llm-detect-ai-generated-text/writeups/comprehensive-1st-place-write-up">Comprehensive 1st Place Write-Up</a>, LLM - Detect AI Generated Text, Kaggle, 2024.</li>
+  <li><a href="https://www.kaggle.com/competitions/dlmmdd-workshop-synthetic-source-attribution-challenge/writeups/2nd-place-solution-synthetic-image-attribution">2nd Place Solution - Synthetic Image Attribution</a>, DLMMDD Workshop: Synthetic Image Attribution, Kaggle, 2026.</li>
+  <li><a href="https://www.kaggle.com/competitions/synthetic-2-real-object-detection-challenge">Synthetic to Real Object Detection Challenge</a>, Kaggle, 2025.</li>
+  <li><a href="https://www.kaggle.com/competitions/playground-series-s6e9/overview/citation">Predicting Electric Vehicle Purchases</a>, Kaggle Playground Series, 2026.</li>
+</ol>
