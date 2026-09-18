@@ -2,7 +2,7 @@
 layout: default
 title: Training
 description: Kaggleの学習手法を、学習制御・data・loss・representationごとに調べるカテゴリ索引。
-summary: Early Stopping、Augmentation、Loss、Frequency / Target Encoding、Aggregation、Lag / Rolling、Pretrainingを目的別に整理する。
+summary: Early Stopping、Augmentation、Synthetic Data、Loss、Frequency / Target Encoding、Aggregation、Lag / Rolling、Pretrainingを目的別に整理する。
 type: category-index
 nav_order: 4
 permalink: /wiki/training/
@@ -20,6 +20,7 @@ permalink: /wiki/training/
 <div class="dictionary-grid">
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/data-augmentation.html' | relative_url }}"><h3>Data Augmentation</h3><p>targetを保つ変換で学習sampleを増やし、不要な変化への過適合を抑える。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/mixup-cutmix.html' | relative_url }}"><h3>Mixup / CutMix</h3><p>sampleとlabelを混ぜて中間sampleを作るstrong augmentation。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/synthetic-data.html' | relative_url }}"><h3>Synthetic Data / Procedural Synthesis</h3><p>simulation・生成規則・既知素材からtarget-domainに近い学習sampleを作り、label不足やdomain gapを埋める。</p></a>
 </div>
 
 <h2>Lossで学習対象の重みを変える</h2>
@@ -43,7 +44,8 @@ permalink: /wiki/training/
 <h2>迷ったときの判断軸</h2>
 <div class="comparison-board">
   <section class="comparison-card"><h4>過学習し始める</h4><dl><dt>見る記事</dt><dd>Early Stopping</dd></dl></section>
-  <section class="comparison-card is-primary"><h4>Dataが少ない</h4><dl><dt>画像等</dt><dd>Augmentation / Mixup / CutMix</dd><dt>既存weight</dt><dd>Transfer Learning</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>Dataが少ない</h4><dl><dt>既存sampleを変換</dt><dd>Augmentation / Mixup / CutMix</dd><dt>scene自体を作る</dt><dd>Synthetic Data</dd><dt>既存weight</dt><dd>Transfer Learning</dd></dl></section>
+  <section class="comparison-card"><h4>Train/Testのsceneが違う</h4><dl><dt>候補</dt><dd>Synthetic Data</dd><dt>注意</dt><dd>Testで起きる変化だけを生成規則へ入れる</dd></dl></section>
   <section class="comparison-card"><h4>不均衡・easy negative過多</h4><dl><dt>候補</dt><dd>Focal Loss</dd><dt>注意</dt><dd>Metricとは別にOOF確認</dd></dl></section>
   <section class="comparison-card"><h4>履歴・group文脈を数値化</h4><dl><dt>候補</dt><dd>Aggregation Features</dd><dt>注意</dt><dd>fold / time境界内で集約</dd></dl></section>
   <section class="comparison-card"><h4>Categoryのrare / commonを使う</h4><dl><dt>候補</dt><dd>Frequency / Count Encoding</dd><dt>注意</dt><dd>元categoryを消すとidentity情報を失う</dd></dl></section>
