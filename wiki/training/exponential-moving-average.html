@@ -1,0 +1,120 @@
+---
+layout: default
+title: Exponential Moving Average (EMA)
+summary: 学習中のmodel weightを指数移動平均し、更新ノイズをならした別weightを推論・評価に使う手法。
+type: reference
+domain: kaggle
+topic: exponential-moving-average
+created: 2026-09-18
+updated: 2026-09-18
+source_count: 6
+tags:
+  - kaggle
+  - training
+  - deep-learning
+  - ema
+---
+
+<h1>Exponential Moving Average (EMA)</h1>
+<p><strong>Exponential Moving Average（EMA）は、学習中に変化するmodel weightをそのまま最後の1点だけ使わず、最近のweightを強く残しながら平均した別modelを持つ方法です。</strong></p>
+<p>mini-batchごとの更新でweightが揺れるDeep Learningで、推論用weightを滑らかにしたいときに使います。optimizer自体を置き換えるのではなく、通常modelを学習しながら<strong>EMA modelを並行して更新</strong>します。</p>
+
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>Deep Learningの更新が揺れる</h4><dl><dt>候補</dt><dd>EMA</dd><dt>狙い</dt><dd>直近の複数weightを滑らかに集約</dd></dl></section>
+  <section class="comparison-card"><h4>最後のcheckpointがbestとは限らない</h4><dl><dt>候補</dt><dd>EMA + Validation</dd><dt>確認</dt><dd>raw weightとEMA weightを同じfoldで比較</dd></dl></section>
+  <section class="comparison-card"><h4>複数checkpointを後から平均したい</h4><dl><dt>候補</dt><dd>SWA / checkpoint averaging</dd><dt>違い</dt><dd>EMAは学習中に逐次更新する</dd></dl></section>
+</div>
+
+<h2 id="mechanism">仕組み</h2>
+<p>通常modelの現在weightを <code>θ_t</code>、EMA weightを <code>θ̄_t</code>、古いEMAをどれだけ残すかをdecay <code>d</code> とすると、更新は次です。</p>
+<p class="formula-block">θ̄<sub>t</sub> = d θ̄<sub>t-1</sub> + (1 − d) θ<sub>t</sub></p>
+<p><code>d</code> が大きいほど過去を長く残し、小さいほど現在weightへ速く追従します。PyTorchはEMAを指数重み付きのPolyak averagingとして扱い、<code>AveragedModel</code>で実装できます（<a href="https://docs.pytorch.org/docs/main/generated/torch.optim.swa_utils.AveragedModel.html">PyTorch AveragedModel</a>）。<code>timm</code>にもModel EMAがあり、学習parameterの移動平均を保持して評価に使う仕組みが提供されています（<a href="https://timm.fast.ai/training_modelEMA">timm Model EMA</a>）。</p>
+
+<div class="interactive-card" data-ema-demo>
+  <h3>decayを変えると、どれだけ現在weightへ追従するか</h3>
+  <p>理解用の模式例です。実測Kaggle scoreではありません。現在weightを10、直前EMAを0として1回更新します。</p>
+  <label for="ema-decay">decay: <output id="ema-decay-value">0.90</output></label>
+  <input id="ema-decay" type="range" min="0" max="0.999" step="0.001" value="0.90" style="width:100%;min-height:44px">
+  <div class="comparison-board" aria-live="polite">
+    <section class="comparison-card"><h4>過去EMAの寄与</h4><p><strong id="ema-old">90.0%</strong></p></section>
+    <section class="comparison-card"><h4>現在weightの寄与</h4><p><strong id="ema-new">10.0%</strong></p></section>
+    <section class="comparison-card is-primary"><h4>更新後EMA</h4><p><strong id="ema-result">1.000</strong></p></section>
+  </div>
+</div>
+<script>
+(function(){
+  var s=document.getElementById('ema-decay');
+  if(!s)return;
+  var v=document.getElementById('ema-decay-value'),o=document.getElementById('ema-old'),n=document.getElementById('ema-new'),r=document.getElementById('ema-result');
+  function draw(){var d=Number(s.value);v.textContent=d.toFixed(3);o.textContent=(d*100).toFixed(1)+'%';n.textContent=((1-d)*100).toFixed(1)+'%';r.textContent=((1-d)*10).toFixed(3);}
+  s.addEventListener('input',draw);draw();
+})();
+</script>
+
+<h3>「予測平均」ではなく「weight平均」</h3>
+<p>EMAは複数modelのpredictionを平均するensembleとは違います。保持するのは<strong>同じmodelの学習trajectory上のweight平均</strong>です。そのため通常は推論回数を増やさず、EMA model 1個で推論できます。</p>
+<p>2024年の体系的研究では、EMA weightはlast-iterate weightと異なる解を形成し、一般化・noisy labelへのrobustness・prediction consistency・calibration・transferで改善が観察されています。ただしこれはKaggle固有の保証ではなく、taskごとにValidation確認が必要です（<a href="https://arxiv.org/abs/2411.18704">Morales-Brotons et al., 2024</a>）。</p>
+
+<h2 id="comparison">使い分け</h2>
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th>手法</th><th>何を平均するか</th><th>いつ平均するか</th><th>主な用途</th></tr></thead>
+  <tbody>
+    <tr><td>EMA</td><td>学習中のweight</td><td>逐次・指数重み</td><td>更新ノイズをならした推論weight</td></tr>
+    <tr><td>SWA</td><td>学習trajectory上のweight</td><td>主に後半・等重み</td><td>複数点を平均して別解を作る</td></tr>
+    <tr><td>Checkpoint averaging</td><td>保存済みweight</td><td>学習後</td><td>複数checkpointを後処理で統合</td></tr>
+    <tr><td>Prediction ensemble</td><td>prediction</td><td>推論時</td><td>異なるmodel/fold/seedの多様性を統合</td></tr>
+  </tbody>
+</table></div>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<h3>第7回全国医療AIコンテスト — 1位</h3>
+<p>2026年の1位解法は顕微鏡画像segmentationで30 epochs、5-fold CV、EMA <code>decay=0.998</code>を採用し、最終的に3 models × 5 folds × 8 TTAを平均しました。EMA単独のablation差は公開されていないため、<strong>採用実績としてEvidence B</strong>と扱います（<a href="https://www.kaggle.com/competitions/medical-ai-contest-7th-2025/writeups/1st-place-solution">1st Place Solution</a>）。</p>
+
+<h3>HuBMAP - Hacking the Human Vasculature — 1位</h3>
+<p>1位解法はRTMDetを中心に使い、EMAを実験上「最も重要なtechnique」と説明しています。EMA modelはvalidationだけでなくtraining accuracyも高かったと報告し、多くの実験で固定learning rateとEMAを併用しました。数値ablationは本文で確認できないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/hubmap-hacking-the-human-vasculature/writeups/tascj-1st-place-solution">1st place solution</a>）。</p>
+
+<h3>ASL Signs — 26位</h3>
+<p>26位解法ではEMAによってCV accuracyが<strong>2〜4%</strong>改善したと報告されています。解法内の定量差なので<strong>Evidence A</strong>ですが、順位・task・architectureが異なるため、この改善幅を他Competitionへそのまま移植してはいけません（<a href="https://www.kaggle.com/competitions/asl-signs/writeups/danylo-kasianenko-26th-place-solution">26th place solution</a>）。</p>
+
+<h2 id="pitfalls">注意点</h2>
+<div class="comparison-board">
+  <section class="comparison-card"><h4>decayが大きすぎる</h4><p>過去weightを長く残すため、学習が大きく改善している途中ではEMAが現在modelへ追いつくまでlagが出ます。2025年のBEMA研究もstandard EMAの古いiterate由来のbiasとlagを問題設定にしています（<a href="https://arxiv.org/abs/2508.00180">Block &amp; Zhang, 2025</a>）。</p></section>
+  <section class="comparison-card"><h4>EMAなら必ず良い、ではない</h4><p>raw modelとEMA modelを同じValidationで比較します。decay・update開始時点・学習長が変われば結果も変わります。</p></section>
+  <section class="comparison-card"><h4>BatchNorm統計</h4><p>weight平均とrunning statisticsは別問題です。PyTorchのSWA utilityでは必要に応じて<code>update_bn()</code>で統計を更新する例が示されています（<a href="https://docs.pytorch.org/docs/main/optim.html">PyTorch optim docs</a>）。</p></section>
+  <section class="comparison-card"><h4>memory</h4><p>EMAはmodel copyを保持するためparameter分の追加memoryが必要です。timmではEMAをCPUへ置く選択肢がありますが、その場合は学習中のEMA validationに制約があります。</p></section>
+</div>
+
+<h2 id="quick-reference">Quick Reference</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>まず試す条件</h4><p>Deep Learningでcheckpoint間のValidationが揺れ、推論costを増やさずweightを安定化したい。</p></section>
+  <section class="comparison-card"><h4>比較方法</h4><p>同じfold・epochでraw weight vs EMA weightを比較する。</p></section>
+  <section class="comparison-card"><h4>調整parameter</h4><p>decay、update開始時点、update頻度。値はtaskと総update数に依存する。</p></section>
+  <section class="comparison-card"><h4>混同しない</h4><p>EMAはprediction ensembleでもEarly Stoppingでもない。</p></section>
+</div>
+
+<h2>関連項目</h2>
+<ul>
+  <li><a href="{{ '/wiki/training/early-stopping.html' | relative_url }}">Early Stopping</a></li>
+  <li><a href="{{ '/wiki/ensemble/fold-ensemble.html' | relative_url }}">Fold Ensemble</a></li>
+  <li><a href="{{ '/wiki/training/pretraining-transfer-learning.html' | relative_url }}">Pretraining / Transfer Learning</a></li>
+</ul>
+
+<h2>参考文献</h2>
+<ol>
+  <li><a href="https://www.kaggle.com/competitions/medical-ai-contest-7th-2025/writeups/1st-place-solution">1st Place Solution</a> — 第7回全国医療AIコンテスト, Kaggle, 2026.</li>
+  <li><a href="https://www.kaggle.com/competitions/hubmap-hacking-the-human-vasculature/writeups/tascj-1st-place-solution">1st place solution</a> — HuBMAP - Hacking the Human Vasculature, Kaggle.</li>
+  <li><a href="https://www.kaggle.com/competitions/asl-signs/writeups/danylo-kasianenko-26th-place-solution">26th place solution</a> — Danylo Kasianenko, Google - Isolated Sign Language Recognition, Kaggle, 2023.</li>
+  <li><a href="https://docs.pytorch.org/docs/main/generated/torch.optim.swa_utils.AveragedModel.html">AveragedModel</a> — PyTorch documentation.</li>
+  <li><a href="https://timm.fast.ai/training_modelEMA">Model EMA (Exponential Moving Average)</a> — timm documentation.</li>
+  <li><a href="https://arxiv.org/abs/2411.18704">Exponential Moving Average of Weights in Deep Learning: Dynamics and Benefits</a> — Daniel Morales-Brotons, Thijs Vogels, Hadrien Hendrikx, 2024.</li>
+</ol>
