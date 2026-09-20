@@ -28,6 +28,7 @@ permalink: /wiki/metrics/
 <h2>Classification — Probability Quality</h2>
 <div class="dictionary-grid">
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/metrics/log-loss.html' | relative_url }}"><h3>LogLoss</h3><p>予測確率の質を測り、自信を持った誤答を強く罰する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/metrics/brier-score.html' | relative_url }}"><h3>Brier Score</h3><p>予測確率と0/1結果の二乗距離を平均し、確率予測の質を評価する。</p></a>
 </div>
 
 <h2>Regression</h2>
@@ -45,7 +46,7 @@ permalink: /wiki/metrics/
 <div class="comparison-board">
   <section class="comparison-card"><h4>最終classだけ重要</h4><dl><dt>候補</dt><dd>Accuracy / Balanced Accuracy / F1</dd><dt>確認</dt><dd>class imbalanceとthreshold</dd></dl></section>
   <section class="comparison-card"><h4>順位が重要</h4><dl><dt>候補</dt><dd>ROC-AUC / PR-AUC</dd><dt>確認</dt><dd>positive率</dd></dl></section>
-  <section class="comparison-card is-primary"><h4>確率そのものが重要</h4><dl><dt>候補</dt><dd>LogLoss</dd><dt>確認</dt><dd>Calibration</dd></dl></section>
+  <section class="comparison-card is-primary"><h4>確率そのものが重要</h4><dl><dt>候補</dt><dd>Brier Score / LogLoss</dd><dt>Brier</dt><dd>確率と結果の二乗距離</dd><dt>LogLoss</dt><dd>自信を持った誤答をより強く罰する</dd></dl></section>
   <section class="comparison-card"><h4>連続値</h4><dl><dt>大外しを強く罰す</dt><dd>RMSE</dd><dt>線形に扱う</dt><dd>MAE</dd></dl></section>
   <section class="comparison-card"><h4>Mask</h4><dl><dt>候補</dt><dd>Dice / IoU</dd><dt>確認</dt><dd>threshold / component処理</dd></dl></section>
 </div>
