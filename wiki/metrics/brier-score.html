@@ -1,0 +1,128 @@
+---
+layout: default
+title: Brier Score
+summary: 予測確率と実際の0/1結果の二乗誤差を平均し、確率予測の質を評価するMetric。
+type: reference
+domain: kaggle
+topic: brier-score
+created: 2026-09-19
+updated: 2026-09-19
+source_count: 6
+tags:
+  - kaggle
+  - metric
+  - probability
+  - calibration
+---
+
+<h1>Brier Score</h1>
+<p><strong>Brier Scoreは、予測した確率と実際の0/1結果のズレを二乗して平均するMetricです。</strong>「勝つ確率70%」のように、classだけでなく<strong>確率そのものの質</strong>を評価したいときに使います。</p>
+<p>Binary classificationでは0が完全一致で、小さいほど良い指標です。2026年のMarch Machine Learning Maniaでは公式Metricとして使われました（<a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026/">Competition公式</a>）。</p>
+
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#intuition">直感</a>
+  <a href="#formula">式</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+</nav>
+
+<h2 id="intuition">直感：同じ正解でも「自信の出し方」を見る</h2>
+<p>正解が1だった試合に対して、0.9と予測したモデルは0.6と予測したモデルより小さな誤差になります。逆に実際は0だったのに0.9と強く予測すると、大きく罰せられます。</p>
+<div class="static-viz html-diagram" aria-label="Brier Scoreの模式例">
+  <div class="comparison-board">
+    <section class="comparison-card is-primary"><h4>実際 1 / 予測 0.9</h4><dl><dt>二乗誤差</dt><dd>(1 - 0.9)² = 0.01</dd><dt>意味</dt><dd>高い確率で正解</dd></dl></section>
+    <section class="comparison-card"><h4>実際 1 / 予測 0.6</h4><dl><dt>二乗誤差</dt><dd>(1 - 0.6)² = 0.16</dd><dt>意味</dt><dd>正しいが自信は弱い</dd></dl></section>
+    <section class="comparison-card"><h4>実際 0 / 予測 0.9</h4><dl><dt>二乗誤差</dt><dd>(0 - 0.9)² = 0.81</dd><dt>意味</dt><dd>自信を持って外した</dd></dl></section>
+  </div>
+</div>
+
+<div class="interactive-viz" id="brier-interactive">
+  <h3>予測確率を動かして誤差を見る</h3>
+  <p>模式例です。実測Kaggle scoreではありません。</p>
+  <label for="brier-prob">positive classの予測確率: <strong id="brier-prob-value">0.70</strong></label>
+  <input id="brier-prob" type="range" min="0" max="1" step="0.01" value="0.70">
+  <div class="comparison-board">
+    <section class="comparison-card"><h4>実際が1なら</h4><dl><dt>Brier loss</dt><dd id="brier-y1">0.0900</dd></dl></section>
+    <section class="comparison-card"><h4>実際が0なら</h4><dl><dt>Brier loss</dt><dd id="brier-y0">0.4900</dd></dl></section>
+  </div>
+  <p id="brier-status" aria-live="polite">0.70はpositiveへ比較的強い確率を置いています。</p>
+</div>
+<script>
+(function () {
+  var slider = document.getElementById('brier-prob');
+  if (!slider) return;
+  var value = document.getElementById('brier-prob-value');
+  var y1 = document.getElementById('brier-y1');
+  var y0 = document.getElementById('brier-y0');
+  var status = document.getElementById('brier-status');
+  function render() {
+    var p = Number(slider.value);
+    value.textContent = p.toFixed(2);
+    y1.textContent = Math.pow(1 - p, 2).toFixed(4);
+    y0.textContent = Math.pow(p, 2).toFixed(4);
+    if (p >= 0.8) status.textContent = p.toFixed(2) + 'はpositiveへ強い確率を置くため、外したときの二乗誤差も大きくなります。';
+    else if (p <= 0.2) status.textContent = p.toFixed(2) + 'はnegativeへ強い確率を置くため、positiveだった場合の二乗誤差が大きくなります。';
+    else status.textContent = p.toFixed(2) + 'は極端な確率を避けていますが、正解時の報酬も極端な予測より小さくなります。';
+  }
+  slider.addEventListener('input', render);
+  render();
+}());
+</script>
+
+<h2 id="formula">式</h2>
+<p>Binary classificationでは、各sampleの正解 <code>y</code> を0または1、positive classの予測確率を <code>p</code> とすると、Brier Scoreは次の平均二乗誤差です。</p>
+<p>\[ BS = \frac{1}{N}\sum_{i=1}^{N}(y_i-p_i)^2 \]</p>
+<p><a href="https://scikit-learn.org/dev/modules/generated/sklearn.metrics.brier_score_loss.html">scikit-learn公式ドキュメント</a>でも、Brier Scoreはprobabilistic predictionに対するstrictly proper scoring ruleとして定義されています。Binary版は通常0〜1で、小さいほど良い値です。</p>
+
+<h2 id="comparison">LogLoss・Accuracy・AUCとの使い分け</h2>
+<div class="html-table-wrap"><table class="html-table"><thead><tr><th>Metric</th><th>何を見るか</th><th>確率の大外し</th><th>向く場面</th></tr></thead><tbody>
+<tr><td>Brier Score</td><td>確率と0/1結果の二乗距離</td><td>二乗で罰する</td><td>forecast・calibrationを含む確率品質</td></tr>
+<tr><td>LogLoss</td><td>正解classへ置いた確率</td><td>0/1付近の誤答を非常に強く罰する</td><td>確率分類全般</td></tr>
+<tr><td>Accuracy</td><td>threshold後の正誤</td><td>確率差を見ない</td><td>最終classだけ重要</td></tr>
+<tr><td>ROC-AUC</td><td>positiveを上へ並べる順位</td><td>確率scaleを直接見ない</td><td>ranking能力が重要</td></tr>
+</tbody></table></div>
+<p>Brier Scoreはcalibrationに敏感ですが、<strong>Brierが低いこととcalibrationだけが良いことは同義ではありません</strong>。scikit-learnはBrier lossがcalibration lossとrefinement lossに分解でき、refinementも独立して変化すると説明しています（<a href="https://scikit-learn.org/1.5/modules/model_evaluation.html#brier-score-loss">Model evaluation</a>）。Calibration自体を調べる場合は<a href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}">Probability Calibration</a>も確認します。</p>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<h3>March Machine Learning Mania 2026 — 1位</h3>
+<p>公式Competitionは勝敗確率をBrier Scoreで評価しました（<a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026/">公式ページ</a>）。1位解法は最終<strong>0.1097454、1位 / 3,485 teams</strong>と報告しています（<a href="https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/march-machine-learning-mania-2026-1st-place-solut">1st Place Solution</a>）。</p>
+<p>この解法ではLeave-One-Season-Out系のValidationでIsotonic calibrationを行い、CV BrierがMen <strong>0.1850→0.1822</strong>、Women <strong>0.1390→0.1357</strong>、Total <strong>0.1620→0.1590</strong>へ改善しています。Brierを目的関数として、確率のcalibrationをOOFで検証した具体例です。<strong>Evidence A</strong>。</p>
+
+<h3>March Machine Learning Mania 2026 — 2位</h3>
+<p>2位解法はXGBoost 60% + Logistic Regression 40%のensembleで、最終Brier <strong>0.1149886</strong>を報告しています。予測を<code>[0.02, 0.98]</code>へclipし、極端に外したときのBrier penaltyを抑える設計を採用しています（<a href="https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/2nd-place-solution-for-the-march-machine-learning">2nd Place Solution</a>）。ただしclip幅そのものの独立ablationは示されていないため、この採用実績は<strong>Evidence B</strong>として扱います。</p>
+
+<h3>WiDS Global Datathon 2026</h3>
+<p>WiDS Global Datathon 2026では、評価の70%にcensor-awareなWeighted Brier Scoreが使われ、24h / 48h / 72hの予測を0.3 / 0.4 / 0.3で重み付けしています（<a href="https://www.kaggle.com/competitions/WiDSWorldWide_GlobalDathon26/overview/code-requirements">Competition評価仕様</a>）。Brier系Metricが単純なbinary forecastだけでなく、time horizon別のrisk predictionにも使われる例です。</p>
+
+<h2 id="pitfalls">注意点</h2>
+<div class="comparison-board">
+  <section class="comparison-card"><h4>Accuracyだけでmodelを選ぶ</h4><dl><dt>問題</dt><dd>同じ正解率でも確率品質は異なる</dd><dt>対策</dt><dd>OOF Brierでmodel・ensemble・calibrationを比較</dd></dl></section>
+  <section class="comparison-card"><h4>Public LBでclip幅を調整</h4><dl><dt>問題</dt><dd>Leaderboardへのpost-processing overfit</dd><dt>対策</dt><dd>OOF / temporal CVで決める</dd></dl></section>
+  <section class="comparison-card"><h4>Brier = calibrationと解釈</h4><dl><dt>問題</dt><dd>refinementもscoreへ影響する</dd><dt>対策</dt><dd>reliability diagram等も併用</dd></dl></section>
+  <section class="comparison-card"><h4>Metric定義を読み飛ばす</h4><dl><dt>問題</dt><dd>multiclass・weight・censoringで定義が変わり得る</dd><dt>対策</dt><dd>CompetitionのEvaluation式を優先</dd></dl></section>
+</div>
+
+<h2>Quick Reference</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>使う</h4><dl><dt>予測</dt><dd>probability</dd><dt>目的</dt><dd>確率の正確さを評価</dd><dt>方向</dt><dd>小さいほど良い</dd></dl></section>
+  <section class="comparison-card"><h4>Validation</h4><dl><dt>基本</dt><dd>Competitionと同じsplit思想でOOF Brier</dd><dt>調整</dt><dd>calibration / blend / clipもOOFで決定</dd></dl></section>
+  <section class="comparison-card"><h4>迷ったら</h4><dl><dt>確率を評価</dt><dd>Brier / LogLoss</dd><dt>順位を評価</dt><dd>ROC-AUC / PR-AUC</dd><dt>classを評価</dt><dd>Accuracy / F1</dd></dl></section>
+</div>
+
+<h2>関連項目</h2>
+<div class="dictionary-grid">
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/metrics/log-loss.html' | relative_url }}"><h3>LogLoss</h3><p>確率予測を対数損失で評価する。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}"><h3>Probability Calibration</h3><p>予測確率と実際の発生率を合わせる。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/metrics/roc-auc.html' | relative_url }}"><h3>ROC-AUC</h3><p>確率値そのものではなくrankingを評価する。</p></a>
+</div>
+
+<h2>参考文献</h2>
+<ol>
+  <li><a href="https://www.kaggle.com/competitions/march-machine-learning-mania-2026/">Kaggle, March Machine Learning Mania 2026 — Competition / Evaluation, 2026.</a></li>
+  <li><a href="https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/march-machine-learning-mania-2026-1st-place-solut">Harrison Horan, March Machine Learning Mania 2026: 1st Place Solution, Kaggle, 2026.</a></li>
+  <li><a href="https://www.kaggle.com/c/march-machine-learning-mania-2026/writeups/2nd-place-solution-for-the-march-machine-learning">March Machine Learning Mania 2026: 2nd Place Solution, Kaggle, 2026.</a></li>
+  <li><a href="https://www.kaggle.com/competitions/WiDSWorldWide_GlobalDathon26/overview/code-requirements">Kaggle / WiDS, WiDS Global Datathon 2026 — Evaluation specification, 2026.</a></li>
+  <li><a href="https://scikit-learn.org/dev/modules/generated/sklearn.metrics.brier_score_loss.html">scikit-learn, brier_score_loss documentation.</a></li>
+  <li><a href="https://scikit-learn.org/1.5/modules/model_evaluation.html#brier-score-loss">scikit-learn, Model evaluation — Brier score loss.</a></li>
+</ol>
