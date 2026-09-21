@@ -2,7 +2,7 @@
 layout: default
 title: Training
 description: Kaggleの学習手法を、学習制御・data・loss・representationごとに調べるカテゴリ索引。
-summary: Early Stopping、EMA、Augmentation、Synthetic Data、Loss、Frequency / Target Encoding、Aggregation、Lag / Rolling、Pretrainingを目的別に整理する。
+summary: Early Stopping、EMA、SWA、Augmentation、Synthetic Data、Loss、Frequency / Target Encoding、Aggregation、Lag / Rolling、Pretrainingを目的別に整理する。
 type: category-index
 nav_order: 4
 permalink: /wiki/training/
@@ -15,6 +15,7 @@ permalink: /wiki/training/
 <div class="dictionary-grid">
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/early-stopping.html' | relative_url }}"><h3>Early Stopping</h3><p>Validation改善が止まった時点で学習を止め、best checkpointを使う。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/exponential-moving-average.html' | relative_url }}"><h3>Exponential Moving Average (EMA)</h3><p>学習中のweightを指数移動平均し、更新ノイズをならした別weightを評価・推論に使う。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/stochastic-weight-averaging.html' | relative_url }}"><h3>Stochastic Weight Averaging (SWA)</h3><p>学習後半の複数weightを等重みで平均し、1つの安定した推論weightを作る。</p></a>
 </div>
 
 <h2>入力を増やす・混ぜる</h2>
@@ -45,7 +46,7 @@ permalink: /wiki/training/
 <h2>迷ったときの判断軸</h2>
 <div class="comparison-board">
   <section class="comparison-card"><h4>過学習し始める</h4><dl><dt>見る記事</dt><dd>Early Stopping</dd></dl></section>
-  <section class="comparison-card"><h4>Deep Learningのweightが揺れる</h4><dl><dt>候補</dt><dd>EMA</dd><dt>比較</dt><dd>raw vs EMAを同じValidationで確認</dd></dl></section>
+  <section class="comparison-card"><h4>Deep Learningのweightが揺れる</h4><dl><dt>候補</dt><dd>EMA / SWA</dd><dt>比較</dt><dd>直近を強く残すEMA、後半weightを等平均するSWAを同じValidationで比較</dd></dl></section>
   <section class="comparison-card is-primary"><h4>Dataが少ない</h4><dl><dt>既存sampleを変換</dt><dd>Augmentation / Mixup / CutMix</dd><dt>scene自体を作る</dt><dd>Synthetic Data</dd><dt>既存weight</dt><dd>Transfer Learning</dd></dl></section>
   <section class="comparison-card"><h4>Train/Testのsceneが違う</h4><dl><dt>候補</dt><dd>Synthetic Data</dd><dt>注意</dt><dd>Testで起きる変化だけを生成規則へ入れる</dd></dl></section>
   <section class="comparison-card"><h4>不均衡・easy negative過多</h4><dl><dt>候補</dt><dd>Focal Loss</dd><dt>注意</dt><dd>Metricとは別にOOF確認</dd></dl></section>
