@@ -1,0 +1,88 @@
+---
+layout: default
+title: Stochastic Weight Averaging (SWA)
+summary: 学習後半の複数weightを等重みで平均し、単一checkpointより安定した解を狙うweight averaging手法。
+type: reference
+domain: kaggle
+topic: stochastic-weight-averaging
+created: 2026-09-20
+updated: 2026-09-20
+source_count: 4
+tags:
+  - kaggle
+  - training
+  - weight-averaging
+---
+
+<h1>Stochastic Weight Averaging (SWA)</h1>
+<p><strong>Stochastic Weight Averaging (SWA)</strong>は、学習後半で得た複数時点のモデルweightを<strong>等しい重みで平均</strong>し、1つの推論用モデルを作る方法です。checkpointを何個も同時推論するprediction ensembleとは違い、最終的には1組のweightだけを使えます。</p>
+<p>Kaggleでは「終盤のcheckpointが少しずつ揺れる」「複数checkpointをensembleしたいが推論costを増やしたくない」ときの候補です。ただし、異なる解へ大きく離れたweightを無条件に平均すればよいわけではありません。</p>
+
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a><a href="#mechanism">仕組み</a><a href="#comparison">使い分け</a><a href="#kaggle-examples">Kaggle実例</a><a href="#pitfalls">注意点</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>終盤checkpointが揺れる</h4><dl><dt>候補</dt><dd>SWA</dd><dt>確認</dt><dd>best single checkpointと同じValidationで比較</dd></dl></section>
+  <section class="comparison-card"><h4>推論costを増やせない</h4><dl><dt>利点</dt><dd>平均後は1モデルとして推論できる</dd><dt>比較</dt><dd>prediction ensembleより軽い</dd></dl></section>
+  <section class="comparison-card"><h4>直近weightを強く残したい</h4><dl><dt>候補</dt><dd>EMA</dd><dt>違い</dt><dd>SWAは収集したweightを原則等重みで平均する</dd></dl></section>
+</div>
+
+<h2 id="mechanism">仕組み</h2>
+<p>直感は「最後の1点を選ぶ代わりに、学習後半で訪れた複数のweightを中央へ寄せる」です。以下は理解用の模式例で、Kaggleの実測値ではありません。</p>
+<div class="html-diagram static-viz" aria-label="SWAの模式図">
+  <div class="comparison-board">
+    <section class="comparison-card"><h4>checkpoint A</h4><p>weight = 0.42</p></section>
+    <section class="comparison-card"><h4>checkpoint B</h4><p>weight = 0.50</p></section>
+    <section class="comparison-card"><h4>checkpoint C</h4><p>weight = 0.58</p></section>
+    <section class="comparison-card is-primary"><h4>SWA</h4><p>(0.42 + 0.50 + 0.58) / 3 = <strong>0.50</strong></p></section>
+  </div>
+  <p><small>模式例。実際のnetworkでは全parameter tensorを要素ごとに平均します。</small></p>
+</div>
+<p>PyTorchの<code>AveragedModel</code>は、渡されたparameterのrunning equal averageを標準で計算します。典型的には通常学習の後半からweight収集を始め、必要ならSWA用learning-rate scheduleへ切り替えます。</p>
+<details><summary>式で見る</summary><p><span>n個のweightを θ₁, …, θₙ とすると、SWA weightは θ<sub>SWA</sub> = (1/n) Σ θᵢ です。EMAのように新しいweightほど指数的に大きな係数を与えるのではなく、収集対象を等重みで扱うのが基本です。</span></p></details>
+
+<h2 id="comparison">使い分け</h2>
+<div class="html-table-wrap"><table class="html-table"><thead><tr><th>方法</th><th>何を平均するか</th><th>推論model数</th><th>向く状況</th></tr></thead><tbody>
+<tr><td>SWA</td><td>複数時点のweightを等重み</td><td>1</td><td>学習後半の近いcheckpointをまとめたい</td></tr>
+<tr><td><a href="{{ '/wiki/training/exponential-moving-average.html' | relative_url }}">EMA</a></td><td>weightを指数移動平均</td><td>1</td><td>学習中の更新noiseを継続的にならしたい</td></tr>
+<tr><td>Checkpoint averaging / model soup</td><td>選んだcheckpointのweight</td><td>1</td><td>保存済みcheckpointをofflineで平均したい</td></tr>
+<tr><td>Prediction ensemble</td><td>各modelの予測</td><td>複数</td><td>異なるmodelのerror diversityを残したい</td></tr>
+</tbody></table></div>
+<p>SWAと「top-k checkpointの単純weight平均」は実装上近い場合がありますが、標準的SWAは<strong>学習後半のweight trajectoryを収集するtraining procedure</strong>まで含む概念です。Kaggle writeupで「SWA」「model soup」「offline weight averaging」が混在する場合は、何をいつ平均したかを確認します。</p>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<h3>BirdCLEF+ 2026: ProtoSSMで +0.007 LB</h3>
+<p>19位solutionではProtoSSMにSWAを使用し、writeupのablationで<strong>0.951 → 0.958 LB</strong>、SWA開始比率<code>start_frac=0.55</code>、70 epochsと報告しています。定量差が明示されているためEvidence Aです（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/birdclef-2026-solution-writeup-19th-place-sel">BirdCLEF 2026 — Solution Writeup (19th place)</a>）。</p>
+<h3>Feedback Prize - Predicting Effective Arguments: 7位</h3>
+<p>7位solutionは有効だった手法としてSWAを列挙し、DeBERTa系model、soft pseudo labeling、AWPなどと併用しています。SWA単独のablation値は示されていないためEvidence Bとして扱います（<a href="https://www.kaggle.com/competitions/feedback-prize-effectiveness/writeups/now-you-see-me-now-you-see-me-7th-place-solution">7th Place Solution</a>）。</p>
+<h3>PhysioNet ECG Image Digitization: offline weight averaging</h3>
+<p>26位solutionではvalidation loss / scoreで上位3modelを保持し、training後にoffline weight averagingを実施しています。これは厳密なSWA training loopというより<strong>checkpoint weight averaging</strong>の実例で、Kaggleで用語が近接して使われる例として区別しておくと安全です（<a href="https://www.kaggle.com/c/physionet-ecg-image-digitization/writeups/26th-place-solution">26th Place Solution</a>）。</p>
+
+<h2 id="pitfalls">注意点</h2>
+<ul>
+  <li><strong>BatchNorm統計:</strong> parameterを平均した後のmodelではBatchNormのrunning statisticsが合わないことがあります。PyTorchは<code>update_bn()</code>で再計算する方法を提供しています。</li>
+  <li><strong>平均開始が早すぎる:</strong> まだ大きく学習中のweightまで混ぜると、良い終盤解から離れる可能性があります。<code>swa_start</code>はValidationで確認します。</li>
+  <li><strong>異なるbasinの無条件平均:</strong> weight空間で離れたmodel同士の単純平均が常に機能するとは限りません。異architectureのensemble代替にはなりません。</li>
+  <li><strong>LBだけで選ばない:</strong> SWA開始epochや収集範囲をPublic LBだけで調整せず、OOF / held-out Validationでsingle checkpointと比較します。</li>
+</ul>
+
+<h2>Quick Reference</h2>
+<div class="comparison-board">
+  <section class="comparison-card"><h4>平均</h4><p>学習後半の複数weightを原則等重み。</p></section>
+  <section class="comparison-card"><h4>推論cost</h4><p>平均後は1model。prediction ensembleほど増えない。</p></section>
+  <section class="comparison-card"><h4>最重要比較</h4><p>best single checkpoint vs SWAを同一Validationで比較。</p></section>
+  <section class="comparison-card"><h4>BNあり</h4><p>平均後のBatchNorm statistics再計算を確認。</p></section>
+</div>
+
+<h2>関連項目</h2>
+<ul><li><a href="{{ '/wiki/training/exponential-moving-average.html' | relative_url }}">Exponential Moving Average (EMA)</a></li><li><a href="{{ '/wiki/training/early-stopping.html' | relative_url }}">Early Stopping</a></li><li><a href="{{ '/wiki/ensemble/weighted-average.html' | relative_url }}">Weighted Average</a></li></ul>
+
+<h2>参考文献</h2>
+<ol>
+  <li><a href="https://docs.pytorch.org/docs/main/optim.html">PyTorch documentation — Weight Averaging (SWA and EMA)</a>. PyTorch.</li>
+  <li><a href="https://arxiv.org/abs/1803.05407">Averaging Weights Leads to Wider Optima and Better Generalization</a>. Izmailov et al., UAI 2018.</li>
+  <li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/birdclef-2026-solution-writeup-19th-place-sel">BirdCLEF 2026 — Solution Writeup (19th place)</a>. Arunodhayan, Kaggle, 2026.</li>
+  <li><a href="https://www.kaggle.com/competitions/feedback-prize-effectiveness/writeups/now-you-see-me-now-you-see-me-7th-place-solution">Now You See Me: 7th Place Solution</a>. CroDoc et al., Kaggle, 2022.</li>
+</ol>
