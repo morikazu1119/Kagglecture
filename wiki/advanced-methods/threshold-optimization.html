@@ -1,0 +1,155 @@
+---
+layout: default
+title: Threshold Optimization
+description: OOF予測上でdecision thresholdを選び、F1・Precision・Recallなどthreshold依存Metricへ最終予測を合わせる方法。
+summary: 0.5固定ではなくOOFで閾値を検証し、fold間の安定性とdistribution shiftを確認して最終decision ruleを決める。
+type: reference
+domain: kaggle
+topic: threshold-optimization
+created: 2026-09-22
+updated: 2026-09-22
+source_count: 7
+tags:
+  - kaggle
+  - advanced-methods
+  - post-processing
+  - threshold
+  - f1
+---
+
+<h1>Threshold Optimization</h1>
+<p><strong>Threshold Optimization（閾値最適化）は、モデルが出したscore / probabilityを0・1やmaskへ変換するときの境界値を、Validation予測から選ぶ方法です。</strong></p>
+<p>F1、Dice、Precision、Recallのようにhard predictionで決まるMetricでは、同じモデルでもthresholdだけでscoreが変わります。<strong>0.5は初期値であって、常に最適な値ではありません。</strong></p>
+<p>ただしthresholdもhyperparameterです。TestやPublic LBを見て決めず、原則としてOOF（Out-of-Fold）prediction上で選び、fold間で安定しているかまで確認します。</p>
+
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#validation">OOFでの決め方</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>F1 / Fβ</h4><dl><dt>操作</dt><dd>scoreを0/1へ切るthreshold</dd><dt>目的</dt><dd>PrecisionとRecallのtrade-offをMetricへ合わせる</dd></dl></section>
+  <section class="comparison-card"><h4>Segmentation</h4><dl><dt>操作</dt><dd>pixel probabilityをmaskへ変換</dd><dt>確認</dt><dd>thresholdとcomponent除去を分けてablation</dd></dl></section>
+  <section class="comparison-card"><h4>Multi-label</h4><dl><dt>操作</dt><dd>class別thresholdも候補</dd><dt>risk</dt><dd>class数だけ自由度が増えてoverfitしやすい</dd></dl></section>
+  <section class="comparison-card"><h4>ROC-AUC / LogLoss</h4><dl><dt>原則</dt><dd>提出が連続scoreならthreshold不要</dd><dt>理由</dt><dd>hard label化すると情報を捨てる</dd></dl></section>
+</div>
+
+<h2 id="mechanism">仕組み</h2>
+<p>二値分類では、予測score <code>p</code> がthreshold <code>t</code> 以上ならpositive、それ未満ならnegativeにします。thresholdを下げるとpositive判定が増え、一般にRecallは上がりやすくPrecisionは下がりやすくなります。逆にthresholdを上げるとpositive判定が減ります。</p>
+
+<div class="static-viz html-diagram" id="threshold-demo" aria-label="閾値を動かしてPrecision Recall F1の変化を見る模式例">
+  <div class="viz-heading"><div><div class="viz-title">Thresholdを動かすと、同じscoreでも最終labelが変わる</div><p class="viz-subtitle">理解用の模式例です。Kaggleの実測値ではありません。</p></div><span class="viz-badge">Interactive</span></div>
+  <label for="threshold-range"><strong>Threshold: <span id="threshold-value">0.50</span></strong></label>
+  <input id="threshold-range" type="range" min="20" max="80" step="5" value="50" style="width:100%;min-height:44px" aria-describedby="threshold-status">
+  <div class="comparison-board" aria-live="polite">
+    <section class="comparison-card"><h4>Precision</h4><p id="threshold-precision"><strong>0.75</strong></p></section>
+    <section class="comparison-card"><h4>Recall</h4><p id="threshold-recall"><strong>0.75</strong></p></section>
+    <section class="comparison-card is-primary"><h4>F1</h4><p id="threshold-f1"><strong>0.75</strong></p></section>
+    <section class="comparison-card"><h4>Positive予測数</h4><p id="threshold-positive"><strong>4 / 8</strong></p></section>
+  </div>
+  <p id="threshold-status">thresholdを下げるとpositive判定が増え、上げると減ります。最良点はdataとMetricで変わります。</p>
+</div>
+<script>
+(function(){
+  var scores=[0.92,0.78,0.66,0.54,0.47,0.41,0.31,0.22];
+  var labels=[1,1,0,1,1,0,0,0];
+  var slider=document.getElementById('threshold-range');
+  if(!slider)return;
+  function fmt(x){return x.toFixed(2);}
+  function update(){
+    var t=Number(slider.value)/100,tp=0,fp=0,fn=0,pos=0;
+    for(var i=0;i<scores.length;i++){
+      var pred=scores[i]>=t?1:0; if(pred)pos++;
+      if(pred&&labels[i])tp++; else if(pred&&!labels[i])fp++; else if(!pred&&labels[i])fn++;
+    }
+    var precision=tp+fp?tp/(tp+fp):0, recall=tp+fn?tp/(tp+fn):0;
+    var f1=precision+recall?2*precision*recall/(precision+recall):0;
+    document.getElementById('threshold-value').textContent=fmt(t);
+    document.getElementById('threshold-precision').innerHTML='<strong>'+fmt(precision)+'</strong>';
+    document.getElementById('threshold-recall').innerHTML='<strong>'+fmt(recall)+'</strong>';
+    document.getElementById('threshold-f1').innerHTML='<strong>'+fmt(f1)+'</strong>';
+    document.getElementById('threshold-positive').innerHTML='<strong>'+pos+' / '+scores.length+'</strong>';
+    document.getElementById('threshold-status').textContent='threshold '+fmt(t)+' では TP='+tp+' / FP='+fp+' / FN='+fn+'。閾値はモデルではなく最終decision ruleを変えています。';
+  }
+  slider.addEventListener('input',update); update();
+})();
+</script>
+
+<h3>Probability Calibrationとは別物</h3>
+<p>Threshold Optimizationは「どこで0/1へ切るか」を選びます。<a href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}">Probability Calibration</a>は「0.8という予測が本当に約80%の頻度で起きるようscoreの意味を整える」処理です。thresholdを変えてもprobability自体は校正されません。</p>
+
+<h2 id="validation">OOFでの決め方</h2>
+<ol>
+  <li>各foldのValidation predictionを保存してOOF predictionを作る。</li>
+  <li>公式Metricをローカルで再現する。</li>
+  <li>threshold候補をOOF全体でsweepし、Metric curveを見る。</li>
+  <li>OOF最良値だけでなく、foldごとの最良thresholdとscore低下幅を確認する。</li>
+  <li>鋭い1点だけが勝つなら過適合を疑い、広いplateau内の安定した値を優先する。</li>
+  <li>選んだthresholdを固定し、Test predictionへ一度だけ適用する。</li>
+</ol>
+<p><a href="https://scikit-learn.org/stable/modules/classification_threshold.html">scikit-learnのdecision threshold guide</a>でも、threshold tuningは独立したValidation / cross-validationで行う設計が示されています。学習に使った同じpredictionへthresholdをfitして、そのscoreをそのまま性能として扱わないことが重要です。</p>
+
+<h2 id="comparison">使い分け</h2>
+<div class="html-table-wrap"><table class="html-table">
+<thead><tr><th>方法</th><th>変えるもの</th><th>向く状況</th><th>主なrisk</th></tr></thead>
+<tbody>
+<tr><td>Global threshold</td><td>全sample共通の境界</td><td>二値分類、単一mask</td><td>subgroup差を吸収できない</td></tr>
+<tr><td>Per-class threshold</td><td>classごとの境界</td><td>Multi-label、class imbalance</td><td>探索自由度が高くOOF overfit</td></tr>
+<tr><td>Adaptive threshold</td><td>sample/groupで境界を変える</td><td>task構造に根拠がある場合</td><td>Test distribution仮定が外れる</td></tr>
+<tr><td>Calibration</td><td>score scaleそのもの</td><td>確率の意味が重要</td><td>threshold Metricとは目的が別</td></tr>
+</tbody></table></div>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<h3>SPR 2026 Mammography Report Classification — 3rd place</h3>
+<p>2026年のSPR Mammography Report Classification 3位解法は、multi-head TF-IDF + LightGBMの<strong>class別thresholdをOOFでgrid search</strong>し、baseline threshold比で<strong>OOF macro-F1 +0.01867</strong>、Private score 0.85431と報告しています（<a href="https://www.kaggle.com/competitions/spr-2026-mammography-report-classification/discussion/697183">3rd Place Solution</a>）。定量ablationがあるためEvidence Aです。</p>
+<h3>MABe Mouse Behavior Detection — 3rd place</h3>
+<p>MABe 3位解法では、blended probabilityに対して<strong>lab × actionごとのthresholdをOOF predictionでgrid search</strong>しています。複数actionが同一frameでpositiveになった場合は probability / threshold の比が最大のactionを残す設計です（<a href="https://www.kaggle.com/competitions/MABe-mouse-behavior-detection/writeups/3rd-place-solution">3rd place solution</a>）。採用は確認できますがthreshold単独のablation値は示されていないためEvidence Bとして扱います。</p>
+<h3>Quora Insincere Questions Classification — 1st place</h3>
+<p>1位チームはfoldごとにoptimal thresholdが大きく変動する問題を確認し、CV上でF1のoptimal値からのdeviationが小さい<strong>安定したfixed threshold</strong>を探しています。またprobability平均よりrank平均の方がthresholdを安定させたと報告しています（<a href="https://www.kaggle.com/competitions/quora-insincere-questions-classification/writeups/the-zoo-1st-place-solution">1st place solution</a>）。「OOF最大の1点」ではなくfold間安定性を見る実例です。</p>
+<h3>Vesuvius Challenge - Ink Detection — 1st place</h3>
+<p>1位解法はAUC、Precision、Recall、F0.5をthreshold sweepで継続監視し、modelごとにoptimal thresholdが広く異なることを確認しています。ensemble後はthresholdが0.5付近へ安定したと報告しており、最後の0.55 submissionはPublicでは悪化した一方Privateではわずかに高かったと記しています（<a href="https://www.kaggle.com/competitions/vesuvius-challenge-ink-detection/writeups/ryches-1st-place-solution">1st place solution</a>）。Public LBだけでthresholdを決める危険性も示す例です。</p>
+
+<h2 id="pitfalls">注意点</h2>
+<h3>Test / Public LBでthresholdを選ぶ</h3>
+<p>submissionを何度も投げてthresholdを選ぶと、Public subsetへfitしたhyperparameterになります。OOFで決め、Public LBは異常検知程度に使います。</p>
+<h3>OOF全体の最大値だけを見る</h3>
+<p>threshold curveが尖っている、foldごとの最良thresholdが大きく違う場合、Testで再現しにくい可能性があります。最良scoreだけでなくplateau幅とfold分散を確認します。</p>
+<h3>class別thresholdを増やしすぎる</h3>
+<p>100 classなら100個の自由parameterを持つことになります。rare classほどValidation sampleが少なく、極端なthresholdへ寄りやすいため、global threshold、group共有、正則化された探索も比較します。</p>
+<h3>Metricがthresholdを必要としない</h3>
+<p>ROC-AUCはranking、LogLossやBrier Scoreはprobabilityを直接評価します。提出形式が連続値ならhard threshold化は通常不要です。CompetitionのEvaluationとsubmission formatを先に確認します。</p>
+<h3>distribution shift</h3>
+<p>OOFとTestでpositive rateやscore分布が変わるとoptimal thresholdも動きます。threshold調整でshiftそのものを解決しようとせず、<a href="{{ '/wiki/validation/adversarial-validation.html' | relative_url }}">Adversarial Validation</a>やsplit設計も確認します。</p>
+
+<h2 id="quick-reference">Quick Reference</h2>
+<ul>
+  <li>F1 / Dice等のhard prediction Metricならthresholdを実験対象にする。</li>
+  <li>thresholdはOOFで決める。Train predictionやPublic LBでfitしない。</li>
+  <li>best scoreだけでなくfold間のthreshold分散とplateau幅を見る。</li>
+  <li>class別thresholdは自由度が増えるのでablationする。</li>
+  <li>ROC-AUC / LogLoss / Brierなど連続score Metricではthresholdの要否を再確認する。</li>
+</ul>
+
+<h2>関連項目</h2>
+<ul>
+  <li><a href="{{ '/wiki/advanced-methods/post-processing.html' | relative_url }}">Post-processing</a></li>
+  <li><a href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}">Probability Calibration</a></li>
+  <li><a href="{{ '/wiki/metrics/f1-score.html' | relative_url }}">F1 Score</a></li>
+  <li><a href="{{ '/wiki/validation/adversarial-validation.html' | relative_url }}">Adversarial Validation</a></li>
+</ul>
+
+<h2>参考文献</h2>
+<ol>
+  <li><a href="https://www.kaggle.com/competitions/spr-2026-mammography-report-classification/discussion/697183">Kaggle, “3rd Place Solution: Threshold-Tuned Multi-Head TF-IDF + LightGBM”, SPR 2026 Mammography Report Classification, 2026</a></li>
+  <li><a href="https://www.kaggle.com/competitions/MABe-mouse-behavior-detection/writeups/3rd-place-solution">Kaggle, “3rd place solution”, MABe Mouse Behavior Detection, 2025</a></li>
+  <li><a href="https://www.kaggle.com/competitions/quora-insincere-questions-classification/writeups/the-zoo-1st-place-solution">Kaggle, “The Zoo - 1st Place Solution”, Quora Insincere Questions Classification, 2019</a></li>
+  <li><a href="https://www.kaggle.com/competitions/vesuvius-challenge-ink-detection/writeups/ryches-1st-place-solution">Kaggle, “1st place solution”, Vesuvius Challenge - Ink Detection, 2023</a></li>
+  <li><a href="https://scikit-learn.org/stable/modules/classification_threshold.html">scikit-learn, “Tuning the decision threshold for class prediction”, User Guide</a></li>
+  <li><a href="https://nttdocomo-developers.jp/entry/202212081200">NTT DOCOMO Developers, “マルチラベル分類モデル/多クラス分類モデルの閾値を最適な値に調整してみよう”, 2022</a></li>
+  <li><a href="https://zenn.dev/ycarbon/articles/d0ac9d6d63b41a">ycarbon, “なぜ分類問題のLBでLogLossではなくF1を使うか”, Zenn, 2024</a></li>
+</ol>

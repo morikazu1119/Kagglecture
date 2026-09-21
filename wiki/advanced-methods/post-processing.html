@@ -7,7 +7,7 @@ type: reference
 domain: kaggle
 topic: post-processing
 created: 2026-09-03
-updated: 2026-09-03
+updated: 2026-09-22
 source_count: 5
 tags:
   - kaggle
@@ -54,7 +54,7 @@ tags:
 <li>improvementが少数foldだけなら原因を調べる。</li>
 <li>testへ同一ruleを一度適用する。</li>
 </ol>
-<p>特にclass multiplierやthresholdは探索自由度が高いため、細かくチューニングしすぎるとOOFにも過適合します。</p>
+<p>特にclass multiplierやthresholdは探索自由度が高いため、細かくチューニングしすぎるとOOFにも過適合します。threshold自体の選択方法は<a href="{{ '/wiki/advanced-methods/threshold-optimization.html' | relative_url }}">Threshold Optimization</a>で扱います。</p>
 <h2 id="pitfalls">注意点</h2>
 <h3>Public LB rule</h3>
 <p>「このclassだけ0.83倍」のようなruleをsubmission結果から足すとPublic slice専用になります。task knowledgeかOOF根拠を要求します。</p>
@@ -72,6 +72,7 @@ tags:
 </ul>
 <h2>関連項目</h2>
 <ul>
+<li><a href="{{ '/wiki/advanced-methods/threshold-optimization.html' | relative_url }}">Threshold Optimization</a></li>
 <li><a href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}">Probability Calibration</a></li>
 <li><a href="{{ '/wiki/metrics/dice-iou.html' | relative_url }}">Dice / IoU</a></li>
 <li><a href="{{ '/wiki/competition-strategy/cv-vs-leaderboard.html' | relative_url }}">CV vs Leaderboard</a></li>
