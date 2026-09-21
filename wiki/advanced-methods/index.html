@@ -2,7 +2,7 @@
 layout: default
 title: Advanced Methods
 description: Kaggleの発展手法を、追加data・推論・確率補正・最終処理ごとに調べるカテゴリ索引。
-summary: Pseudo Label、External Data、TTA、Calibration、Post-processingを適用段階で整理する。
+summary: Pseudo Label、External Data、TTA、Calibration、Threshold Optimization、Post-processingを適用段階で整理する。
 type: category-index
 nav_order: 5
 permalink: /wiki/advanced-methods/
@@ -22,9 +22,10 @@ permalink: /wiki/advanced-methods/
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/test-time-augmentation.html' | relative_url }}"><h3>Test-Time Augmentation</h3><p>推論時に複数変換した入力のpredictionを平均し、変換依存の揺れを減らす。</p></a>
 </div>
 
-<h2>Probabilityを補正する</h2>
+<h2>Probabilityとdecision boundaryを整える</h2>
 <div class="dictionary-grid">
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}"><h3>Probability Calibration</h3><p>OOFを使って予測確率scaleを実際の発生率へ近づける。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/advanced-methods/threshold-optimization.html' | relative_url }}"><h3>Threshold Optimization</h3><p>F1やDiceなどthreshold依存Metricに対し、OOFで0/1・mask化の境界を選ぶ。</p></a>
 </div>
 
 <h2>最終outputをtaskへ合わせる</h2>
@@ -36,6 +37,7 @@ permalink: /wiki/advanced-methods/
 <div class="comparison-board">
   <section class="comparison-card"><h4>labelが少ない</h4><dl><dt>unlabeled test/data</dt><dd>Pseudo Labeling</dd><dt>公開data</dt><dd>External Data</dd></dl></section>
   <section class="comparison-card is-primary"><h4>input変換で予測が揺れる</h4><dl><dt>候補</dt><dd>TTA</dd><dt>条件</dt><dd>label semanticsを変えない変換</dd></dl></section>
-  <section class="comparison-card"><h4>0.9予測が90%当たらない</h4><dl><dt>候補</dt><dd>Probability Calibration</dd></dl></section>
+  <section class="comparison-card"><h4>確率の意味がずれる</h4><dl><dt>候補</dt><dd>Probability Calibration</dd><dt>例</dt><dd>0.9予測が90%当たらない</dd></dl></section>
+  <section class="comparison-card"><h4>0/1の境界を決めたい</h4><dl><dt>候補</dt><dd>Threshold Optimization</dd><dt>必須</dt><dd>OOFでMetricと安定性を確認</dd></dl></section>
   <section class="comparison-card"><h4>Metric/task制約へ合わせたい</h4><dl><dt>候補</dt><dd>Post-processing</dd><dt>必須</dt><dd>OOFでrule検証</dd></dl></section>
 </div>
