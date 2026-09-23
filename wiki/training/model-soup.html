@@ -1,0 +1,106 @@
+---
+layout: default
+title: Model Soup
+summary: 複数のfine-tuned checkpointの重みを平均し、追加の推論コストなしで1つのモデルへ統合する手法。
+type: reference
+domain: kaggle
+topic: model-soup
+created: 2026-09-23
+updated: 2026-09-23
+source_count: 5
+tags:
+  - kaggle
+  - training
+  - weight-averaging
+---
+
+<h1>Model Soup</h1>
+<p><strong>Model Soupは、同じarchitecture・同じpretrained modelからfine-tuningした複数checkpointの重みを平均し、1つの推論モデルへ統合する方法です。</strong></p>
+<p>Prediction ensembleと違い、完成後は1モデルだけをforwardするため、候補を複数保存できる一方で本番の推論時間を増やしたくない場面に向きます。ただし、無関係な重みを何でも平均してよいわけではありません。</p>
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+  <a href="#quick-reference">Quick Reference</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+<div class="comparison-board" aria-label="Model Soupを使う条件">
+  <section class="comparison-card is-primary"><h4>同じ初期weightから複数fine-tune</h4><dl><dt>候補</dt><dd>Model Soup</dd><dt>狙い</dt><dd>候補checkpointの情報を1モデルへ統合</dd></dl></section>
+  <section class="comparison-card"><h4>推論時間を増やせる</h4><dl><dt>候補</dt><dd>Prediction Ensemble</dd><dt>利点</dt><dd>異種architectureも混ぜやすい</dd></dl></section>
+  <section class="comparison-card"><h4>1 run内の後半weightを平均</h4><dl><dt>候補</dt><dd>SWA / checkpoint averaging</dd><dt>違い</dt><dd>複数fine-tuning runの統合がModel Soupの中心</dd></dl></section>
+</div>
+
+<h2 id="mechanism">仕組み</h2>
+<p>候補modelのparameterを <code>θ₁, θ₂, …, θₖ</code> とすると、Uniform Soupは同じparameter位置を単純平均して <code>θ_soup = (θ₁ + … + θₖ) / k</code> を作ります。重要なのは<strong>predictionではなくweightを平均する</strong>点です。</p>
+<div class="static-viz html-diagram" aria-label="Prediction EnsembleとModel Soupの違い">
+  <div class="viz-heading"><div><div class="viz-title">平均する場所が違う</div><p class="viz-subtitle">Model Soupは推論前にweightを1組へまとめる。</p></div><span class="viz-badge">概念図</span></div>
+  <div class="comparison-board">
+    <section class="comparison-card"><h4>Prediction Ensemble</h4><dl><dt>保存</dt><dd>Model A + B + C</dd><dt>推論</dt><dd>3回forward</dd><dt>平均</dt><dd>prediction / logit</dd></dl></section>
+    <section class="comparison-card is-primary"><h4>Model Soup</h4><dl><dt>作成</dt><dd>weight A + B + Cを平均</dd><dt>推論</dt><dd>1回forward</dd><dt>出力</dt><dd>1つのsoup model</dd></dl></section>
+  </div>
+  <p class="viz-caption">構造を示す概念図です。性能値を表す図ではありません。</p>
+</div>
+<h3>Uniform SoupとGreedy Soup</h3>
+<p><strong>Uniform Soup</strong>は候補をすべて等平均します。<strong>Greedy Soup</strong>はvalidation性能の高い候補から始め、1つ追加して平均したときにvalidationが改善する候補だけを採用します。原論文では、候補選択を行うGreedy Soupが、質の低い候補を混ぜるリスクを抑える方法として提案されています（<a href="https://arxiv.org/abs/2203.05482">Wortsman et al., 2022</a>）。</p>
+
+<h2 id="comparison">使い分け</h2>
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th scope="col">手法</th><th scope="col">平均するもの</th><th scope="col">推論cost</th><th scope="col">主な条件</th></tr></thead>
+  <tbody>
+    <tr><th scope="row">Model Soup</th><td>複数runのweight</td><td>1 model相当</td><td>同一architectureでweight平均が成立</td></tr>
+    <tr><th scope="row">SWA</th><td>1 run後半のweight</td><td>1 model相当</td><td>学習trajectory後半を平均</td></tr>
+    <tr><th scope="row">EMA</th><td>学習中weight</td><td>1 model相当</td><td>直近weightを指数的に強く残す</td></tr>
+    <tr><th scope="row">Prediction Ensemble</th><td>prediction / logit</td><td>model数に応じ増加</td><td>異種architectureも混ぜやすい</td></tr>
+  </tbody>
+</table></div>
+<p>Model Soupの原論文は、共通のpretrained modelから異なるhyperparameterでfine-tuneしたモデルが同じ低loss basinにある場合、weight averagingが有効になりやすいことを示しています。逆に、独立に学習した全く異なる解やarchitectureをそのまま平均する用途ではありません。</p>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<div class="html-table-wrap"><table class="html-table">
+  <thead><tr><th scope="col">Competition</th><th scope="col">Rank</th><th scope="col">使い方</th><th scope="col">Evidence</th></tr></thead>
+  <tbody>
+    <tr><th scope="row"><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/2026-birdclef-7th-solution">BirdCLEF+ 2026</a></th><td class="numeric">7th</td><td>同一modelのepoch 24 / 28 / 32 checkpoint等をsoupしてKaggle推論に使用。</td><td>B</td></tr>
+    <tr><th scope="row"><a href="https://www.kaggle.com/competitions/czii-cryo-et-object-identification/writeups/i-cryo-everyteim-8th-place-solution-for-the-czii-c">CZII - CryoET Object Identification</a></th><td class="numeric">8th</td><td>異なるmodel size・parameter・training dataで学習した4つの3D U-Net model soupsを最終submission側で利用。</td><td>B</td></tr>
+  </tbody>
+</table></div>
+<p>BirdCLEF+ 2026の7位解法は、複数epoch checkpointのModel Soupを実際の推論pipelineへ採用しています。ただしWriteupにはSoup単独のCV/LB差がないため、効果量は推測せずEvidence Bとします。</p>
+<p>CZIIの8位解法も4つの3D U-Net Model Soupを最終解法へ組み込んでいます。こちらもSoup単独ablationは公開Writeupで確認できないためEvidence Bです。</p>
+<p>研究側では、Model Soups原論文がCLIP・ALIGN・ViT-G等のfine-tuningでbest individual modelを上回る設定を報告し、ViT-GではImageNet top-1 90.94%を報告しています（<a href="https://arxiv.org/abs/2203.05482">原論文</a>、<a href="https://github.com/mlfoundations/model-soups">公式実装</a>）。これはKaggleのスコアではなく、手法そのものの定量的根拠です。</p>
+
+<h2 id="pitfalls">注意点</h2>
+<h3>architectureやparameter対応が違うmodelは平均できない</h3>
+<p>weight tensorのshapeと意味が対応している必要があります。異種backboneを混ぜたい場合はprediction ensembleを使います。</p>
+<h3>候補を増やせば必ず良くなるわけではない</h3>
+<p>低品質checkpointや異なるbasinのmodelをUniform Soupへ混ぜると悪化し得ます。OOF / validationでUniformとbest singleを比較し、候補選択自体を同じvalidationへ過適合させないようにします。</p>
+<h3>BatchNormなどbufferも確認する</h3>
+<p>parameterだけでなくrunning statisticsを持つmodelでは、何を平均・再計算するかを実装ごとに確認します。</p>
+<h3>「推論costが1 model」はSoup作成後の話</h3>
+<p>候補modelのfine-tuningと保存には計算・storageが必要です。Inference budgetを節約する手法であって、training costを無料にする手法ではありません。</p>
+
+<h2 id="quick-reference">Quick Reference</h2>
+<ul>
+  <li>同じarchitecture・共通pretrained weightから得た複数checkpointが候補。</li>
+  <li>Uniform Soupは全候補を等平均、Greedy Soupはvalidationで候補を選ぶ。</li>
+  <li>Prediction ensembleと違い、完成後のforwardは1 model分。</li>
+  <li>best single / SWA / EMA / prediction ensembleと同じOOFで比較する。</li>
+  <li>異種architectureや遠いweightを無条件に平均しない。</li>
+</ul>
+
+<h2>関連項目</h2>
+<ul>
+  <li><a href="{{ '/wiki/training/stochastic-weight-averaging.html' | relative_url }}">Stochastic Weight Averaging (SWA)</a></li>
+  <li><a href="{{ '/wiki/training/exponential-moving-average.html' | relative_url }}">Exponential Moving Average (EMA)</a></li>
+  <li><a href="{{ '/wiki/ensemble/weighted-average.html' | relative_url }}">Weighted Average Ensemble</a></li>
+</ul>
+
+<h2>参考文献</h2>
+<ol>
+  <li><a href="https://arxiv.org/abs/2203.05482">Wortsman et al., “Model soups: averaging weights of multiple fine-tuned models improves accuracy without increasing inference time”, ICML 2022</a></li>
+  <li><a href="https://github.com/mlfoundations/model-soups">mlfoundations/model-soups, official implementation</a></li>
+  <li><a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/2026-birdclef-7th-solution">Joseph Zhou, “BirdCLEF 2026 7th solution”, BirdCLEF+ 2026, Kaggle, 2026</a></li>
+  <li><a href="https://www.kaggle.com/competitions/czii-cryo-et-object-identification/writeups/i-cryo-everyteim-8th-place-solution-for-the-czii-c">Team I Cryo Everyteim, “8th Place Solution for the CZII - CryoET Object Identification Competition”, Kaggle, 2025</a></li>
+  <li><a href="https://zenn.dev/mantis_ryuji/articles/4ebef9541758c1">「Model soups 論文解説：Transformer 時代の重み平均」, Zenn, 2026</a></li>
+</ol>
