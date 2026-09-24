@@ -1,0 +1,125 @@
+---
+layout: default
+title: Label Smoothing
+summary: one-hot labelを少し平らにし、分類モデルの過度な確信を抑える正則化手法。
+type: reference
+domain: kaggle
+topic: label-smoothing
+created: 2026-09-24
+updated: 2026-09-24
+source_count: 6
+tags:
+  - kaggle
+  - training
+  - regularization
+  - classification
+---
+
+<h1>Label Smoothing</h1>
+<p><strong>Label Smoothingは、分類の正解labelを「正解=1、その他=0」と断定せず、少しだけ確率を他classへ分ける正則化です。</strong></p>
+<p>モデルに「100%確実だ」と学習させにくくすることで、over-confidenceやlabel noiseへの過適合を抑えます。ただし<strong>常に精度が上がる手法ではなく、smoothing量はOOF / Validationで比較</strong>します。</p>
+
+<nav class="article-jump-nav" aria-label="ページ内ナビゲーション">
+  <a href="#use-cases">使う場面</a>
+  <a href="#mechanism">仕組み</a>
+  <a href="#comparison">使い分け</a>
+  <a href="#kaggle-examples">Kaggle実例</a>
+  <a href="#pitfalls">注意点</a>
+</nav>
+
+<h2 id="use-cases">使う場面</h2>
+<div class="comparison-board">
+  <section class="comparison-card is-primary"><h4>分類modelが過度に確信する</h4><dl><dt>候補</dt><dd>Label Smoothing</dd><dt>見るもの</dt><dd>OOF metric、確率分布、threshold</dd></dl></section>
+  <section class="comparison-card"><h4>labelに曖昧さ・noiseがある</h4><dl><dt>狙い</dt><dd>hard one-hot targetへの過適合を弱める</dd><dt>注意</dt><dd>誤label自体を修正する手法ではない</dd></dl></section>
+  <section class="comparison-card"><h4>class imbalanceが主問題</h4><dl><dt>第一候補</dt><dd>class weight / sampling / Focal Lossも比較</dd><dt>理由</dt><dd>Label Smoothingはclass頻度を直接補正しない</dd></dl></section>
+</div>
+
+<h2 id="mechanism">仕組み</h2>
+<p>通常の3-class分類で正解がclass Aならtargetは <code>[1, 0, 0]</code> です。Label Smoothingはこれをuniform distributionと混ぜます。PyTorchの定義では、smoothing係数を ε、class数を K とすると、targetは <code>(1-ε) × one-hot + ε/K</code> になります（<a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html">PyTorch CrossEntropyLoss</a>）。</p>
+
+<div class="static-viz html-diagram" aria-label="Label Smoothingでtarget確率が変わる模式例">
+  <p><strong>模式例:</strong> 3-class、正解=A。実測値ではありません。</p>
+  <label for="ls-epsilon">smoothing ε: <output id="ls-epsilon-value">0.10</output></label>
+  <input id="ls-epsilon" type="range" min="0" max="0.4" step="0.05" value="0.1">
+  <div class="comparison-board" aria-live="polite">
+    <section class="comparison-card is-primary"><h4>Class A（正解）</h4><p id="ls-a"><strong>0.933</strong></p></section>
+    <section class="comparison-card"><h4>Class B</h4><p id="ls-b"><strong>0.033</strong></p></section>
+    <section class="comparison-card"><h4>Class C</h4><p id="ls-c"><strong>0.033</strong></p></section>
+  </div>
+  <p id="ls-status">ε=0.10では、正解classだけを1.0へ押し切る圧力を弱めます。</p>
+</div>
+<script>
+(function () {
+  const slider = document.getElementById('ls-epsilon');
+  if (!slider) return;
+  const out = document.getElementById('ls-epsilon-value');
+  const a = document.getElementById('ls-a');
+  const b = document.getElementById('ls-b');
+  const c = document.getElementById('ls-c');
+  const status = document.getElementById('ls-status');
+  function render() {
+    const e = Number(slider.value);
+    const other = e / 3;
+    const correct = 1 - e + other;
+    out.textContent = e.toFixed(2);
+    a.innerHTML = '<strong>' + correct.toFixed(3) + '</strong>';
+    b.innerHTML = '<strong>' + other.toFixed(3) + '</strong>';
+    c.innerHTML = '<strong>' + other.toFixed(3) + '</strong>';
+    status.textContent = e === 0 ? 'ε=0では通常のone-hot targetです。' : 'ε=' + e.toFixed(2) + 'では、正解classだけを1.0へ押し切る圧力を弱めます。';
+  }
+  slider.addEventListener('input', render);
+  render();
+})();
+</script>
+
+<p>Label Smoothing RegularizationはSzegedyらのInception研究で導入され、その後、分類modelのconfidenceや表現への影響が研究されています（<a href="https://arxiv.org/abs/1512.00567">Szegedy et al., 2015</a>）。</p>
+
+<h2 id="comparison">使い分け</h2>
+<div class="html-table-wrap"><table class="html-table"><thead><tr><th>手法</th><th>何を変えるか</th><th>向く状況</th></tr></thead><tbody>
+<tr><td>Label Smoothing</td><td>target分布</td><td>over-confidence、labelの曖昧さ</td></tr>
+<tr><td><a href="{{ '/wiki/training/focal-loss.html' | relative_url }}">Focal Loss</a></td><td>easy / hard sampleのloss重み</td><td>easy negativeが多い、不均衡</td></tr>
+<tr><td><a href="{{ '/wiki/training/mixup-cutmix.html' | relative_url }}">Mixup / CutMix</a></td><td>inputとlabelの両方</td><td>augmentationとsoft targetを同時に使う</td></tr>
+<tr><td>Class Weight</td><td>classごとのloss寄与</td><td>class imbalanceを直接補正したい</td></tr>
+</tbody></table></div>
+
+<h2 id="kaggle-examples">Kaggleでの実例</h2>
+<h3>RSNA Screening Mammography Breast Cancer Detection — 1位</h3>
+<p>1位解法は通常のlabel smoothingと、positiveだけを弱めるsoft positive labelを比較しています。fold 0の実験では通常の <code>label_smoothing=0.1</code> がbest PF1 <strong>0.4970</strong>、positive targetを0.8にした設定が <strong>0.5714</strong> でした。一方、後日の全体ablationではsoft positive labelが標準label smoothingを明確に上回るとは確認できないと報告されています（<a href="https://www.kaggle.com/competitions/rsna-breast-cancer-detection/discussion/392449">1st place solution</a>）。局所foldの改善だけで一般化を断定しない好例です。<strong>Evidence A</strong>。</p>
+<p>同じwriteupでは、external dataなし・label smoothing 0.1でOOF F1 <strong>0.4921</strong> / Private <strong>0.53</strong>、external dataありではOOF F1 <strong>0.5161</strong> / Private <strong>0.56</strong> と報告されています。ここで改善の主因はexternal dataであり、label smoothing単独の効果量として解釈してはいけません。</p>
+
+<h3>Anime Gender Classification 2026 — 31位</h3>
+<p>2026年6月の公開Writeupでは、pretrained ResNet50、strong augmentation、cosine warmup、15-fold soft votingとともにLabel Smoothingを最終pipelineへ採用しています（<a href="https://www.kaggle.com/competitions/anime-gender-classification/writeups/resnet50-transfer-learning-with-15-fold-soft-votin">solution writeup</a>）。単独ablationは公開されていないため、採用実績として<strong>Evidence BではなくD相当</strong>に留め、効果量は推測しません。</p>
+
+<h2 id="pitfalls">注意点</h2>
+<ul>
+  <li><strong>εを大きくしすぎない:</strong> targetを平らにしすぎるとclass間の識別signalまで弱めます。固定値を慣習で入れずValidationで比較します。</li>
+  <li><strong>Calibration改善と同義ではない:</strong> confidenceを抑える効果があっても、目的metric上のcalibrationが必ず改善するとは限りません。</li>
+  <li><strong>Mixup / CutMixとの重複を確認する:</strong> これらもsoft targetを作るため、同時利用時は追加smoothingが強すぎないかablationします。</li>
+  <li><strong>binary / multi-labelでは実装定義を確認する:</strong> softmax multi-classのuniform mixingと、BCEでpositive / negative targetをずらす実装は同一ではありません。</li>
+  <li><strong>Public LBでεを選ばない:</strong> OOF / Validationで候補を比較し、fold間で傾向が安定するか確認します。</li>
+</ul>
+
+<h2>Quick Reference</h2>
+<div class="comparison-board">
+  <section class="comparison-card"><h4>まず試す</h4><p>Cross Entropy分類でover-confidenceやlabel noiseが疑わしいとき、小さいεからOOF比較。</p></section>
+  <section class="comparison-card"><h4>比較する</h4><p>ε=0を必ずbaselineに残し、Focal Loss、class weight、Mixup / CutMixとも目的を分けて比較。</p></section>
+  <section class="comparison-card"><h4>採用判断</h4><p>単一foldやPublic LBではなく、OOF metric・fold安定性・確率分布を確認。</p></section>
+</div>
+
+<h2>関連項目</h2>
+<ul>
+  <li><a href="{{ '/wiki/training/focal-loss.html' | relative_url }}">Focal Loss</a></li>
+  <li><a href="{{ '/wiki/training/mixup-cutmix.html' | relative_url }}">Mixup / CutMix</a></li>
+  <li><a href="{{ '/wiki/metrics/log-loss.html' | relative_url }}">LogLoss</a></li>
+  <li><a href="{{ '/wiki/advanced-methods/probability-calibration.html' | relative_url }}">Probability Calibration</a></li>
+</ul>
+
+<h2>参考文献</h2>
+<ol>
+  <li><a href="https://arxiv.org/abs/1512.00567">Szegedy et al., Rethinking the Inception Architecture for Computer Vision</a>, 2015.</li>
+  <li><a href="https://docs.pytorch.org/docs/stable/generated/torch.nn.CrossEntropyLoss.html">PyTorch, CrossEntropyLoss documentation</a>.</li>
+  <li><a href="https://www.kaggle.com/competitions/rsna-breast-cancer-detection/discussion/392449">RSNA Screening Mammography Breast Cancer Detection — 1st place solution</a>, Kaggle, 2023.</li>
+  <li><a href="https://www.kaggle.com/competitions/anime-gender-classification/writeups/resnet50-transfer-learning-with-15-fold-soft-votin">Anime Gender Classification — ResNet50 Transfer Learning with 15-Fold Soft Voting Ensemble</a>, Kaggle, 2026.</li>
+  <li><a href="https://arxiv.org/abs/1906.02629">Müller, Kornblith, Hinton, When Does Label Smoothing Help?</a>, NeurIPS 2019.</li>
+  <li><a href="https://qiita.com/T-STAR/items/a3bdcd1ae00150fe1402">Online Label Smoothingの実装と評価</a>, Qiita.</li>
+</ol>
