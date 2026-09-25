@@ -14,6 +14,7 @@ permalink: /wiki/training/
 <h2>学習を止める・安定させる</h2>
 <div class="dictionary-grid">
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/early-stopping.html' | relative_url }}"><h3>Early Stopping</h3><p>Validation改善が止まった時点で学習を止め、best checkpointを使う。</p></a>
+  <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/lr-warmup-cosine.html' | relative_url }}"><h3>LR Warmup + Cosine Decay</h3><p>序盤はLRを徐々に上げ、後半はcosine曲線で下げて学習を安定化・収束させる。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/exponential-moving-average.html' | relative_url }}"><h3>Exponential Moving Average (EMA)</h3><p>学習中のweightを指数移動平均し、更新ノイズをならした別weightを評価・推論に使う。</p></a>
   <a class="dictionary-card dictionary-card-link" href="{{ '/wiki/training/stochastic-weight-averaging.html' | relative_url }}"><h3>Stochastic Weight Averaging (SWA)</h3><p>学習後半の複数weightを等重みで平均し、1つの安定した推論weightを作る。</p></a>
 </div>
