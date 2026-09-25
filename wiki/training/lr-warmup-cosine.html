@@ -1,7 +1,81 @@
 ---
 layout: default
 title: Learning Rate Warmup + Cosine Decay
+summary: 序盤はlearning rateを徐々に上げ、後半はcosine曲線で下げる定番scheduler。
+type: reference
+domain: kaggle
+topic: lr-warmup-cosine
+created: 2026-09-25
+updated: 2026-09-25
+source_count: 6
+tags:
+  - kaggle
+  - training
+  - deep-learning
 ---
 
 <h1>Learning Rate Warmup + Cosine Decay</h1>
-<p>WarmupとCosine Decayを解説する記事。</p>
+<p><strong>Warmup + Cosine Decayは、学習開始直後だけlearning rate（LR）を小さく始めて徐々に上げ、その後はcosine曲線に沿って滑らかに下げるscheduleです。</strong></p>
+<p>直感的には、modelが不安定な序盤は小さな歩幅で慣らし、学習が進んだら十分に動き、終盤は再び歩幅を小さくして仕上げます。pretrained backboneのfine-tuning、Transformer、大きめのbatchで頻出します。</p>
+
+<h2>使う場面</h2>
+<div class="comparison-board">
+<section class="comparison-card is-primary"><h4>pretrained modelをfine-tune</h4><p>序盤の急な更新を避け、終盤は小さいLRで調整します。</p></section>
+<section class="comparison-card"><h4>大きなbatch / Transformer</h4><p>Linear Warmup + Cosine Decayを候補にし、gradientとValidationを確認します。</p></section>
+<section class="comparison-card"><h4>短い学習</h4><p>warmupを長くしすぎるとpeak LRを使う時間がなくなります。</p></section>
+</div>
+
+<h2>仕組み</h2>
+<p>WarmupとCosineは別の役割を持ちます。Warmupは序盤の急激なparameter更新を抑え、Cosine Decayはpeak LR到達後から終盤へ向けてstep幅を滑らかに小さくします。Goyalらはlarge-batch ImageNet学習で序盤のoptimization difficultyに対処するwarmup schemeを導入しました。Cosine annealingはLoshchilovとHutterのSGDRで体系化されています。</p>
+<div class="static-viz html-diagram">
+<h3>LRの変化を3区間で読む</h3>
+<div class="comparison-board">
+<section class="comparison-card"><h4>1. Warmup</h4><p>小さいLRからpeak LRへ徐々に上げる。</p></section>
+<section class="comparison-card is-primary"><h4>2. Peak付近</h4><p>modelを十分に更新する。</p></section>
+<section class="comparison-card"><h4>3. Cosine Decay</h4><p>終盤へ向けて滑らかにLRを下げる。</p></section>
+</div>
+<p>模式例です。実測Kaggle scoreではありません。Warmupが長いほどpeak LR到達までが長くなり、cosine decayに使えるupdate数は短くなります。</p>
+</div>
+<p>PyTorchの<code>CosineAnnealingLR</code>はcosine annealingを実装しますがwarmupは自動追加しません。<code>SequentialLR</code>でschedulerを順番に適用でき、timmの<code>CosineLRScheduler</code>は<code>warmup_t</code>を持ちます。</p>
+
+<h2>使い分け</h2>
+<div class="html-table-wrap"><table class="html-table"><thead><tr><th>Schedule</th><th>基準</th><th>向く場面</th><th>注意</th></tr></thead><tbody>
+<tr><td>Warmup + Cosine</td><td>step / epoch</td><td>fine-tuning、Transformer</td><td>warmup比率を確認</td></tr>
+<tr><td>Constant LR</td><td>固定</td><td>baseline</td><td>終盤もstepが大きい</td></tr>
+<tr><td>Step / MultiStep</td><td>指定epoch</td><td>既知recipeの再現</td><td>境界で急変</td></tr>
+<tr><td>ReduceLROnPlateau</td><td>Validation metric</td><td>改善停止で下げたい</td><td>metric noiseに依存</td></tr>
+</tbody></table></div>
+
+<h2>Kaggleでの実例</h2>
+<h3>CSIRO - Image2Biomass Prediction — 8位（2026）</h3>
+<p>8位解法はDINOv3 Hugeのfull-backbone fine-tuningで35 epochs、<code>lr_min=1e-6</code>、<code>warmup_t=3</code>、<code>warmup_lr_init=1e-7</code>を採用しました。本人が3-epoch warmupをcrucialと記載しますが単独ablationはないため<strong>Evidence B</strong>です。</p>
+<h3>BirdCLEF+ 2026 — 9位</h3>
+<p>Private 9位解法では30 epochsを<strong>2 warmup + 20 flat + 8 cosine</strong>に分けています。warmup直後から必ずcosineで下げる必要はない実例です。単独ablationはないため<strong>Evidence B</strong>です。</p>
+<h3>MITSUI&amp;CO. Commodity Prediction Challenge — 8位（2026）</h3>
+<p>8位のTransformer解法はAdamW、gradient clipping、cosine schedule + linear warmupを使用しました。単独効果量は公開されていないため<strong>Evidence B</strong>です。</p>
+<h3>Cornell Birdcall Identification — 1位</h3>
+<p>1位解法でもAdamWとCosine Annealing Scheduler with warmupが最終recipeに採用されました。異なる年代・音声taskでのクロスチェックになります。単独ablationはないため<strong>Evidence B</strong>です。</p>
+
+<h2>注意点</h2>
+<div class="comparison-board">
+<section class="comparison-card"><h4>Warmupが長すぎる</h4><p>総stepが少ないのにwarmup比率が大きいと十分なLRで学習する区間を失います。</p></section>
+<section class="comparison-card"><h4>Gradient accumulation</h4><p>micro-batch数とoptimizer step数は一致しません。schedulerを何stepごとに進めるか確認します。</p></section>
+<section class="comparison-card"><h4>Resume</h4><p>scheduler stateを復元しないとLRがpeak付近へ戻る場合があります。再開前後のLR logを確認します。</p></section>
+<section class="comparison-card"><h4>採用例は効果保証ではない</h4><p>上位解法で頻出しても単独ablationは少ないため、同じfold・seedで比較します。</p></section>
+</div>
+
+<h2>Quick Reference</h2>
+<div class="comparison-board"><section class="comparison-card is-primary"><h4>何をする？</h4><p>序盤はLRを小から大、以後はcosineで大から小へ変える。</p></section><section class="comparison-card"><h4>記録</h4><p>peak LR、min LR、warmup steps、total optimizer steps。</p></section><section class="comparison-card"><h4>Validation</h4><p>no warmup / warmup、constant / cosineを同条件で比較。</p></section></div>
+
+<h2>関連項目</h2>
+<ul><li><a href="{{ '/wiki/training/early-stopping.html' | relative_url }}">Early Stopping</a></li><li><a href="{{ '/wiki/training/pretraining-transfer-learning.html' | relative_url }}">Pretraining / Transfer Learning</a></li><li><a href="{{ '/wiki/training/exponential-moving-average.html' | relative_url }}">EMA</a></li></ul>
+
+<h2>参考文献</h2>
+<ol>
+<li>8th Place Solution | PixelScale — CSIRO - Image2Biomass Prediction, Kaggle, 2026.</li>
+<li>Private 9th | Public 2nd solution — BirdCLEF+ 2026, Kaggle, 2026.</li>
+<li>Transformer Based Solution — MITSUI&amp;CO. Commodity Prediction Challenge, Kaggle, 2026.</li>
+<li>1st Place Solution — Cornell Birdcall Identification, Kaggle, 2020.</li>
+<li>Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour — Priya Goyal et al., 2017.</li>
+<li>SGDR: Stochastic Gradient Descent with Warm Restarts — Ilya Loshchilov, Frank Hutter, 2016.</li>
+</ol>
