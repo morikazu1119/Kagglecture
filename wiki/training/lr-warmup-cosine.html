@@ -48,13 +48,13 @@ tags:
 
 <h2>Kaggleでの実例</h2>
 <h3>CSIRO - Image2Biomass Prediction — 8位（2026）</h3>
-<p>8位解法はDINOv3 Hugeのfull-backbone fine-tuningで35 epochs、<code>lr_min=1e-6</code>、<code>warmup_t=3</code>、<code>warmup_lr_init=1e-7</code>を採用しました。本人が3-epoch warmupをcrucialと記載しますが単独ablationはないため<strong>Evidence B</strong>です。</p>
+<p>8位解法はDINOv3 Hugeのfull-backbone fine-tuningで35 epochs、<code>lr_min=1e-6</code>、<code>warmup_t=3</code>、<code>warmup_lr_init=1e-7</code>を採用しました。本人が3-epoch warmupをcrucialと記載しますが単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/csiro-biomass/writeups/8th-place-solution-csiro-image2biomass">8th Place Solution</a>）。</p>
 <h3>BirdCLEF+ 2026 — 9位</h3>
-<p>Private 9位解法では30 epochsを<strong>2 warmup + 20 flat + 8 cosine</strong>に分けています。warmup直後から必ずcosineで下げる必要はない実例です。単独ablationはないため<strong>Evidence B</strong>です。</p>
+<p>Private 9位解法では30 epochsを<strong>2 warmup + 20 flat + 8 cosine</strong>に分けています。warmup直後から必ずcosineで下げる必要はない実例です。単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/private-9th-public-2nd-solution">9th place solution</a>）。</p>
 <h3>MITSUI&amp;CO. Commodity Prediction Challenge — 8位（2026）</h3>
-<p>8位のTransformer解法はAdamW、gradient clipping、cosine schedule + linear warmupを使用しました。単独効果量は公開されていないため<strong>Evidence B</strong>です。</p>
+<p>8位のTransformer解法はAdamW、gradient clipping、cosine schedule + linear warmupを使用しました。単独効果量は公開されていないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/mitsui-commodity-prediction-challenge/writeups/transformer-based-solution">Transformer Based Solution</a>）。</p>
 <h3>Cornell Birdcall Identification — 1位</h3>
-<p>1位解法でもAdamWとCosine Annealing Scheduler with warmupが最終recipeに採用されました。異なる年代・音声taskでのクロスチェックになります。単独ablationはないため<strong>Evidence B</strong>です。</p>
+<p>1位解法でもAdamWとCosine Annealing Scheduler with warmupが最終recipeに採用されました。異なる年代・音声taskでのクロスチェックになります。単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/birdsong-recognition/writeups/ryan-wong-1st-place-solution">1st Place Solution</a>）。</p>
 
 <h2>注意点</h2>
 <div class="comparison-board">
