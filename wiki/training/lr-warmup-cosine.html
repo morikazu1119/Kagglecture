@@ -6,8 +6,8 @@ type: reference
 domain: kaggle
 topic: lr-warmup-cosine
 created: 2026-09-25
-updated: 2026-09-25
-source_count: 6
+updated: 2026-10-08
+source_count: 8
 tags:
   - kaggle
   - training
@@ -27,15 +27,62 @@ tags:
 
 <h2>仕組み</h2>
 <p>WarmupとCosineは別の役割を持ちます。Warmupは序盤の急激なparameter更新を抑え、Cosine Decayはpeak LR到達後から終盤へ向けてstep幅を滑らかに小さくします。Goyalらはlarge-batch ImageNet学習で序盤のoptimization difficultyに対処するwarmup schemeを導入しました。Cosine annealingはLoshchilovとHutterのSGDRで体系化されています。</p>
-<div class="static-viz html-diagram">
-<h3>LRの変化を3区間で読む</h3>
+<div class="static-viz html-diagram" id="lr-schedule-viz">
+<h3>学習率の曲線を操作する（模式例）</h3>
+<p>横軸は総optimizer updateに対する進行率、縦軸はpeak LRを1とした相対値です。数値は説明用であり、KaggleのCV/LB実測値ではありません。</p>
+<svg viewBox="0 0 560 218" role="img" aria-label="学習率は序盤のwarmupで上昇し、flat区間を経てcosine曲線で減少する。初期設定はwarmup 15%、flat 10%。" style="display:block;width:100%;height:auto;max-width:760px">
+<line x1="48" y1="34" x2="48" y2="176" stroke="currentColor" opacity=".55"/>
+<line x1="48" y1="176" x2="520" y2="176" stroke="currentColor" opacity=".55"/>
+<line x1="48" y1="34" x2="520" y2="34" stroke="currentColor" stroke-dasharray="4 5" opacity=".18"/>
+<text x="12" y="37" fill="currentColor" font-size="12">1.0</text><text x="19" y="180" fill="currentColor" font-size="12">0</text>
+<text x="48" y="198" fill="currentColor" font-size="12">開始</text><text x="482" y="198" fill="currentColor" font-size="12">終了</text>
+<text x="254" y="214" fill="currentColor" font-size="12">学習進行率</text>
+<polyline id="lr-curve" points="48.0,164.6 52.7,155.9 57.4,147.2 62.2,138.5 66.9,129.8 71.6,121.1 76.3,112.4 81.0,103.7 85.8,95.0 90.5,86.3 95.2,77.5 99.9,68.8 104.6,60.1 109.4,51.4 114.1,42.7 118.8,34.0 123.5,34.0 128.2,34.0 133.0,34.0 137.7,34.0 142.4,34.0 147.1,34.0 151.8,34.0 156.6,34.0 161.3,34.0 166.0,34.0 170.7,34.1 175.4,34.2 180.2,34.5 184.9,34.9 189.6,35.4 194.3,36.1 199.0,36.8 203.8,37.6 208.5,38.6 213.2,39.6 217.9,40.8 222.6,42.1 227.4,43.4 232.1,44.9 236.8,46.5 241.5,48.1 246.2,49.9 251.0,51.7 255.7,53.6 260.4,55.6 265.1,57.7 269.8,59.8 274.6,62.0 279.3,64.3 284.0,66.7 288.7,69.1 293.4,71.5 298.2,74.0 302.9,76.6 307.6,79.1 312.3,81.8 317.0,84.4 321.8,87.1 326.5,89.8 331.2,92.5 335.9,95.2 340.6,98.0 345.4,100.7 350.1,103.4 354.8,106.1 359.5,108.9 364.2,111.6 369.0,114.2 373.7,116.9 378.4,119.5 383.1,122.1 387.8,124.6 392.6,127.1 397.3,129.6 402.0,132.0 406.7,134.3 411.4,136.6 416.2,138.8 420.9,141.0 425.6,143.0 430.3,145.0 435.0,146.9 439.8,148.8 444.5,150.5 449.2,152.2 453.9,153.7 458.6,155.2 463.4,156.6 468.1,157.8 472.8,159.0 477.5,160.1 482.2,161.0 487.0,161.9 491.7,162.6 496.4,163.2 501.1,163.7 505.8,164.1 510.6,164.4 515.3,164.6 520.0,164.6" fill="none" stroke="#0d9488" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>
+<line id="lr-warmup-boundary" x1="118.8" y1="34" x2="118.8" y2="176" stroke="#ea580c" stroke-dasharray="5 5" stroke-width="2"/>
+<line id="lr-flat-boundary" x1="166" y1="34" x2="166" y2="176" stroke="#2563eb" stroke-dasharray="5 5" stroke-width="2"/>
+</svg>
 <div class="comparison-board">
-<section class="comparison-card"><h4>1. Warmup</h4><p>小さいLRからpeak LRへ徐々に上げる。</p></section>
-<section class="comparison-card is-primary"><h4>2. Peak付近</h4><p>modelを十分に更新する。</p></section>
-<section class="comparison-card"><h4>3. Cosine Decay</h4><p>終盤へ向けて滑らかにLRを下げる。</p></section>
+<section class="comparison-card"><label for="lr-warmup-range"><strong>Warmup比率 <output id="lr-warmup-value">15%</output></strong></label><input id="lr-warmup-range" type="range" min="0" max="40" step="5" value="15" style="width:100%;min-height:44px"><p>オレンジの破線まで徐々に上昇。</p></section>
+<section class="comparison-card"><label for="lr-flat-range"><strong>Peak維持比率 <output id="lr-flat-value">10%</output></strong></label><input id="lr-flat-range" type="range" min="0" max="40" step="5" value="10" style="width:100%;min-height:44px"><p>青い破線まで高いLRを維持。</p></section>
 </div>
-<p>模式例です。実測Kaggle scoreではありません。Warmupが長いほどpeak LR到達までが長くなり、cosine decayに使えるupdate数は短くなります。</p>
+<p id="lr-schedule-summary" aria-live="polite">総更新の15%でpeak LRに達し、10%維持して、残り75%をcosineで減衰します。</p>
+<p>Warmup 0%なら最初からpeak LRです。Peak維持 0%ならwarmup直後からcosineで減衰します。Warmupを長くすると同じ総更新数では減衰区間が短くなります。</p>
 </div>
+<script>
+(function () {
+  const root = document.getElementById('lr-schedule-viz');
+  if (!root) return;
+  const warm = root.querySelector('#lr-warmup-range');
+  const flat = root.querySelector('#lr-flat-range');
+  const curve = root.querySelector('#lr-curve');
+  const left = root.querySelector('#lr-warmup-boundary');
+  const right = root.querySelector('#lr-flat-boundary');
+  const value = (t, w, f) => {
+    if (w > 0 && t < w) return 0.08 + 0.92 * t / w;
+    if (t <= w + f) return 1;
+    return 0.08 + 0.46 * (1 + Math.cos(Math.PI * (t - w - f) / (1 - w - f)));
+  };
+  function update() {
+    const w = Number(warm.value) / 100;
+    const f = Number(flat.value) / 100;
+    const points = [];
+    for (let i = 0; i <= 100; i++) {
+      const t = i / 100;
+      points.push((48 + 472 * t).toFixed(1) + ',' + (176 - 142 * value(t, w, f)).toFixed(1));
+    }
+    curve.setAttribute('points', points.join(' '));
+    left.setAttribute('x1', 48 + 472 * w);
+    left.setAttribute('x2', 48 + 472 * w);
+    right.setAttribute('x1', 48 + 472 * (w + f));
+    right.setAttribute('x2', 48 + 472 * (w + f));
+    root.querySelector('#lr-warmup-value').textContent = warm.value + '%';
+    root.querySelector('#lr-flat-value').textContent = flat.value + '%';
+    root.querySelector('#lr-schedule-summary').textContent = '総更新の' + warm.value + '%でpeak LRに達し、' + flat.value + '%維持して、残り' + Math.round((1 - w - f) * 100) + '%をcosineで減衰します。';
+  }
+  warm.addEventListener('input', update);
+  flat.addEventListener('input', update);
+})();
+</script>
 <p>PyTorchの<code>CosineAnnealingLR</code>はcosine annealingを実装しますがwarmupは自動追加しません。<code>SequentialLR</code>でschedulerを順番に適用でき、timmの<code>CosineLRScheduler</code>は<code>warmup_t</code>を持ちます。</p>
 
 <h2>使い分け</h2>
@@ -48,13 +95,13 @@ tags:
 
 <h2>Kaggleでの実例</h2>
 <h3>CSIRO - Image2Biomass Prediction — 8位（2026）</h3>
-<p>8位解法はDINOv3 Hugeのfull-backbone fine-tuningで35 epochs、<code>lr_min=1e-6</code>、<code>warmup_t=3</code>、<code>warmup_lr_init=1e-7</code>を採用しました。本人が3-epoch warmupをcrucialと記載しますが単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/csiro-biomass/writeups/8th-place-solution-csiro-image2biomass">8th Place Solution</a>）。</p>
+<p>8位解法はDINOv3 Hugeのfull-backbone fine-tuningで35 epochs、<code>lr_min=1e-6</code>、<code>warmup_t=3</code>、<code>warmup_lr_init=1e-7</code>を採用しました。5-fold StratifiedKFoldで検証しています。本人が3-epoch warmupをcrucialと記載しますが単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/csiro-biomass/writeups/8th-place-solution-csiro-image2biomass">8th Place Solution</a>）。</p>
 <h3>BirdCLEF+ 2026 — 9位</h3>
-<p>Private 9位解法では30 epochsを<strong>2 warmup + 20 flat + 8 cosine</strong>に分けています。warmup直後から必ずcosineで下げる必要はない実例です。単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/private-9th-public-2nd-solution">9th place solution</a>）。</p>
+<p>Private 9位解法では30 epochsを<strong>2 warmup + 20 flat + 8 cosine</strong>に分けています。warmup直後から必ずcosineで下げる必要はない実例です。4-foldでsoundscapeを評価し、seed間でlocal validationが約±0.02変動したと報告しています。scheduler単独の効果は切り分けられないため<strong>Evidence C（採用事実のクロスチェック）</strong>です（<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/private-9th-public-2nd-solution">9th place solution</a>）。</p>
 <h3>MITSUI&amp;CO. Commodity Prediction Challenge — 8位（2026）</h3>
 <p>8位のTransformer解法はAdamW、gradient clipping、cosine schedule + linear warmupを使用しました。単独効果量は公開されていないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/mitsui-commodity-prediction-challenge/writeups/transformer-based-solution">Transformer Based Solution</a>）。</p>
 <h3>Cornell Birdcall Identification — 1位</h3>
-<p>1位解法でもAdamWとCosine Annealing Scheduler with warmupが最終recipeに採用されました。異なる年代・音声taskでのクロスチェックになります。単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/birdsong-recognition/writeups/ryan-wong-1st-place-solution">1st Place Solution</a>）。</p>
+<p>1位解法でもAdamWとCosine Annealing Scheduler with warmupが最終recipeに採用されました。異なる年代・音声taskでのクロスチェックになります。CVとPublic LBの相関が弱かったと報告しており、scheduler単独の効果は未検証です。<strong>Evidence C（複数上位解法での採用）</strong>として扱います（<a href="https://www.kaggle.com/competitions/birdsong-recognition/writeups/ryan-wong-1st-place-solution">1st Place Solution</a>）。</p>
 
 <h2>注意点</h2>
 <div class="comparison-board">
@@ -78,4 +125,6 @@ tags:
 <li><a href="https://www.kaggle.com/competitions/birdsong-recognition/writeups/ryan-wong-1st-place-solution">1st Place Solution</a> — Cornell Birdcall Identification, Kaggle, 2020.</li>
 <li><a href="https://arxiv.org/abs/1706.02677">Accurate, Large Minibatch SGD: Training ImageNet in 1 Hour</a> — Priya Goyal et al., 2017.</li>
 <li><a href="https://arxiv.org/abs/1608.03983">SGDR: Stochastic Gradient Descent with Warm Restarts</a> — Ilya Loshchilov, Frank Hutter, 2016.</li>
+<li><a href="https://docs.pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CosineAnnealingLR.html">CosineAnnealingLR</a> — PyTorch公式ドキュメント（warmup非内蔵・restartなし）。</li>
+<li><a href="https://zenn.dev/inaturam/articles/e0fa6eed17afbe">PyTorchのWarmup付きCosine Annealing LR Scheduler</a> — inaturam, Zenn, 2023（日本語実装解説・補助資料）。</li>
 </ol>
