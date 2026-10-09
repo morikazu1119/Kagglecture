@@ -6,8 +6,8 @@ type: reference
 domain: kaggle
 topic: lr-warmup-cosine
 created: 2026-09-25
-updated: 2026-10-08
-source_count: 8
+updated: 2026-10-09
+source_count: 10
 tags:
   - kaggle
   - training
@@ -29,7 +29,7 @@ tags:
 <p>WarmupとCosineは別の役割を持ちます。Warmupは序盤の急激なparameter更新を抑え、Cosine Decayはpeak LR到達後から終盤へ向けてstep幅を滑らかに小さくします。Goyalらはlarge-batch ImageNet学習で序盤のoptimization difficultyに対処するwarmup schemeを導入しました。Cosine annealingはLoshchilovとHutterのSGDRで体系化されています。</p>
 <div class="static-viz html-diagram" id="lr-schedule-viz">
 <h3>学習率の曲線を操作する（模式例）</h3>
-<p>横軸は総optimizer updateに対する進行率、縦軸はpeak LRを1とした相対値です。数値は説明用であり、KaggleのCV/LB実測値ではありません。</p>
+<p>横軸は総optimizer updateに対する進行率、縦軸はpeak LRを1とした相対値です。開始・終了LRはpeakの8%とした模式例であり、KaggleのCV/LB実測値ではありません。実際の開始・終了LRはrecipeごとに異なります。</p>
 <svg viewBox="0 0 560 218" role="img" aria-label="学習率は序盤のwarmupで上昇し、flat区間を経てcosine曲線で減少する。初期設定はwarmup 15%、flat 10%。" style="display:block;width:100%;height:auto;max-width:760px">
 <line x1="48" y1="34" x2="48" y2="176" stroke="currentColor" opacity=".55"/>
 <line x1="48" y1="176" x2="520" y2="176" stroke="currentColor" opacity=".55"/>
@@ -88,11 +88,23 @@ tags:
 <h2>使い分け</h2>
 <div class="html-table-wrap"><table class="html-table"><thead><tr><th>Schedule</th><th>基準</th><th>向く場面</th><th>注意</th></tr></thead><tbody>
 <tr><td>Warmup + Cosine</td><td>step / epoch</td><td>fine-tuning、Transformer</td><td>warmup比率を確認</td></tr>
+<tr><td>Warmup + Flat + Cosine</td><td>step / epoch</td><td>peak LRを長く維持したいrecipe</td><td>flatが長いと終盤の減衰時間が短い</td></tr>
 <tr><td>Constant LR</td><td>固定</td><td>baseline</td><td>終盤もstepが大きい</td></tr>
 <tr><td>Step / MultiStep</td><td>指定epoch</td><td>既知recipeの再現</td><td>境界で急変</td></tr>
 <tr><td>ReduceLROnPlateau</td><td>Validation metric</td><td>改善停止で下げたい</td><td>metric noiseに依存</td></tr>
 </tbody></table></div>
 
+<h2>Validationで効果を確かめる</h2>
+<p>上位解法での採用と、scheduler単独での改善は別です。<strong>同じデータ分割・optimizer・peak LR・更新回数・seed</strong>で比較し、まず「warmupの有無」と「減衰の有無」を切り分けます。下表は実験設計の模式例で、スコアを示すものではありません。</p>
+<div class="html-table-wrap"><table class="html-table"><thead><tr><th>比較</th><th>序盤</th><th>中盤〜終盤</th><th>何が分かる？</th></tr></thead><tbody>
+<tr><td>Baseline</td><td>Warmupなし</td><td>Constant</td><td>基準のValidation</td></tr>
+<tr><td>Warmupのみ</td><td>Warmupあり</td><td>Constant</td><td>初期LRを慣らす効果</td></tr>
+<tr><td>Cosineのみ</td><td>Warmupなし</td><td>Cosine</td><td>終盤の減衰効果</td></tr>
+<tr><td>組み合わせ</td><td>Warmupあり</td><td>Cosine</td><td>併用時の結果と交互作用</td></tr>
+</tbody></table></div>
+<p>全条件で総optimizer updateをそろえ、各foldのOOFまたは同じholdout metricを比較します。差が小さい場合は複数seedでばらつきを確認します。early stoppingで更新回数が変わると公平な比較が難しくなるため、まず固定予算で比較し、best checkpointの選択ルールも統一します。<a href="https://www.kaggle.com/competitions/birdclef-2026/writeups/private-9th-public-2nd-solution">BirdCLEF+ 2026の9位解法</a>ではlocal validationがseedにより約±0.02変動したと報告されていますが、これはscheduler固有の変動量ではありません。</p>
+<h3>Optimizer stepを数える</h3>
+<p>たとえば1 epochに1,200 micro-batchesがあり、gradient accumulationが4なら、<strong>optimizer updateは300回/epoch</strong>です。30 epochsなら9,000 updates、warmup 5%なら450 optimizer updatesが目安です（端数・drop_last・分散学習設定は別途確認）。<code>num_training_steps</code>にmicro-batch回数を誤って入れると、予定より遅いLR曲線になります。step基準のschedulerは実際の<code>optimizer.step()</code>に合わせて進めます（<a href="https://huggingface.co/docs/transformers/main_classes/optimizer_schedules">Hugging Face公式scheduler資料</a>）。</p>
 <h2>Kaggleでの実例</h2>
 <h3>CSIRO - Image2Biomass Prediction — 8位（2026）</h3>
 <p>8位解法はDINOv3 Hugeのfull-backbone fine-tuningで35 epochs、<code>lr_min=1e-6</code>、<code>warmup_t=3</code>、<code>warmup_lr_init=1e-7</code>を採用しました。5-fold StratifiedKFoldで検証しています。本人が3-epoch warmupをcrucialと記載しますが単独ablationはないため<strong>Evidence B</strong>です（<a href="https://www.kaggle.com/competitions/csiro-biomass/writeups/8th-place-solution-csiro-image2biomass">8th Place Solution</a>）。</p>
@@ -106,7 +118,7 @@ tags:
 <h2>注意点</h2>
 <div class="comparison-board">
 <section class="comparison-card"><h4>Warmupが長すぎる</h4><p>総stepが少ないのにwarmup比率が大きいと十分なLRで学習する区間を失います。</p></section>
-<section class="comparison-card"><h4>Gradient accumulation</h4><p>micro-batch数とoptimizer step数は一致しません。schedulerを何stepごとに進めるか確認します。</p></section>
+<section class="comparison-card"><h4>Gradient accumulation</h4><p>micro-batch数とoptimizer step数は一致しません。schedulerがepoch単位かoptimizer step単位かを確認します。</p></section>
 <section class="comparison-card"><h4>Resume</h4><p>scheduler stateを復元しないとLRがpeak付近へ戻る場合があります。再開前後のLR logを確認します。</p></section>
 <section class="comparison-card"><h4>採用例は効果保証ではない</h4><p>上位解法で頻出しても単独ablationは少ないため、同じfold・seedで比較します。</p></section>
 </div>
@@ -127,4 +139,6 @@ tags:
 <li><a href="https://arxiv.org/abs/1608.03983">SGDR: Stochastic Gradient Descent with Warm Restarts</a> — Ilya Loshchilov, Frank Hutter, 2016.</li>
 <li><a href="https://docs.pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.CosineAnnealingLR.html">CosineAnnealingLR</a> — PyTorch公式ドキュメント（warmup非内蔵・restartなし）。</li>
 <li><a href="https://zenn.dev/inaturam/articles/e0fa6eed17afbe">PyTorchのWarmup付きCosine Annealing LR Scheduler</a> — inaturam, Zenn, 2023（日本語実装解説・補助資料）。</li>
+<li><a href="https://docs.pytorch.org/docs/stable/generated/torch.optim.lr_scheduler.SequentialLR.html">SequentialLR</a> — PyTorch公式ドキュメント（schedulerの順次適用）。</li>
+<li><a href="https://huggingface.co/docs/transformers/main_classes/optimizer_schedules">Optimization / Schedules</a> — Hugging Face Transformers公式ドキュメント（warmup steps、total steps、cosineおよびwarmup-stable-decay）。</li>
 </ol>
